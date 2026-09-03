@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SMC Sniper — Nautilus — Detalle del backtest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #111827; --surface: #1f2937; --surface-2: #283548;
+    --ink: #f3f4f6; --ink-muted: #9ca3af; --ink-faint: #6b7280;
+    --border: #374151; --accent: #F0812A; --accent-bg: rgba(240, 129, 42, 0.12);
+    --ok: #10b981; --ok-bg: rgba(16, 185, 129, 0.12); --bad: #ef4444; --bad-bg: rgba(239, 68, 68, 0.12);
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Inter", -apple-system, sans-serif; line-height: 1.5;
+  }
+  .container { max-width: 980px; margin: 0 auto; padding: 40px 24px 80px; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .back { font-size: 13px; color: var(--ink-faint); }
+  h1 { font-size: 28px; font-weight: 600; margin: 16px 0 4px; }
+  .meta { font-family: var(--mono); font-size: 12.5px; color: var(--ink-faint); margin: 0 0 32px; }
+  .stat-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 12px; margin-bottom: 28px;
+  }
+  .stat-tile {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px; text-align: center;
+  }
+  .stat-value { font-size: 22px; font-weight: 700; font-family: var(--mono); }
+  .stat-label { font-size: 11.5px; color: var(--ink-muted); margin-top: 4px; }
+  .pos { color: var(--ok); } .neg { color: var(--bad); } .flat { color: var(--ink); }
+  h2 { font-size: 17px; font-weight: 600; margin: 36px 0 14px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th {
+    text-align: left; color: var(--ink-faint); font-weight: 500; font-size: 11px;
+    text-transform: uppercase; letter-spacing: .04em; padding: 8px 10px; border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; background: var(--bg);
+  }
+  td { padding: 9px 10px; border-bottom: 1px solid var(--surface-2); font-family: var(--mono); }
+  td.sym { font-family: "Inter", sans-serif; font-weight: 500; }
+  .dir-long { color: var(--ok); } .dir-short { color: var(--bad); }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; }
+  table.trades { min-width: 780px; }
+  .empty { color: var(--ink-faint); padding: 24px; text-align: center; }
+  .note {
+    color: var(--ink-muted); font-size: 13px; line-height: 1.6; margin: 8px 0 0;
+    padding: 12px 14px; background: var(--surface-2); border-left: 2px solid var(--accent); border-radius: 6px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>SMC Sniper — Nautilus (paralelo)</h1>
+  <p class="meta" id="run-meta">Cargando...</p>
+
+  <div class="stat-grid" id="stat-grid"></div>
+  <p class="note" id="note" hidden></p>
+
+  <h2>Por símbolo</h2>
+  <div class="table-wrap">
+    <table id="by-symbol-table">
+      <thead><tr><th>Símbolo</th><th>Trades</th><th>Win rate</th><th>R total</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <h2>Trades (más reciente primero)</h2>
+  <div class="table-wrap">
+    <table class="trades" id="trades-table">
+      <thead>
+        <tr>
+          <th>Símbolo</th><th>Dir</th><th>Entrada</th><th>Salida</th>
+          <th>Cierre (UTC)</th><th>Duración</th><th>PnL</th><th>R</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  const numFmt = (n, d = 1) => (n === null || n === undefined) ? '—' : Number(n).toFixed(d);
+  const rClass = (n) => n > 0 ? 'pos' : n < 0 ? 'neg' : 'flat';
+  const rSign = (n) => n > 0 ? '+' : '';
+
+  function statTile(label, value, cls = '') {
+    return `<div class="stat-tile"><div class="stat-value ${cls}">${value}</div><div class="stat-label">${label}</div></div>`;
+  }
+
+  async function load() {
+    const res = await fetch('/api/nautilus-backtest/last');
+    const d = await res.json();
+
+    if (!d || !d.run_at) {
+      document.getElementById('run-meta').textContent = 'Todavía no se corrió ningún backtest — usá el botón "Ejecutar backtest" en el dashboard.';
+      document.querySelector('.stat-grid').innerHTML = '';
+      return;
+    }
+
+    document.getElementById('run-meta').textContent =
+      `Corrido ${new Date(d.run_at).toLocaleString('es-AR')} · ${d.days} días · ` +
+      `${(d.symbols || []).join(', ')} · riesgo $${d.risk_usdt}/trade`;
+
+    document.getElementById('stat-grid').innerHTML = [
+      statTile('Trades', d.trades_closed ?? 0),
+      statTile('Win rate', numFmt(d.win_rate) + '%'),
+      statTile('R total', rSign(d.r_total) + numFmt(d.r_total, 2) + 'R', rClass(d.r_total)),
+      statTile('Expectancy', rSign(d.expectancy) + numFmt(d.expectancy, 3) + 'R'),
+      statTile('Max DD', numFmt(d.max_dd, 2) + 'R'),
+      statTile('Fills', d.fills ?? 0),
+    ].join('');
+
+    const noteEl = document.getElementById('note');
+    if (!d.trades_closed) {
+      noteEl.hidden = false;
+      noteEl.textContent = 'El backtest corrió pero no cerró ningún trade en esta ventana — puede ser normal (Craig es selectivo: todos los gates obligatorios deben cumplirse) o una señal de que hace falta más historia (--days más alto) para juntar setups.';
+    }
+
+    const bySymbolBody = document.querySelector('#by-symbol-table tbody');
+    bySymbolBody.innerHTML = (d.by_symbol || []).map(s => `
+      <tr>
+        <td class="sym">${s.symbol}</td>
+        <td>${s.trades}</td>
+        <td>${numFmt(s.win_rate)}%</td>
+        <td class="${rClass(s.r_total)}">${rSign(s.r_total)}${numFmt(s.r_total, 2)}R</td>
+      </tr>`).join('') || '<tr><td colspan="4" class="empty">Sin datos</td></tr>';
+
+    const trades = [...(d.trades || [])].reverse();
+    const tradesBody = document.querySelector('#trades-table tbody');
+    tradesBody.innerHTML = trades.map(t => `
+      <tr>
+        <td class="sym">${t.symbol}</td>
+        <td class="dir-${t.direction}">${t.direction === 'long' ? 'LONG' : 'SHORT'}</td>
+        <td>$${numFmt(t.entry_price, 4)}</td>
+        <td>$${numFmt(t.exit_price, 4)}</td>
+        <td>${new Date(t.close_time).toLocaleString('es-AR')}</td>
+        <td>${numFmt(t.duration_min, 0)}min</td>
+        <td class="${rClass(t.pnl)}">${rSign(t.pnl)}$${numFmt(t.pnl, 2)}</td>
+        <td class="${rClass(t.r)}">${rSign(t.r)}${numFmt(t.r, 2)}R</td>
+      </tr>`).join('') || '<tr><td colspan="8" class="empty">Sin trades</td></tr>';
+  }
+
+  load();
+</script>
+</body>
+</html>

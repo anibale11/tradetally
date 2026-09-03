@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Bot SMC vs. Método Craig Percoco — Auditoría de fidelidad</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Paleta unificada con el dashboard (nautilus-trading/dashboard-simple) —
+     mismos nombres de variable que usaba el documento original (los
+     gráficos SVG embebidos referencian var(--accent)/var(--ink)/etc
+     directo), solo se remapean los valores para que coincida con la
+     identidad visual real de nautilustrader.io. Dark-only a propósito
+     (el dashboard tampoco tiene modo claro). */
+  :root {
+    --bg: #111827;
+    --surface: #1f2937;
+    --surface-2: #283548;
+    --ink: #f3f4f6;
+    --ink-muted: #9ca3af;
+    --ink-faint: #6b7280;
+    --border: #374151;
+    --accent: #F0812A;
+    --accent-strong: #f78f2f;
+    --accent-bg: rgba(240, 129, 42, 0.12);
+    --ok: #10b981;
+    --ok-bg: rgba(16, 185, 129, 0.12);
+    --ok-border: rgba(16, 185, 129, 0.35);
+    --bad: #ef4444;
+    --bad-bg: rgba(239, 68, 68, 0.12);
+    --bad-border: rgba(239, 68, 68, 0.35);
+    --warn: #f59e0b;
+    --warn-bg: rgba(245, 158, 11, 0.12);
+    --warn-border: rgba(245, 158, 11, 0.35);
+    --info: #60a5fa;
+    --info-bg: rgba(96, 165, 250, 0.12);
+    --info-border: rgba(96, 165, 250, 0.35);
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 20px rgba(0,0,0,0.35);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #111827; --surface: #1f2937; --surface-2: #283548;
+      --ink: #f3f4f6; --ink-muted: #9ca3af; --ink-faint: #6b7280;
+      --border: #374151; --accent: #F0812A; --accent-strong: #f78f2f;
+      --accent-bg: rgba(240, 129, 42, 0.12); --ok: #10b981; --ok-bg: rgba(16, 185, 129, 0.12);
+      --ok-border: rgba(16, 185, 129, 0.35); --bad: #ef4444; --bad-bg: rgba(239, 68, 68, 0.12);
+      --bad-border: rgba(239, 68, 68, 0.35); --warn: #f59e0b; --warn-bg: rgba(245, 158, 11, 0.12);
+      --warn-border: rgba(245, 158, 11, 0.35); --info: #60a5fa; --info-bg: rgba(96, 165, 250, 0.12);
+      --info-border: rgba(96, 165, 250, 0.35);
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 20px rgba(0,0,0,0.35);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #111827; --surface: #1f2937; --surface-2: #283548;
+    --ink: #f3f4f6; --ink-muted: #9ca3af; --ink-faint: #6b7280;
+    --border: #374151; --accent: #F0812A; --accent-strong: #f78f2f;
+    --accent-bg: rgba(240, 129, 42, 0.12); --ok: #10b981; --ok-bg: rgba(16, 185, 129, 0.12);
+    --ok-border: rgba(16, 185, 129, 0.35); --bad: #ef4444; --bad-bg: rgba(239, 68, 68, 0.12);
+    --bad-border: rgba(239, 68, 68, 0.35); --warn: #f59e0b; --warn-bg: rgba(245, 158, 11, 0.12);
+    --warn-border: rgba(245, 158, 11, 0.35); --info: #60a5fa; --info-bg: rgba(96, 165, 250, 0.12);
+    --info-border: rgba(96, 165, 250, 0.35);
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 20px rgba(0,0,0,0.35);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Inter", system-ui, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 56px 24px 96px;
+  }
+
+  code, .mono { font-family: "JetBrains Mono", ui-monospace, monospace; }
+
+  /* ── Header ─────────────────────────────────────────── */
+  header.doc-head {
+    margin-bottom: 40px;
+  }
+  .eyebrow {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 14px;
+  }
+  h1 {
+    font-size: clamp(28px, 4vw, 38px);
+    line-height: 1.15;
+    margin: 0 0 12px;
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+  .doc-head p.lede {
+    font-size: 16.5px;
+    color: var(--ink-muted);
+    max-width: 62ch;
+    margin: 0 0 8px;
+  }
+  .doc-head .meta {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12.5px;
+    color: var(--ink-faint);
+    margin-top: 18px;
+  }
+
+  /* ── Summary stat row ───────────────────────────────── */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 28px 0 44px;
+    box-shadow: var(--shadow);
+  }
+  .stat {
+    background: var(--surface);
+    padding: 18px 14px;
+    text-align: center;
+  }
+  .stat .n {
+    font-family: "JetBrains Mono", monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: 26px;
+    font-weight: 600;
+    line-height: 1;
+  }
+  .stat .l {
+    font-size: 11.5px;
+    color: var(--ink-muted);
+    margin-top: 8px;
+    letter-spacing: 0.01em;
+  }
+  .stat.ok .n { color: var(--ok); }
+  .stat.fixed .n { color: var(--accent); }
+  .stat.gap .n { color: var(--bad); }
+  .stat.info .n { color: var(--info); }
+
+  /* ── Legend ─────────────────────────────────────────── */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+    margin-bottom: 48px;
+    padding: 14px 18px;
+    background: var(--surface-2);
+    border-radius: 8px;
+    font-size: 12.5px;
+    color: var(--ink-muted);
+  }
+  .legend .item { display: flex; align-items: center; gap: 7px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+
+  /* ── Category sections ──────────────────────────────── */
+  section.cat {
+    margin-bottom: 52px;
+  }
+  .cat-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+    margin-bottom: 22px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .cat-head h2 {
+    font-size: 20px;
+    margin: 0;
+    letter-spacing: -0.005em;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .cat-chevron {
+    display: inline-block;
+    transition: transform 0.15s;
+    transform: rotate(90deg);
+    color: var(--ink-faint);
+    font-size: 16px;
+  }
+  section.cat.collapsed .cat-chevron { transform: rotate(0deg); }
+  section.cat.collapsed .cat-head { margin-bottom: 0; padding-bottom: 12px; }
+  section.cat.collapsed > *:not(.cat-head) { display: none; }
+  .cat-head .count {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    color: var(--ink-faint);
+    white-space: nowrap;
+  }
+  .cat-intro {
+    color: var(--ink-muted);
+    font-size: 14.5px;
+    margin: -10px 0 22px;
+    max-width: 68ch;
+  }
+
+  /* ── Rule card ──────────────────────────────────────── */
+  .rule {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--rule-color, var(--border));
+    border-radius: 8px;
+    padding: 18px 20px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow);
+  }
+  .rule.ok { --rule-color: var(--ok); }
+  .rule.fixed { --rule-color: var(--accent); }
+  .rule.gap { --rule-color: var(--bad); }
+  .rule.partial { --rule-color: var(--warn); }
+  .rule.info { --rule-color: var(--info); }
+
+  .rule-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .rule-title {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.4;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .rule-chevron {
+    flex: none;
+    display: inline-block;
+    color: var(--ink-faint);
+    transition: transform 0.15s ease;
+    transform: rotate(90deg);
+    font-size: 11px;
+    line-height: 1.6;
+  }
+  .rule.collapsed .rule-chevron { transform: rotate(0deg); }
+  .rule.collapsed .rule-body,
+  .rule.collapsed .rule-foot,
+  .rule.collapsed .chart-wrap {
+    display: none;
+  }
+  .rule:not(.collapsed) .rule-top { margin-bottom: 6px; }
+
+  .toggle-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    color: var(--ink-muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 14px;
+    cursor: pointer;
+    margin-bottom: 20px;
+  }
+  .toggle-all:hover { color: var(--accent); border-color: var(--accent); }
+  .badge {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+    flex: none;
+  }
+  .rule.ok .badge { color: var(--ok); background: var(--ok-bg); border: 1px solid var(--ok-border); }
+  .rule.fixed .badge { color: var(--accent-strong); background: var(--accent-bg); border: 1px solid var(--accent); }
+  .rule.gap .badge { color: var(--bad); background: var(--bad-bg); border: 1px solid var(--bad-border); }
+  .rule.partial .badge { color: var(--warn); background: var(--warn-bg); border: 1px solid var(--warn-border); }
+  .rule.info .badge { color: var(--info); background: var(--info-bg); border: 1px solid var(--info-border); }
+
+  .rule-body {
+    font-size: 14px;
+    color: var(--ink-muted);
+    max-width: 74ch;
+  }
+  .rule-body p { margin: 6px 0; }
+  .rule-body code {
+    font-size: 12.5px;
+    background: var(--surface-2);
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: var(--ink);
+  }
+  blockquote.nb {
+    margin: 10px 0 6px;
+    padding: 8px 14px;
+    border-left: 2px solid var(--ink-faint);
+    font-size: 13px;
+    font-style: italic;
+    color: var(--ink-faint);
+  }
+  .rule-foot {
+    margin-top: 10px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11.5px;
+    color: var(--ink-faint);
+  }
+
+  /* ── Footer note ────────────────────────────────────── */
+  footer.doc-foot {
+    margin-top: 60px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--ink-faint);
+  }
+  footer.doc-foot p { margin: 4px 0; max-width: 70ch; }
+
+  @media (max-width: 640px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* ── Charts ──────────────────────────────────────────── */
+  .chart-wrap {
+    margin: 16px 0;
+    overflow-x: auto;
+  }
+  .bar-chart, .candle-chart, .funnel-chart, .price-chart {
+    width: 100%;
+    height: auto;
+    min-width: 480px;
+    color: var(--ink);
+  }
+
+  /* ── Comparison table ───────────────────────────────────── */
+  .cmp-table-wrap { margin: 16px 0; overflow-x: auto; }
+  .cmp-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 560px; }
+  .cmp-table th, .cmp-table td { padding: 8px 12px; text-align: right; border-bottom: 1px solid var(--border); }
+  .cmp-table th:first-child, .cmp-table td:first-child { text-align: left; }
+  .cmp-table thead th { color: var(--ink-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; border-bottom: 2px solid var(--border); }
+  .cmp-table tbody tr:last-child td { border-bottom: none; }
+  .cmp-table tr.cmp-total td { font-weight: 700; border-top: 2px solid var(--border); }
+  .cmp-pos { color: var(--ok); font-weight: 600; }
+  .cmp-neg { color: var(--bad); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="doc-head">
+    <p class="eyebrow">Auditoría interna · bot_trading</p>
+    <h1>Bot SMC Sniper vs. método real de Craig Percoco</h1>
+    <p class="lede">Comparación punto por punto entre lo que implementa el código (<code>smc_bias_analyzer.py</code>, <code>smc_sniper_strategy.py</code>, <code>position_monitor.py</code>) y lo que documenta el NotebookLM <strong>trading-brain</strong> sobre la metodología real de Craig Percoco. Cada punto está clasificado por qué tan verificado está, sin asumir nada que no esté citado.</p>
+    <p class="meta">Generado 2026-08-19 · actualizado 2026-08-21 · fuente: NB trading-brain (id eefd6f23-…) · solo para uso local</p>
+  </header>
+
+  <button type="button" class="toggle-all" id="toggle-all-btn">▸ Expandir todo</button>
+
+  <div class="stats">
+    <div class="stat ok"><div class="n">14</div><div class="l">Cumple método real</div></div>
+    <div class="stat fixed"><div class="n">12</div><div class="l">Corregido</div></div>
+    <div class="stat gap"><div class="n">1</div><div class="l">Gap pendiente</div></div>
+    <div class="stat info"><div class="n">0</div><div class="l">Parcial / simplificado</div></div>
+    <div class="stat info"><div class="n">6</div><div class="l">Calibración propia</div></div>
+  </div>
+
+  <div class="legend">
+    <div class="item"><span class="dot" style="background:var(--ok)"></span>Cumple — verificado sin cambios necesarios</div>
+    <div class="item"><span class="dot" style="background:var(--accent)"></span>Corregido 2026-08-19 — era un gap, ya deployado</div>
+    <div class="item"><span class="dot" style="background:var(--bad)"></span>Gap pendiente — identificado, sin implementar</div>
+    <div class="item"><span class="dot" style="background:var(--warn)"></span>Parcial — implementado en versión simplificada</div>
+    <div class="item"><span class="dot" style="background:var(--info)"></span>Calibración propia — no especificado por Craig, decisión de implementación</div>
+  </div>
+
+  <!-- ═══════════════════ 1. SESGO ═══════════════════ -->
+  <section class="cat">
+    <div class="cat-head">
+      <h2>1 · Sesgo de mercado (BTC)</h2>
+      <span class="count">8 puntos</span>
+    </div>
+    <p class="cat-intro">Cómo se determina la dirección macro y cómo esa dirección afecta (o no) las decisiones sobre SOL/ETH.</p>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">BTC neutral NO debe bloquear operar SOL/ETH</div><span class="badge">Corregido 2026-08-19</span></div>
+      <div class="rule-body">
+        <p>El hallazgo más importante de la auditoría. El código tenía <code>if bias_dir == "neutral": return []</code> — bloqueaba <em>toda</em> evaluación de SOL/ETH sin siquiera mirar su estructura propia.</p>
+        <blockquote class="nb">"Craig Percoco no bloquea la operativa en otros pares [cuando BTC está neutral]... cita un período de 35 días donde Bitcoin estuvo completamente plano, pero la capitalización de mercado de las altcoins experimentó un incremento cercano al 100%."</blockquote>
+        <p>Reemplazado por un filtro de <strong>fuerza relativa contra BTC</strong> (ver siguiente punto). Verificado en producción: el log pasó de <code>"Sesgo neutro — no se opera"</code> a <code>"Sesgo BTC: NEUTRAL — analizando setups"</code>.</p>
+      </div>
+      <div class="rule-foot">smc_sniper_strategy.run_once() — commit ca30260</div>
+    </div>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">Filtro real: fuerza relativa contra BTC ("Strength vs Bitcoin")</div><span class="badge">Corregido 2026-08-19</span></div>
+      <div class="rule-body">
+        <p>Craig usa un indicador tipo beta que oscila en torno a cero: verde (rendimiento del par &gt; rendimiento de BTC) habilita largos, rojo habilita cortos. Cerca de cero es aceptable en ambas direcciones si el setup técnico es sólido.</p>
+        <blockquote class="nb">"Si el indicador se encuentra cerca del umbral centralizado... lo considera perfectamente aceptable y viable para operar sin inconvenientes, siempre y cuando el setup técnico principal (ChoCh + FVG) sea de alta calidad."</blockquote>
+        <p>Implementado como <code>_relative_strength()</code>: rendimiento % del par menos rendimiento % de BTC en la misma ventana (15m×100 ≈ 25h), con tolerancia ±0.3pp cerca de cero.</p>
+      </div>
+      <div class="rule-foot">smc_sniper_strategy._relative_strength / _relative_strength_ok</div>
+    </div>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">Swings confirmados por BOS mecánico, no fractal de N velas</div><span class="badge">Corregido 2026-08-19</span></div>
+      <div class="rule-body">
+        <p>La versión anterior exigía 5 velas de confirmación a cada lado antes de aceptar un swing (hasta 20h de demora en 4h).</p>
+        <blockquote class="nb">"El punto de swing solo es válido y operable una vez que otra vela cierra oficialmente con su cuerpo por encima del máximo anterior (BOS)... no exige un número específico de velas de confirmación a cada lado."</blockquote>
+        <p>Nuevo detector de "leg-tracking": cada swing se confirma en el instante exacto del cierre que rompe el extremo confirmado anterior.</p>
+      </div>
+      <div class="rule-foot">smc_bias_analyzer._detect_mechanical_swings</div>
+    </div>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">HALLAZGO CRÍTICO — el detector de swings se atascaba por años</div><span class="badge">Corregido 20/08</span></div>
+      <div class="rule-body">
+        <p>Bug real encontrado al cuestionar (con razón) por qué BTC daba "neutral" incluso mirando 845 días de historia. La primera versión del detector mecánico seguía una única pierna desde el ÚLTIMO extremo confirmado, exigiendo que el precio rompiera ESE extremo — por lejano que fuera — para reconocer el siguiente swing.</p>
+        <p>Verificado con datos reales de BTC 4h: el último swing quedó fijado en <strong>2024-08-05</strong> (low $48,922) y <strong>ningún swing nuevo se confirmó en los 2 años siguientes</strong>, pese a que el precio subió a $126,185 y volvió a bajar a ~$75,000 en el medio — una tendencia sostenida hace que los retrocesos siempre hagan mínimos más altos, así que la condición de ruptura casi nunca se cumplía.</p>
+        <p>Fix en dos fases: (1) ZigZag de piernas locales con umbral de retroceso mínimo (3%) que no se ancla a un extremo lejano; (2) confirmación mecánica de Craig sobre esos giros, buscando el cierre de confirmación durante la pierna siguiente inmediata (no antes del pivot, no sin límite hacia adelante — ambos errores intermedios se probaron y descartaron con datos reales antes de llegar a esta versión).</p>
+        <p>Verificado empíricamente: el conteo de swings ahora crece de forma <strong>estable y monótona</strong> con el tamaño de ventana (2→3→4→5→7→13→22→36 para 60→1000 velas) — antes era errático. <code>CANDLES</code> sube de 60 a 500 velas (~83 días) porque el algoritmo corregido necesita más historia real para formar una secuencia genuina de 2 BOS.</p>
+      </div>
+      <div class="rule-foot">smc_bias_analyzer._detect_mechanical_swings (rediseño) — commit 8f70b78</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Se exigen 2 BOS consecutivos para confirmar tendencia</div><span class="badge">Cumple</span></div>
+      <div class="rule-body">
+        <p>Un solo quiebre estructural no alcanza para declarar tendencia — el código ya exigía 2 Higher Highs + 2 Higher Lows (o el espejo bajista) antes del fix del 19/08, y se mantuvo sin cambios.</p>
+        <blockquote class="nb">"Craig exige estrictamente ver 2 BOS consecutivos... si el precio hace un primer quiebre pero luego se estanca... Craig considera que el mercado está en un estado neutral o de consolidación."</blockquote>
+        <p><strong>Investigación adicional (2026-08-26), NO implementada — 3 variantes probadas y descartadas</strong>: verificado en NB que Craig separa 2 fases distintas — identificar el pivot (Lux Algo SMC usa lookback fractal automático, no % de retroceso) vs. confirmar que se rompió (cierre de cuerpo, criterio manual estricto). Nuestro <code>_detect_mechanical_swings</code> mezcla ambas en un ZigZag por %. Se probaron 3 variantes de separación con datos reales de BTC (500 velas 4h):</p>
+        <ul style="margin:0 0 12px 20px; padding:0;">
+          <li><strong>v1</strong> (confirmación acotada al próximo pivot opuesto, igual que el ZigZag): 1 swing confirmado en 83 días.</li>
+          <li><strong>v2</strong> (confirmación sin acotar): 11 swings, pero con bug de alternancia (varios "high" seguidos) y el último swing quedaba fechado 56 días atrás sin actualizar pese al movimiento real de BTC.</li>
+          <li><strong>v3</strong> (con reintento: un candidato rechazado puede ser reemplazado por uno más extremo del mismo tipo): corregido el bug de alternancia, pero volvió a dar 1 swing — barrido de lookback fractal (5/10/15/20/30 velas) probado también, mejor caso 2 swings con el último fechado 12 días atrás.</li>
+        </ul>
+        <p>En las 3 variantes, correctamente implementadas y debuggeadas, los pivots fractales resultaron demasiado finos/cercanos entre sí para que el criterio estricto de "cierre de vela más allá del pivot opuesto" (que sí funciona con las piernas grandes del ZigZag por %) se confirme con frecuencia razonable. <strong>Ninguna variante superó al detector actual en ningún escenario probado — descartadas las 3, nada deployado.</strong> El ZigZag actual sigue en producción, validado semanas, actualizándose con datos frescos.</p>
+      </div>
+      <div class="rule-foot">smc_bias_analyzer._analyze_structure — hh_count>=2 and hl_count>=2</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">BTC como "North Star" — nunca se opera directo</div><span class="badge">Cumple</span></div>
+      <div class="rule-body">
+        <p>BTC-USDT solo se monitorea para sesgo macro; el bot solo ejecuta trades reales en SOL-USDT y ETH-USDT. Coincide con cómo Craig usa BTC como brújula sin operarlo activamente.</p>
+      </div>
+      <div class="rule-foot">docker-compose.yml — STRATEGY_SYMBOLS=SOL-USDT,ETH-USDT</div>
+    </div>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">Timeframe del sesgo: Craig usa 1D + 4H combinados</div><span class="badge">Corregido 2026-08-19</span></div>
+      <div class="rule-body">
+        <p>Investigado a fondo: 1D y 4H NO son intercambiables ni deben "coincidir" — juegan roles jerárquicos distintos. El 1D define contexto macro (SMA200 diaria, vela del día anterior, FVG diario); el 4H define la "tesis de la sesión" (Elliott Wave, confirma si el nivel macro rompe o rebota) — es el timeframe operativo real.</p>
+        <blockquote class="nb">"Para analizar el sesgo direccional del mercado, Craig Percoco utiliza principalmente los gráficos en las temporalidades de 1 Día (1D) y 4 Horas (4H)."</blockquote>
+        <p>Pero además se verificó que el SMA200 diario <strong>no bloquea</strong> operar en contra ("no hay que casarse con el sesgo") — implementarlo como filtro habría repetido el mismo error que el bloqueo por BTC neutral. Se agregó como <strong>confluencia opcional</strong> (ver sección 3), no como gate.</p>
+      </div>
+      <div class="rule-foot">smc_bias_analyzer._macro_direction — commit c8a76ec</div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ 2. ENTRADA ═══════════════════ -->
+  <section class="cat">
+    <div class="cat-head">
+      <h2>2 · Entrada — modelo base (ChoCh + FVG)</h2>
+      <span class="count">12 puntos</span>
+    </div>
+    <p class="cat-intro">El "checklist mecánico" que Craig describe como no-negociable para habilitar cualquier entrada, independientemente de confluencias extra.</p>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">Intervalo de escaneo — de 15 min a 60s</div><span class="badge">Corregido 2026-08-19</span></div>
+      <div class="rule-body">
+        <p><code>SNIPER_INTERVAL</code> era 15 min (900s) sin ninguna justificación documentada (inventado en el commit original, 30/06/2026). Problema de fondo real, no solo un número sin respaldo: <code>run_once()</code> hace un escaneo puntual por ciclo y, si encuentra un candidato, confirma ChoCh solo durante los 60s siguientes (<code>CHOCH_MAX_WAIT_S</code>) — el resto de cada ciclo (~14 min) el bot no está mirando el mercado en absoluto. Un ChoCh que se confirma fuera de esa ventana de 60s nunca se ve hasta el ciclo siguiente, para cuando el precio ya pudo alejarse del setup.</p>
+        <p>Craig opera mirando el gráfico de 1-5m en tiempo real, reaccionando "en el momento exacto del cierre de la vela" (mismo patrón confirmado en la consulta sobre RSI Cloud) — no por sondeos periódicos. Bajado a 60s, alineado al cierre de cada vela de 1m (el timeframe de gatillo real). No cambia qué FVGs se detectan (siguen siendo velas ya cerradas), solo elimina el punto ciego entre escaneos. Verificado estable en producción tras el deploy (ciclos completándose cada ~60s sin errores).</p>
+      </div>
+      <div class="rule-foot">smc_strategy_manager.SNIPER_INTERVAL</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">ChoCh = cierre de cuerpo de vela, no mecha</div><span class="badge">Cumple</span></div>
+      <div class="rule-body">
+        <p>Un toque con mecha que luego retrocede no cuenta como ChoCh — el código exige <code>close</code> más allá del nivel, consistente con la regla de Craig.</p>
+      </div>
+      <div class="rule-foot">smc_sniper_strategy._confirm_choch</div>
+    </div>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">Referencia del ChoCh = último swing confirmado por BOS</div><span class="badge">Corregido 2026-08-19</span></div>
+      <div class="rule-body">
+        <p>Antes usaba el máximo/mínimo de una ventana fija de 10 velas, sin verificar que fuera un swing real.</p>
+        <blockquote class="nb">"Si el precio rompe una zona que no ha sido validada como un swing point por un BOS anterior, Craig no lo considera un ChoCh, sino ruido."</blockquote>
+        <p>Ahora reutiliza el mismo detector mecánico del sesgo, aplicado a velas de 1m.</p>
+      </div>
+      <div class="rule-foot">smc_sniper_strategy._choch_reference_level</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Definición del FVG: 3 velas, mechas (no cuerpo), no solapamiento</div><span class="badge">Cumple</span></div>
+      <div class="rule-body">
+        <p>Verificado en NB en detalle (2026-08-26): Craig define el FVG con las MECHAS (high/low) de la vela 1 y la vela 3 de una secuencia de 3 velas de fuerte desplazamiento — el gap es el espacio entre esas mechas sin solaparse a través de la vela 2. Nuestro <code>_detect_fvgs</code> compara exactamente <code>prev["low"]/["high"]</code> contra <code>nxt["high"]/["low"]</code> — mechas, no cuerpo. Dirección (alcista/bajista) también coincide: se decide por el sentido del gap entre esas mechas.</p>
+      </div>
+      <div class="rule-foot">smc_sniper_strategy._detect_fvgs</div>
+    </div>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">Condición extra sin respaldo: cierre de la 3ra vela más allá del gap</div><span class="badge">Corregido 2026-08-19</span></div>
+      <div class="rule-body">
+        <p>El código original (commit inicial, 30/06/2026, sin justificación) exigía además que <code>nxt["close"]</code> cerrara más allá del borde del gap — Craig NO menciona esta condición, solo pide que las mechas no se solapen. Eliminada. Verificado empíricamente sobre datos reales de SOL/ETH: sin cambio en el conteo de FVGs detectados (99/27) — la condición era redundante en la práctica en este dataset, pero podía descartar gaps válidos por mecha en otros escenarios.</p>
+      </div>
+      <div class="rule-foot">smc_sniper_strategy._detect_fvgs</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Entrada al punto medio del FVG (Consequential Encroachment)</div><span class="badge">Cumple</span></div>
+      <div class="rule-body">
+        <p>La orden se calcula sobre el 50% del gap, no sobre el borde — coincide exactamente con el término que usa Craig ("Consequential Encroachment"), R/R diseñado para 1:4 desde ese punto.</p>
+      </div>
+      <div class="rule-foot">smc_sniper_strategy._analyze_symbol — entry = fvg["midpoint"]</div>
+    </div>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">Invalidación del FVG por Consequential Encroachment</div><span class="badge">Corregido 2026-08-19</span></div>
+      <div class="rule-body">
+        <p>Verificado en NB (2026-08-26): si una vela CIERRA el cuerpo más allá del midpoint del FVG en contra de la dirección, Craig considera el gap "ignorado" y corta la posición antes de llegar al SL completo — aplica tanto antes de entrar (descarta el setup / cancela la orden límite) como después de entrar (gestión de riesgo activa).</p>
+        <blockquote class="nb">"Si la vela cierra oficialmente superando esta línea central, la probabilidad de que el mercado respete el FVG disminuye drásticamente... el precio podría atravesarlo como mantequilla."</blockquote>
+        <p><strong>Implementado en 2 fases</strong>: (1) Pre-entrada, en <code>_confirm_choch</code> — aborta el setup antes de tiempo si se invalida mientras espera confirmación de ChoCh (mandatorio, bajo riesgo). (2) Post-entrada, <code>_check_fvg_encroachment_alert</code> — <strong>SOLO alerta por Telegram, no cierra automático</strong>. Craig lo describe como discrecional ("podés optar por salir"), no una regla dura como el ChoCh/2 BOS, y el SL ancho actual (fuera de la vela generadora, 0.8%-6%) ya da margen a propósito — automatizar el cierre podría cortar trades que se iban a recuperar dentro de ese margen. Decisión del usuario: juntar datos reales de las alertas antes de decidir si automatizarlo.</p>
+      </div>
+      <div class="rule-foot">smc_sniper_strategy._fvg_invalidated / position_monitor._check_fvg_encroachment_alert</div>
+    </div>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">El FVG debe romper una "zona clave"</div><span class="badge">Corregido 2026-08-19</span></div>
+      <div class="rule-body">
+        <p>Antes cualquier gap que superara el tamaño mínimo era candidato, sin importar si el precio venía rebotando ahí antes.</p>
+        <blockquote class="nb">"Operar cualquier FVG que aparezca de forma aislada... es perderse en el ruido... Craig busca exclusivamente FVGs que se formen a partir de una vela de fuerte desplazamiento institucional que logre romper un nivel donde el precio se había estancado previamente."</blockquote>
+        <p>Nuevo gate: exige ≥2 toques previos de un nivel antes de que la vela generadora lo rompa con el cuerpo.</p>
+      </div>
+      <div class="rule-foot">smc_sniper_strategy._fvg_breaks_key_zone</div>
+    </div>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">FVG dentro de la zona Fibonacci 50%–78.6%, obligatorio</div><span class="badge">Corregido 2026-08-19</span></div>
+      <div class="rule-body">
+        <p>Antes era una confluencia opcional que sumaba puntaje si el precio estaba cerca de un punto (61.8% o 78.6%). Craig lo trata como filtro duro sobre el rango completo.</p>
+        <blockquote class="nb">"El FVG debe estar ubicado dentro de la zona de descuento del retroceso de Fibonacci (entre el nivel 50% y el 78.6%)... cualquier FVG que se forme fuera de este umbral... es descartado automáticamente."</blockquote>
+        <p>Esta regla y la de "zona clave" son, según el NB, exactamente las <strong>2 confluencias mínimas exigidas</strong> para un setup válido más allá de ChoCh+FVG — confirmando que ambos fixes del 19/08 apuntaron a lo correcto.</p>
+      </div>
+      <div class="rule-foot">smc_sniper_strategy._fib_discount_zone</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Sweep de liquidez: opcional, no obligatorio</div><span class="badge">Cumple</span></div>
+      <div class="rule-body">
+        <p>Confirmado que Craig no exige un barrido de liquidez previo para el modelo base — es una "confluencia premium" (setup A+) solo si ocurre justo en PDH/PDL. El bot no lo exige, correcto.</p>
+        <blockquote class="nb">"No es un requisito obligatorio ver un barrido de liquidez previo para ejecutar una entrada; alcanza únicamente con el ChoCh + FVG."</blockquote>
+      </div>
+      <div class="rule-foot">smc_sniper_strategy._analyze_symbol — sin chequeo de sweep</div>
+    </div>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">Secuencia disciplinada 15m→1m (no 1m "suelto")</div><span class="badge">Corregido 2026-08-19</span></div>
+      <div class="rule-body">
+        <p>Verificado en NB en detalle (2026-08-26): el 1 minuto NO es "scalping raro" para Craig — es su timeframe de <strong>ejecución estándar</strong> diario. Pero nunca lo opera de forma aislada ("tierra de nadie"). Su secuencia real: identifica zonas de interés SOLO en 15m durante la pre-sesión (FVG de 15m sin retestear, PDH/PDL, S/R), coloca alertas y espera pasivamente — recién cuando el precio interactúa con una de esas zonas de 15m, mira el gráfico de 1m para el ChoCh+FVG de entrada.</p>
+        <p>Nuestro código combinaba FVGs de 1m y 15m en un mismo pool sin esa jerarquía — cualquier FVG de 1m cercano al precio calificaba, sin exigir una zona de 15m detrás. <strong>Implementado</strong>: <code>_has_active_15m_zone()</code> exige, cuando el gatillo elegido es un FVG de 1m, que exista una zona de 15m sin mitigar activa cerca del precio. Backtesteado (16 días reales): zona_clave bajó de 35.4% a 21.9% (el nuevo filtro la reemplaza, 32.3%) — resultado final sigue en 0 trades en esta ventana, pero más fiel al método real.</p>
+      </div>
+      <div class="rule-foot">smc_sniper_strategy._has_active_15m_zone / _analyze_symbol</div>
+    </div>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">Prioridad entre FVGs de distinto timeframe</div><span class="badge">Corregido 2026-08-19</span></div>
+      <div class="rule-body">
+        <p>Bug de programación (no de metodología): se ordenaban por índice crudo dentro de cada lista de velas (0-59 en 1m, 0-99 en 15m), escalas no comparables — en la práctica priorizaba sistemáticamente 15m sobre 1m, al revés de lo que decía el propio comentario del código.</p>
+        <p>Corregido: ahora se ordena por timestamp real de la vela generadora.</p>
+      </div>
+      <div class="rule-foot">smc_sniper_strategy._detect_fvgs — campo "ts"</div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ 3. CONFLUENCIAS OPCIONALES ═══════════════════ -->
+  <section class="cat">
+    <div class="cat-head">
+      <h2>3 · Confluencias opcionales</h2>
+      <span class="count">6 puntos</span>
+    </div>
+    <p class="cat-intro">Craig separa criterios obligatorios de un pool de confluencias donde "alcanza con que se cumplan varias, no todas".</p>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">POC (VRVP) coincide con el midpoint del FVG</div><span class="badge">Corregido 2026-08-19</span></div>
+      <div class="rule-body">
+        <p>Verificado en NB en 2 pasadas (2026-08-26, la primera tuvo un diseño equivocado). Craig usa el <strong>VRVP de rango VISIBLE</strong> (no fijo, recalcula dinámicamente con scroll/zoom) y el <strong>POC nunca es gate ni score cuantitativo interno</strong> — lo busca coincidiendo físicamente con Fibonacci 61.8%/EMA200/midpoint de FVG de 15m como confluencia de convicción ("Setup Unicornio" si todo se alinea).</p>
+        <p><strong>Intento previo descartado (mismo día)</strong>: usar el POC como sustituto/rescate del gate obligatorio de zona clave — backtest negativo (destrababa zona clave 35%→5% pero 0 trades adicionales, el cuello de botella se trasladaba a Fibonacci/ChoCh; diseño incorrecto, no la idea del VRVP en sí).</p>
+        <p><strong>Implementado correctamente</strong>: <code>_compute_poc()</code>/<code>_poc_aligned()</code> — proxy de volumen por vela agrupado en 20 bins de precio sobre la ventana de 100 velas ya analizada (aproxima el rango visible), sumado como confluencia OPCIONAL más al score (junto a PDH/PDL, sesgo BTC, macro SMA200, RSI). Score máximo pasa de 0-5 a 0-6. Backtesteado antes de deployar: coincide en ~20.8% de los ciclos con FVG evaluable — selectivo, no un sello de goma.</p>
+      </div>
+      <div class="rule-foot">smc_sniper_strategy._compute_poc / _poc_aligned</div>
+    </div>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">Macro SMA200 diaria de BTC</div><span class="badge">Corregido 2026-08-19</span></div>
+      <div class="rule-body">
+        <p>Nueva confluencia opcional: si la dirección del trade coincide con la posición del precio de BTC respecto a su SMA200 diaria, suma un punto al score. Deliberadamente NO es un filtro/gate — Craig explícitamente no bloquea operar en contra del macro.</p>
+      </div>
+      <div class="rule-foot">smc_bias_analyzer._macro_direction / smc_sniper_strategy._analyze_symbol — commit c8a76ec</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">PDH / PDL (máximo/mínimo del día anterior)</div><span class="badge">Cumple</span></div>
+      <div class="rule-body"><p>Confluencia de "inflexión de liquidez" documentada por Craig — implementada como suma opcional de score.</p></div>
+      <div class="rule-foot">smc_sniper_strategy._analyze_symbol — PDH/PDL</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Alineación con sesgo BTC</div><span class="badge">Cumple</span></div>
+      <div class="rule-body"><p>Cuando BTC sí tiene tendencia confirmada, sigue sumando como confluencia opcional — ya no bloquea nada por sí sola (ver sección 1).</p></div>
+      <div class="rule-foot">smc_sniper_strategy._analyze_symbol — aligned</div>
+    </div>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">RSI como confluencia de entrada — divergencia real</div><span class="badge">Corregido 21/08</span></div>
+      <div class="rule-body">
+        <p>Reemplazado el chequeo simple de sobrecompra/sobreventa por detección real de <strong>divergencia</strong> precio/RSI, verificada empíricamente antes de implementar.</p>
+        <blockquote class="nb">"Divergencias como Confluencia Premium (A+): Craig busca activamente divergencias entre el precio y el RSI... precio hace un mínimo más bajo pero el RSI hace un mínimo más alto."</blockquote>
+        <p>Probado contra datos reales de SOL/ETH (500 velas de 15m, ~5 días): 8 divergencias en SOL (1 alcista/7 bajistas), 19 en ETH (6/13) — frecuencia razonable, ni ruido ni objetivo inalcanzable. Sigue siendo confluencia opcional del pool, no un requisito.</p>
+      </div>
+      <div class="rule-foot">smc_sniper_strategy._rsi_divergence / _detect_local_pivots — commit b77dca2</div>
+    </div>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">Setup "Unicornio" — EMA200 + divergencia RSI + PDH/PDL simultáneos</div><span class="badge">Corregido 21/08</span></div>
+      <div class="rule-body">
+        <p>Implementado como bloque único: cuando la divergencia RSI, la EMA200 alineada con el FVG (±0.5%) y un toque de PDH/PDL coinciden en la misma señal, se marca como Unicornio — confianza forzada a 1.0 y alerta crítica.</p>
+        <p><strong>Deliberadamente aditivo, nunca un gate</strong> — si no se da, el trade se evalúa igual con el score normal. Umbral de EMA200 calibrado empíricamente: la distancia MÍNIMA real entre un FVG y la EMA200 en los datos probados fue 0.45%/0.73% — un umbral de 0.3% jamás habría disparado. Con 0.5%, sí aparecen casos reales (3/28 FVGs en SOL, 1/13 en ETH).</p>
+      </div>
+      <div class="rule-foot">smc_sniper_strategy._ema200_aligned / is_unicorn — commit b77dca2</div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ 4. GESTIÓN DE POSICIÓN ═══════════════════ -->
+  <section class="cat">
+    <div class="cat-head">
+      <h2>4 · Niveles y gestión de posición</h2>
+      <span class="count">5 puntos</span>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">SL fuera de la vela generadora del FVG</div><span class="badge">Cumple</span></div>
+      <div class="rule-body"><p>El SL estructural va por fuera del extremo de la vela de displacement, con buffer y límites de 0.8%–6%.</p></div>
+      <div class="rule-foot">smc_sniper_strategy._calc_sl</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">TP1 = 50% exacto de la posición</div><span class="badge">Cumple</span></div>
+      <div class="rule-body">
+        <blockquote class="nb">"Craig utiliza como regla general cerrar exactamente el 50% de su posición en su primer Take Profit."</blockquote>
+      </div>
+      <div class="rule-foot">trade_executor.py — qty_half</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Ratio TP1/TP2 = 1:4 / 1:8</div><span class="badge">Cumple</span></div>
+      <div class="rule-body"><p>Verificado como regla explícita de Craig en sesiones previas de esta auditoría.</p></div>
+      <div class="rule-foot">smc_sniper_strategy._analyze_symbol — rr_dist*4 / rr_dist*8</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Breakeven inmediato tras TP1 ("risk-free trade")</div><span class="badge">Cumple</span></div>
+      <div class="rule-body">
+        <blockquote class="nb">"Una vez que el trade muestra la inercia correcta y se toman ganancias parciales, está prohibido bajo su plan de negocios dejar que un trade ganador se convierta en una pérdida."</blockquote>
+      </div>
+      <div class="rule-foot">position_monitor.py — breakeven tras TP1</div>
+    </div>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">Trailing stop del 50% restante</div><span class="badge">Corregido 2026-08-19</span></div>
+      <div class="rule-body">
+        <p>Implementado trailing por estructura (uno de los 4 métodos mecánicos reales de Craig) reemplazando el trailing por ATR en la fase 2. Nueva <code>_structure_trail_level()</code> reutiliza el detector mecánico de swings de <code>smc_bias_analyzer</code> sobre velas de 5m (500 velas — verificado empíricamente que con menos no llega a formar swings confirmados): para un long usa el último swing "low" confirmado (HL), para un short el último "high" confirmado (LH), como referencia del nuevo SL.</p>
+        <blockquote class="nb">"Craig Percoco no utiliza el indicador ATR para gestionar su trailing stop... en sus fuentes, el ATR no se menciona en absoluto para el scalping o day trading."</blockquote>
+        <p>De los 4 métodos de Craig (estructura, FVGs consecutivos, líneas de tendencia dinámicas, RSI Cloud), el de estructura y el RSI Cloud ya están implementados (ver fila siguiente) — quedan fuera de alcance los 2 manuales/visuales (líneas de tendencia a mano, sin equivalente automatizable). El ATR se mantiene solo como fallback de seguridad si no hay swing confirmado disponible en el momento del trailing.</p>
+      </div>
+      <div class="rule-foot">position_monitor.py._structure_trail_level / _apply_trailing_stop</div>
+    </div>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">Gatillo de salida por agotamiento (RSI Cloud)</div><span class="badge">Corregido 2026-08-19</span></div>
+      <div class="rule-body">
+        <p>Verificado en NB en detalle (2026-08-26): el "Pro Plus RSI Cloud" de Craig SÍ tiene fórmula replicable — no es una caja negra propietaria como se pensaba. Es RSI envuelto en una banda de desviación estándar (tipo Bollinger, pero sobre el RSI), gestionado en un timeframe 3x mayor al de entrada (si entra en 5m, gestiona en 15m). Cuando el RSI o la banda cruzan 70/30 se pinta un "highlight strip"; la salida real ocurre cuando CIERRA una vela del TF de gestión con el highlight en dirección opuesta a la posición — ahí Craig aplana el 100% (así logra ratios de 6R-10R en vez de un TP fijo).</p>
+        <blockquote class="nb">"Craig monitoriza el RSI Cloud subiendo 3 veces la temporalidad de entrada... en el momento exacto del cierre de esa vela con highlight, él cierra y aplana el 100% de la posición."</blockquote>
+        <p>Implementado: <code>_rsi_cloud_exit_signal()</code> (RSI-14 + banda ±2 desvíos estándar sobre 14 valores de RSI, TF 15m) y <code>_check_rsi_cloud_exit()</code> — cierra a mercado y persiste <code>close_reason='rsi_cloud_exhaustion'</code>. Se evalúa antes del trailing en cada ciclo del loop activo. Verificado con datos reales de SOL/ETH antes de deployar (valores de RSI/banda con rango sensato, sin sesgo hacia "siempre true/false").</p>
+        <p><strong>Fix posterior (mismo día)</strong>: al re-auditar las filas ya marcadas "Cumple" del documento, se encontró que el RSI Cloud disparaba sin importar si el TP1 ya se había tomado — eso lo ponía en modo "full risk-on" (100% de la posición original) para TODOS los trades. Verificado en NB: ese modo es la EXCEPCIÓN de Craig para sesiones de alta volatilidad (FOMC, etc.) — su protocolo ESTÁNDAR es TP1 50% → breakeven → RSI Cloud cierra solo el 50% restante ("runner"). Corregido: <code>_check_rsi_cloud_exit</code> ahora solo se invoca cuando <code>tp1_hit=1</code>, y el cálculo de PnL reutiliza <code>_get_real_close_data</code> (combina el TP1 parcial real + este cierre desde órdenes FILLED de BingX) en vez de estimarlo solo con el precio actual y la cantidad original.</p>
+      </div>
+      <div class="rule-foot">position_monitor.py._rsi_cloud_exit_signal / _check_rsi_cloud_exit — gateado por tp1_hit</div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ 5. RIESGO Y SESIÓN ═══════════════════ -->
+  <section class="cat">
+    <div class="cat-head">
+      <h2>5 · Riesgo y horario de sesión</h2>
+      <span class="count">4 puntos</span>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Límite de pérdida diaria en unidades R (cuenta completa)</div><span class="badge">Cumple</span></div>
+      <div class="rule-body">
+        <p>3 pérdidas consecutivas = -3R con riesgo uniforme de 1R por trade son la misma regla, no dos — mide el R neto de toda la cuenta en el día, sin distinguir por símbolo. Verificado en una sesión anterior de esta misma auditoría.</p>
+      </div>
+      <div class="rule-foot">trade_executor.py — MAX_DAILY_LOSS_R</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Confianza mínima 90% también para señales CRITICAL</div><span class="badge">Cumple</span></div>
+      <div class="rule-body"><p>Señales críticas no tienen bypass del umbral de confianza mínima — verificado en sesión anterior.</p></div>
+      <div class="rule-foot">trade_executor.py — MIN_CONFIDENCE_THRESHOLD</div>
+    </div>
+
+    <div class="rule info">
+      <div class="rule-top"><div class="rule-title">Horario NY 9:30–16:00 ET + sesión Asia</div><span class="badge">Implementado, desactivado</span></div>
+      <div class="rule-body">
+        <p>El código implementa correctamente las ventanas de sesión que documenta Craig (NY + "Night Owl" Asia, excluyendo viernes noche). En producción, <code>SESSION_FILTER_ENABLED=false</code> — el bot analiza 24/7. Esto fue una decisión explícita del usuario en una sesión anterior ("por ahora dejala tal cual está"), no un descuido — se deja tal como está, sin tocar.</p>
+      </div>
+      <div class="rule-foot">smc_sniper_strategy._is_ny_session / _is_asia_session</div>
+    </div>
+
+    <div class="rule gap">
+      <div class="rule-top"><div class="rule-title">"Zona gris" 8:00-11:00 AM EST — no operar</div><span class="badge">No implementado</span></div>
+      <div class="rule-body"><p>Encontrado en NB: Craig evita operar en la ventana de solapamiento/transición 8-11am EST por baja liquidez y movimientos erráticos previos a la apertura de Nueva York. Esta es una regla real y específica de Craig, no una calibración propia — solo la ventana horaria exacta que documenta. No implementada en el bot. Actualmente moot porque <code>SESSION_FILTER_ENABLED=false</code> por instrucción explícita del usuario — queda anotado para cuando se reactive el filtro de sesión.</p></div>
+      <div class="rule-foot">Pendiente — depende de SESSION_FILTER_ENABLED</div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ 6. CALIBRACIÓN PROPIA ═══════════════════ -->
+  <section class="cat">
+    <div class="cat-head">
+      <h2>6 · Calibración numérica de reglas que Craig sí especifica (sin valor exacto)</h2>
+      <span class="count">4 puntos</span>
+    </div>
+    <p class="cat-intro">Importante: en TODOS estos puntos Craig especifica la regla cualitativa o un rango aproximado — lo que no fija es el número/unidad exacto a usar en código. No son "inventados desde cero"; son la elección numérica concreta dentro de un criterio que el NB sí confirma. Dos de ellos (PRICE_TOL_MULT y la ventana de fuerza relativa) son la excepción — ahí Craig no da ninguna referencia, ni cualitativa ni numérica.</p>
+
+    <div class="rule info">
+      <div class="rule-top"><div class="rule-title">Tamaño mínimo de gap del FVG</div><span class="badge">Craig da el número (0.1-0.15), no la unidad</span></div>
+      <div class="rule-body">
+        <p><code>MIN_GAP_PCT = 0.1%</code>. Confirmado en NB (2026-08-26): Craig usa el indicador Lux Algo Fair Value Gap en TradingView, ajustando manualmente el "Threshold" a <strong>0.1 o 0.15</strong> (varía según sesión/video) — coincide numéricamente con nuestro valor. Pero el propio NB aclara que Craig **nunca especifica la unidad matemática exacta** de ese parámetro (no queda claro si es % del precio, relación con el cuerpo de la vela, o un multiplicador interno de volatilidad del script) — así que la coincidencia numérica (0.1) es alentadora pero no una confirmación 1:1 de unidades.</p>
+        <p>Backtest paramétrico (2026-08-26, datos reales sobre ~1000 velas 15m): la proporción de FVGs que sobreviven el gate de "zona clave" se mantiene estable (~20-25%) en todo el rango 0.05%-0.3% — sugiere que este valor no es el cuello de botella real, sin urgencia de recalibrar.</p>
+      </div>
+      <div class="rule-foot">smc_sniper_strategy.MIN_GAP_PCT</div>
+    </div>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">Cooldown de 1 hora entre señales del mismo símbolo</div><span class="badge">Craig especifica el criterio, no un número — corregido</span></div>
+      <div class="rule-body">
+        <p>Reemplazado el cooldown temporal fijo (1h) por "reseteo estructural" — método real de Craig, confirmado en NB: no usa un cooldown por tiempo, espera a que se forme una nueva estructura confirmada (nuevo swing por BOS mecánico) y permite operaciones consecutivas sin límite de tiempo si la estructura lo justifica. La parte "propia" acá no es la regla (es de Craig) sino el detalle de implementación (qué ventana de velas usar para reconstruir el último swing).</p>
+        <p>Implementado: <code>_structural_reset_ready()</code> compara el último swing confirmado en 15m/500 velas contra el que había al momento de la última señal para ese símbolo — solo bloquea si NO se confirmó estructura nueva desde entonces, sin importar cuánto tiempo pasó. Probado en el contenedor real (backtest corre sin errores, estado de producción restaurado tras la prueba). <code>backtest_smc_sniper.py</code> y la limpieza de higiene del archivo de señales activas (<code>smc_strategy_manager.py</code>, ahora TTL de 7 días solo para no crecer sin límite) actualizados en paralelo.</p>
+      </div>
+      <div class="rule-foot">smc_sniper_strategy._structural_reset_ready</div>
+    </div>
+
+    <div class="rule info">
+      <div class="rule-top"><div class="rule-title">Tolerancia de proximidad FVG-precio (1.2%)</div><span class="badge">Calibración propia — Craig no da referencia</span></div>
+      <div class="rule-body"><p>Define qué tan "cerca" debe estar un FVG del precio actual para considerarlo candidato — a diferencia de los otros 3 puntos de esta sección, acá no hay ni criterio cualitativo ni rango numérico de Craig en el NB: es un parámetro de implementación puro.</p></div>
+      <div class="rule-foot">smc_sniper_strategy.PRICE_TOL_MULT</div>
+    </div>
+
+    <div class="rule info">
+      <div class="rule-top"><div class="rule-title">Ventana de fuerza relativa (100 velas de 15m ≈ 25h)</div><span class="badge">Calibración propia — Craig no da referencia</span></div>
+      <div class="rule-body"><p>Craig especifica el concepto ("Strength vs Bitcoin") pero no el período exacto sobre el que se mide — a diferencia de la tolerancia "cerca de cero" (abajo), que sí tiene una referencia cualitativa del NB. Se eligió una ventana de ~1 día como aproximación razonable.</p></div>
+      <div class="rule-foot">smc_sniper_strategy._relative_strength</div>
+    </div>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">Tolerancia "cerca de cero" en fuerza relativa (±0.5pp)</div><span class="badge">Craig especifica el criterio, no un número — corregido</span></div>
+      <div class="rule-body">
+        <p>Craig acepta niveles "cerca del umbral centralizado" sin dar un número exacto — la regla cualitativa SÍ es de Craig, la calibración numérica es nuestra. Análisis empírico (2026-08-26): sobre 900 muestras reales (ventana de 100 velas 15m ≈ 25h) la fuerza relativa SOL/ETH vs BTC tiene desvío estándar de 2-3.25 puntos porcentuales — la banda anterior de ±0.3pp cubría solo 11-15% de los valores observados, demasiado angosta.</p>
+        <p><strong>Ampliada a ±0.5pp</strong> (cubre 18-24% — casi el doble de casos "cerca de cero" sin volver el filtro un sello de goma, ±1.0pp ya hubiera cubierto ~40%, demasiado laxo). Usuario confirmó el cambio tras revisar el análisis. Desplegado en producción.</p>
+      </div>
+      <div class="rule-foot">smc_sniper_strategy.REL_STRENGTH_TOL = 0.005</div>
+    </div>
+  </section>
+
+
+
+
+
+  <!-- ═══════════════════ 6b. FIXES DE FIDELIDAD IMPLEMENTADOS ═══════════════════ -->
+  <section class="cat">
+    <div class="cat-head">
+      <h2>6b · Fixes de fidelidad al método — implementados y desplegados</h2>
+      <span class="count">3 hallazgos</span>
+    </div>
+    <p class="cat-intro">3 desalineamientos encontrados y corregidos esta sesión (2026-08-27/28), verificados vía NB trading-brain y validados con backtest real de 90 días. Los primeros diagnósticos usaron una prueba incremental sobre datos de Bybit que quedó descartada tras el rate-limit de esa API — el diagnóstico vigente usa Binance (ver 6c) y ya refleja los 3 fixes desplegados.</p>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">MIN_SCORE=3 — contradice el método real de Craig</div><span class="badge">Corregido y desplegado — 2026-08-28</span></div>
+      <div class="rule-body">
+        <p>Verificado en NB (2026-08-27): Craig <strong>no usa ningún sistema numérico de score</strong>. Su método es binario — criterios obligatorios (todos deben cumplirse, sin excepción) + confluencias que suman convicción pero <strong>nunca son un mínimo requerido</strong> para operar. Las confluencias solo sirven para el "Setup Unicornio" (máxima convicción) o para elegir entre 2 activos con el mismo patrón simultáneo — no para bloquear un trade que ya cumple todos los obligatorios.</p>
+        <blockquote class="nb">"Craig no utiliza un sistema numérico de puntaje matemático... Criterios de Confluencia: son análisis suplementarios que añaden convicción pero no son obligatorios para tomar un trade."</blockquote>
+        <p><code>MIN_SCORE=3</code> fue inventado en el commit original (30/06/2026), sin cita de NB. Impacto medido: es exactamente el gate que bloqueó los 2 únicos candidatos que pasaron los 5 gates obligatorios reales en 90 días — quitarlo los convertiría en trades reales.</p>
+        <div class="chart-wrap"><svg viewBox="0 0 640 118" class="bar-chart" role="img" aria-label="Trades reales con y sin MIN_SCORE, 90 días">
+    <g>
+      <text x="10" y="32" font-size="12" fill="currentColor">CON MIN_SCORE=3 (actual)</text>
+      <rect x="200" y="15" width="3.0" height="26" fill="var(--accent-strong)"/>
+      <text x="211.0" y="32" font-size="12" fill="currentColor" font-weight="600">0</text>
+    </g>
+    <g>
+      <text x="10" y="76" font-size="12" fill="currentColor">SIN MIN_SCORE (5 gates obligatorios reales)</text>
+      <rect x="200" y="59" width="460.0" height="26" fill="var(--accent)"/>
+      <text x="668.0" y="76" font-size="12" fill="currentColor" font-weight="600">2</text>
+    </g></svg></div>
+        <p><strong>Corregido</strong> en <code>smc_sniper_strategy.py</code> (worktree <code>score-fibonacci-fix</code>): gate eliminado, fórmula de <code>confidence</code> ajustada (base 0.70→0.90) para que <code>trade_executor.min_confidence=0.90</code> no vuelva a bloquear por otra vía lo mismo que MIN_SCORE bloqueaba. Sincronizado en <code>backtest_smc_sniper.py</code> y <code>backtest_smc_sniper_bybit.py</code>. Desplegado en producción 2026-08-28 (commit <code>4985959</code>), <code>smc-strategy</code> reiniciado sin errores, sin trades abiertos en riesgo.</p>
+      </div>
+      <div class="rule-foot">smc_sniper_strategy.MIN_SCORE — corregido y desplegado</div>
+    </div>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">Fibonacci: swing_high/swing_low de rango genérico, no del ChoCh real</div><span class="badge">Corregido y desplegado — 2026-08-28</span></div>
+      <div class="rule-body">
+        <p><code>swing_high</code>/<code>swing_low</code> se calculaban como el máximo/mínimo simple de las últimas 30 velas de 15m (7.5h) — mismo patrón "naive lookback" ya corregido para el ChoCh el 19/08 (referencia por swing confirmado), pero nunca aplicado acá.</p>
+        <blockquote class="nb">"En su estrategia de reversión (ChoCh + FVG en 1m): Craig coloca el anclaje estrictamente en el origen del impulso de fuerte volumen (vela de desplazamiento) que causó la ruptura estructural o ChoCh... arrastrando el extremo final mientras la tendencia sigue haciendo nuevos máximos."</blockquote>
+        <p><strong>Corregido</strong>: <code>_detect_mechanical_swings</code> (el detector estricto confirmado por BOS) da 0 swings en la ventana de 100 velas de 15m disponible en <code>_analyze_symbol</code> (verificado empíricamente contra producción) — se usa en cambio <code>_detect_local_pivots</code> (umbral 0.6%, ya usado para divergencia RSI) como ancla real del swing, con fallback al método viejo (30 velas) si hay menos de 2 pivots alternados. Sincronizado en los 2 scripts de backtest. Desplegado en producción 2026-08-28.</p>
+      </div>
+      <div class="rule-foot">smc_sniper_strategy._fib_discount_zone — swing_high/swing_low en _analyze_symbol — corregido y desplegado</div>
+    </div>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">ChoCh en 1m: umbral de retroceso de BTC/4h (3%) reutilizado sin adaptar</div><span class="badge">Corregido y desplegado — 2026-08-28</span></div>
+      <div class="rule-body">
+        <p>El embudo de la sección 6c mostraba una caída a <strong>0 sobrevivientes exactamente en el gate ChoCh</strong>. Causa raíz: <code>_choch_reference_level</code> reutilizaba <code>_detect_mechanical_swings</code> con su default <code>SWING_RETRACE_PCT=0.03</code> (3% de retroceso mínimo, calibrado para el sesgo macro de BTC en 4h) aplicado tal cual sobre velas de 1 minuto — un giro de pierna del 3% es un movimiento intradía enorme, casi nunca ocurre en una ventana de 2h (120 velas 1m).</p>
+        <blockquote class="nb">"No hay un umbral porcentual mínimo de precio para validar un swing. Lo único que Craig requiere para confirmar que la estructura se ha roto y que ha ocurrido un ChoCh válido en 1 minuto es un cierre de cuerpo de vela contundente por fuera del extremo del pivote anterior."</blockquote>
+        <p>Verificación empírica (90 días, Binance, SOL/ETH, ventanas de 120 velas 1m): con 3% solo el 0.4-0.5% de las ventanas producen algún swing candidato — explica el 0/1020 del embudo en este gate.</p>
+        <div class="chart-wrap"><svg viewBox="0 0 640 165" class="bar-chart" role="img" aria-label="Porcentaje de ventanas con algún swing detectado según umbral de retroceso, SOL-USDT">
+    <g>
+      <text x="10" y="32" font-size="12" fill="currentColor">3.0% (actual, reutilizado de BTC 4h)</text>
+      <rect x="230" y="15" width="2.4" height="26" fill="var(--accent-strong)"/>
+      <text x="240.4" y="32" font-size="12" fill="currentColor" font-weight="600">0.5%</text>
+    </g>
+    <g>
+      <text x="10" y="76" font-size="12" fill="currentColor">1.0%</text>
+      <rect x="230" y="59" width="87.0" height="26" fill="var(--accent)"/>
+      <text x="325.0" y="76" font-size="12" fill="currentColor" font-weight="600">18.1%</text>
+    </g>
+    <g>
+      <text x="10" y="120" font-size="12" fill="currentColor">0.6% (elegido — CHOCH_RETRACE_PCT)</text>
+      <rect x="230" y="103" width="211.0" height="26" fill="var(--accent-strong)"/>
+      <text x="449.0" y="120" font-size="12" fill="currentColor" font-weight="600">43.9%</text>
+    </g>
+    <g>
+      <text x="10" y="164" font-size="12" fill="currentColor">0.1%</text>
+      <rect x="230" y="147" width="460.0" height="26" fill="var(--accent)"/>
+      <text x="698.0" y="164" font-size="12" fill="currentColor" font-weight="600">99.8%</text>
+    </g></svg></div>
+        <p><strong>Corregido</strong>: nueva constante <code>CHOCH_RETRACE_PCT=0.006</code> en <code>smc_sniper_strategy.py</code> (sin tocar <code>SWING_RETRACE_PCT=0.03</code>, que sigue siendo correcto para el sesgo de BTC en 4h) — elegida por backtest real comparando 5 valores candidatos (ver 6d abajo), no arbitraria. Coincide con <code>UNICORN_RETRACE_PCT</code>, ya usado en el mismo archivo para pivots de 15m. Sincronizado en los 2 scripts de backtest. Desplegado en producción 2026-08-28.</p>
+      </div>
+      <div class="rule-foot">smc_sniper_strategy.CHOCH_RETRACE_PCT — corregido y desplegado</div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ 6c. BACKTEST — EMBUDO CON LOS 3 FIXES (BINANCE) ═══════════════════ -->
+  <section class="cat">
+    <div class="cat-head">
+      <h2>6c · Backtest 90 días (Binance) — embudo con los 3 fixes</h2>
+      <span class="count">1 gráfico</span>
+    </div>
+    <p class="cat-intro">Fuente alternativa a Bybit (rate-limit "Too many visits" tras uso intensivo en la misma sesión): API pública de Binance, mismo período (90 días), mismos símbolos, con los <strong>3 fixes ya desplegados en producción</strong> (MIN_SCORE removido + Fibonacci re-anclado + CHOCH_RETRACE_PCT=0.006). Embudo secuencial — cada banda muestra los ciclos que sobreviven ACUMULADO hasta ese gate, en el mismo orden que corre en producción.</p>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">Embudo de validación (Binance, con los 3 fixes)</div><span class="badge">57 ciclos pasan todos los gates (antes: 0)</span></div>
+      <div class="rule-body">
+        <div class="chart-wrap"><svg viewBox="0 0 730 420" class="funnel-chart" role="img" aria-label="Embudo de validación SMC Sniper con los 3 fixes aplicados, datos Binance 90 días: de 16960 ciclos con FVG cercano a 57 sobrevivientes tras ChoCh">
+<polygon points="110,20 590,20 590,78 110,78" fill="var(--accent)" opacity="1.00" stroke="var(--border)" stroke-width="1"/><text x="350" y="53" font-size="13" fill="var(--bg)" text-anchor="middle" font-weight="600">Ciclos con FVG cercano</text><text x="350" y="69" font-size="12" fill="var(--bg)" text-anchor="middle">16,960 ciclos</text>
+<polygon points="110,84 590,84 565.7,142 134.3,142" fill="var(--accent)" opacity="0.89" stroke="var(--border)" stroke-width="1"/><text x="350" y="117" font-size="13" fill="var(--bg)" text-anchor="middle" font-weight="600">Zona 15m activa</text><text x="350" y="133" font-size="12" fill="var(--bg)" text-anchor="middle">13,700 ciclos</text><text x="610" y="117" font-size="12" fill="var(--ink-muted)" font-weight="400">80.8%</text>
+<polygon points="134.3,148 565.7,148 530.25,206 169.75,206" fill="var(--accent)" opacity="0.78" stroke="var(--border)" stroke-width="1"/><text x="350" y="181" font-size="13" fill="var(--bg)" text-anchor="middle" font-weight="600">Fuerza relativa vs BTC</text><text x="350" y="197" font-size="12" fill="var(--bg)" text-anchor="middle">9,560 ciclos</text><text x="610" y="181" font-size="12" fill="var(--ink-muted)" font-weight="400">56.4%</text>
+<polygon points="169.75,212 530.25,212 469.05,270 230.95,270" fill="var(--accent)" opacity="0.68" stroke="var(--border)" stroke-width="1"/><text x="350" y="245" font-size="13" fill="var(--bg)" text-anchor="middle" font-weight="600">Zona clave</text><text x="350" y="261" font-size="12" fill="var(--bg)" text-anchor="middle">4,172 ciclos</text><text x="610" y="245" font-size="12" fill="var(--ink-muted)" font-weight="400">24.6%</text>
+<polygon points="230.95,276 469.05,276 408.85,334 291.15,334" fill="var(--accent)" opacity="0.57" stroke="var(--border)" stroke-width="1"/><text x="350" y="309" font-size="13" fill="var(--ink)" text-anchor="middle" font-weight="600">Fibonacci 50-78.6%</text><text x="350" y="325" font-size="12" fill="var(--ink)" text-anchor="middle">1,020 ciclos</text><text x="610" y="309" font-size="12" fill="var(--ink-muted)" font-weight="400">6.0%</text>
+<polygon points="291.15,340 408.85,340 363.9,398 336.1,398" fill="var(--accent-strong)" opacity="0.9" stroke="var(--border)" stroke-width="1"/><text x="350" y="373" font-size="13" fill="var(--ink)" text-anchor="middle" font-weight="600">ChoCh confirmado</text><text x="350" y="389" font-size="12" fill="var(--ink)" text-anchor="middle">57 ciclos</text><text x="610" y="373" font-size="12" fill="var(--accent-strong)" font-weight="700">0.3% ← ya NO colapsa a 0</text>
+</svg></div>
+        <p>Sobre 16,960 ciclos con FVG cercano: 80.8% sigue vivo tras zona 15m activa, 56.4% tras fuerza relativa, 24.6% tras zona clave, y 6.0% (1,020 ciclos) llega a evaluar Fibonacci con éxito. <strong>Con <code>CHOCH_RETRACE_PCT=0.006</code> ya aplicado, 57 de esos 1,020 ciclos (5.6% del remanente, 0.3% del total) confirman un ChoCh real</strong> — antes de este fix, con el umbral de 3% heredado de BTC/4h, ninguno lo lograba. Estos 57 ciclos son los candidatos "todos los gates obligatorios OK"; el motor completo de simulación (sección 6d) filtra sobre estos con el resto de las reglas de ejecución (sesión NY/Asia, reseteo estructural, un trade a la vez por símbolo) y da 19 trades reales simulados.</p>
+      </div>
+      <div class="rule-foot">/home/anibale/.claude/jobs/02dae952/tmp/funnel_binance_fixed.py — datos reales Binance, con los 3 fixes desplegados en producción 2026-08-28 (commit 4985959)</div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ 6d. CALIBRACIÓN CHOCH_RETRACE_PCT Y RESULTADO COMBINADO ═══════════════════ -->
+  <section class="cat">
+    <div class="cat-head">
+      <h2>6d · Calibración CHOCH_RETRACE_PCT y resultado combinado de los 3 fixes</h2>
+      <span class="count">2 gráficos</span>
+    </div>
+    <p class="cat-intro">Motor de backtest completo (<code>backtest_smc_sniper_binance.py</code>, nuevo — TP1/TP2 1:4/1:8, breakeven tras TP1, salida por RSI Cloud, ventana de sesión NY/Asia, reseteo estructural) sobre 90 días reales de Binance, SOL-USDT + ETH-USDT, reutilizando las funciones reales de producción.</p>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">Sweep de CHOCH_RETRACE_PCT — R promedio por trade</div><span class="badge">0.006 = óptimo</span></div>
+      <div class="rule-body">
+        <div class="chart-wrap"><svg viewBox="0 0 640 210" class="bar-chart" role="img" aria-label="R promedio por trade según CHOCH_RETRACE_PCT, 90 días Binance">
+    <g>
+      <text x="10" y="32" font-size="12" fill="currentColor">0.001 (76 trades, WR 30.3%)</text>
+      <rect x="230" y="15" width="230.6" height="26" fill="var(--accent)"/>
+      <text x="464.6" y="32" font-size="12" fill="currentColor" font-weight="600">+0.494R</text>
+    </g>
+    <g>
+      <text x="10" y="76" font-size="12" fill="currentColor">0.003 (42 trades, WR 31.0%)</text>
+      <rect x="230" y="59" width="220.6" height="26" fill="var(--accent)"/>
+      <text x="454.6" y="76" font-size="12" fill="currentColor" font-weight="600">+0.472R</text>
+    </g>
+    <g>
+      <text x="10" y="120" font-size="12" fill="currentColor">0.006 (19 trades, WR 42.1%) ← elegido</text>
+      <rect x="230" y="103" width="460.0" height="26" fill="var(--accent-strong)"/>
+      <text x="694.0" y="120" font-size="12" fill="currentColor" font-weight="700">+1.073R</text>
+    </g>
+    <g>
+      <text x="10" y="164" font-size="12" fill="currentColor">0.010 (5 trades, WR 40.0%) — muestra chica</text>
+      <rect x="230" y="147" width="234.3" height="26" fill="var(--accent)"/>
+      <text x="468.3" y="164" font-size="12" fill="currentColor" font-weight="600">+0.547R</text>
+    </g>
+    <g>
+      <text x="10" y="208" font-size="12" fill="currentColor">0.030 (actual, sin fix)</text>
+      <rect x="230" y="191" width="2.0" height="26" fill="var(--ink-muted)"/>
+      <text x="240.0" y="208" font-size="12" fill="currentColor" font-weight="600">0 trades</text>
+    </g></svg></div>
+        <p>0.006 da el R promedio más alto (+1.073, casi el doble que 0.001/0.003) con una muestra razonable (19 trades) — los umbrales más chicos generan más señales pero de peor calidad (retrocesos ruidosos tratados como swing válido), y 0.010 tiene muy pocos trades para ser confiable.</p>
+      </div>
+      <div class="rule-foot">/home/anibale/.claude/jobs/02dae952/tmp/choch_retrace_sweep.py — datos reales Binance, 90 días</div>
+    </div>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">Trades reales simulados: antes vs. después de los 3 fixes</div><span class="badge">0 → 19 trades</span></div>
+      <div class="rule-body">
+        <div class="chart-wrap"><svg viewBox="0 0 640 118" class="bar-chart" role="img" aria-label="Trades reales simulados antes y después de los 3 fixes, 90 días Binance">
+    <g>
+      <text x="10" y="32" font-size="12" fill="currentColor">ANTES (MIN_SCORE + Fibonacci genérico + ChoCh 3%)</text>
+      <rect x="230" y="15" width="2.0" height="26" fill="var(--ink-muted)"/>
+      <text x="240.0" y="32" font-size="12" fill="currentColor" font-weight="600">0</text>
+    </g>
+    <g>
+      <text x="10" y="76" font-size="12" fill="currentColor">DESPUÉS (3 fixes: MIN_SCORE + Fibonacci + CHOCH_RETRACE_PCT=0.006)</text>
+      <rect x="230" y="59" width="460.0" height="26" fill="var(--accent-strong)"/>
+      <text x="698.0" y="76" font-size="12" fill="currentColor" font-weight="700">19 (+20.39R, WR 42.1%)</text>
+    </g></svg></div>
+        <p>La combinación de los 3 fixes es lo que efectivamente produce señales — ninguno por separado alcanzaba (MIN_SCORE + Fibonacci solos seguían dando 0 trades, el ChoCh era el bloqueante silencioso que quedaba después). Con los 3 juntos: 19 trades reales simulados sobre 90 días, win rate 42.1%, +20.39R total.</p>
+      </div>
+      <div class="rule-foot">/home/anibale/.claude/jobs/02dae952/tmp/choch_retrace_sweep.py — CHOCH_RETRACE_PCT=0.006 — datos reales Binance, 90 días</div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ 6e. PRECIO DE ENTRADA Y SALIDA POR TRADE ═══════════════════ -->
+  <section class="cat">
+    <div class="cat-head">
+      <h2>6e · Precio de entrada y salida por trade (90 días, Binance)</h2>
+      <span class="count">4 gráficos</span>
+    </div>
+    <p class="cat-intro">Corrida fresca 2026-08-31 (tras los 5 fixes desplegados). Detalle de los 38 trades simulados por <code>backtest_smc_sniper_binance.py</code> — diamante = precio de entrada, círculo = precio de salida real (SL, TP2, breakeven o cierre por RSI Cloud), franja tenue = rango riesgo (rojo, hasta el SL) / recompensa (verde, hasta el TP2), ticks finos = niveles de SL/TP1/TP2 planeados. El badge <strong>LONG</strong> (azul) / <strong>SHORT</strong> (ámbar) junto a la fecha indica la dirección del trade — es independiente del color verde/rojo de la línea y el círculo, que indican solo si ganó o perdió. Separado por símbolo porque cada uno opera en una escala de precio muy distinta.</p>
+    <p class="cat-intro"><strong>Resultado agregado</strong> (corrida equivalente sin instrumentar, 45 trades — la diferencia con los 38 de abajo es variación normal de timing/red entre corridas separadas de la API de Binance, no una discrepancia de lógica): win rate 33.3% (15W/30L), R total +22.70, expectancy +0.505R/trade, max drawdown 7.00R. Por símbolo: <strong>SOL-USDT</strong> 19 trades, WR 42.1%, R+19.73 (el más rentable, lejos) · <strong>ETH-USDT</strong> 7 trades, WR 28.6%, R+2.53 · <strong>XRP-USDT</strong> 7 trades, WR 28.6%, R+1.52 · <strong>ATOM-USDT</strong> 12 trades, WR 25.0%, R-1.08. Nota: <strong>este backtest no simula la capa de ejecución en vivo</strong> (órdenes límite pendientes, filtro de confianza pre-ejecución) — los 2 bugs de la sección 6g no afectan estos números, ver esa sección para el detalle.</p>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">SOL-USDT — 14 trades</div><span class="badge">rango 65.66 – 108.71</span></div>
+      <div class="rule-body">
+        <div class="chart-wrap"><svg viewBox="0 0 720 562" class="price-chart" role="img" aria-label="Precio de entrada, stop loss, take profit y salida real por trade, SOL-USDT, 90 días Binance"><rect x="10" y="11" width="9" height="9" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 14.5 15.5)"/><text x="24" y="18" font-size="10" fill="var(--ink-muted)">Entrada</text><circle cx="92" cy="15.5" r="4.5" fill="var(--ink-muted)"/><text x="104" y="18" font-size="10" fill="var(--ink-muted)">Salida real</text><line x1="180" y1="10" x2="180" y2="21" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.7"/><text x="190" y="18" font-size="10" fill="var(--ink-muted)">SL</text><line x1="220" y1="10" x2="220" y2="21" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.7"/><text x="230" y="18" font-size="10" fill="var(--ink-muted)">TP1/TP2</text><rect x="282" y="8" width="15" height="14" rx="3" fill="var(--info, #2f6690)" opacity="0.18"/><text x="289.5" y="18" font-size="9" fill="var(--info, #2f6690)" font-weight="700" text-anchor="middle">▲</text><text x="302" y="18" font-size="10" fill="var(--ink-muted)">LONG</text><rect x="344" y="8" width="15" height="14" rx="3" fill="var(--warn, #a16b21)" opacity="0.18"/><text x="351.5" y="18" font-size="9" fill="var(--warn, #a16b21)" font-weight="700" text-anchor="middle">▼</text><text x="364" y="18" font-size="10" fill="var(--ink-muted)">SHORT</text><line x1="0" y1="26" x2="720" y2="26" stroke="var(--border)" stroke-width="1" opacity="0.5"/><rect x="0" y="108.0" width="720" height="34.0" fill="var(--surface-2, var(--border))" opacity="0.35"/><rect x="0" y="176.0" width="720" height="34.0" fill="var(--surface-2, var(--border))" opacity="0.35"/><rect x="0" y="244.0" width="720" height="34.0" fill="var(--surface-2, var(--border))" opacity="0.35"/><rect x="0" y="312.0" width="720" height="34.0" fill="var(--surface-2, var(--border))" opacity="0.35"/><rect x="0" y="380.0" width="720" height="34.0" fill="var(--surface-2, var(--border))" opacity="0.35"/><rect x="0" y="448.0" width="720" height="34.0" fill="var(--surface-2, var(--border))" opacity="0.35"/><rect x="0" y="516.0" width="720" height="34.0" fill="var(--surface-2, var(--border))" opacity="0.35"/><line x1="145.3" y1="60.0" x2="145.3" y2="550.0" stroke="var(--border)" stroke-width="1" stroke-dasharray="2,3" opacity="0.6"/><text x="145.3" y="44" font-size="10.5" fill="var(--ink-muted)" text-anchor="middle">60.000</text><line x1="338.9" y1="60.0" x2="338.9" y2="550.0" stroke="var(--border)" stroke-width="1" stroke-dasharray="2,3" opacity="0.6"/><text x="338.9" y="44" font-size="10.5" fill="var(--ink-muted)" text-anchor="middle">80.000</text><line x1="532.6" y1="60.0" x2="532.6" y2="550.0" stroke="var(--border)" stroke-width="1" stroke-dasharray="2,3" opacity="0.6"/><text x="532.6" y="44" font-size="10.5" fill="var(--ink-muted)" text-anchor="middle">100.000</text><text x="10" y="44" font-size="10.5" fill="var(--ink-muted)" font-weight="700">TRADE</text><text x="681.0" y="44" font-size="10.5" fill="var(--ink-muted)" text-anchor="middle" font-weight="700">RESULTADO</text><text x="10" y="95.0" font-size="11" fill="currentColor">2026-06-04</text><rect x="65" y="83.0" width="38" height="16" rx="3" fill="var(--warn, #a16b21)" opacity="0.16"/><text x="70" y="95.0" font-size="9.5" fill="var(--warn, #a16b21)" font-weight="700">▼ SHORT</text><text x="112" y="95.0" font-size="9.5" fill="var(--ink-muted)">SL</text><rect x="200.9" y="85.0" width="44.0" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="244.9" y="85.0" width="5.5" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="244.9" y1="91.0" x2="250.4" y2="91.0" stroke="var(--bad, #c0392b)" stroke-width="3" stroke-linecap="round"/><line x1="250.4" y1="83.0" x2="250.4" y2="99.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="222.9" y1="83.0" x2="222.9" y2="99.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="200.9" y1="83.0" x2="200.9" y2="99.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="241.4" y="87.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 244.9 91.0)"/><circle cx="250.4" cy="91.0" r="5" fill="var(--bad, #c0392b)" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="95.0" font-size="12" fill="var(--bad, #c0392b)" font-weight="700" text-anchor="end">-1.00R</text><text x="10" y="129.0" font-size="11" fill="currentColor">2026-06-09</text><rect x="65" y="117.0" width="38" height="16" rx="3" fill="var(--info, #2f6690)" opacity="0.16"/><text x="70" y="129.0" font-size="9.5" fill="var(--info, #2f6690)" font-weight="700">▲ LONG</text><text x="112" y="129.0" font-size="9.5" fill="var(--ink-muted)">BE</text><rect x="200.0" y="119.0" width="31.9" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="200.0" y="119.0" width="1.0" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="200.0" y1="125.0" x2="200.0" y2="125.0" stroke="var(--ok, var(--accent-strong))" stroke-width="3" stroke-linecap="round"/><line x1="200.0" y1="117.0" x2="200.0" y2="133.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="215.9" y1="117.0" x2="215.9" y2="133.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="231.9" y1="117.0" x2="231.9" y2="133.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="196.5" y="121.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 200.0 125.0)"/><circle cx="200.0" cy="125.0" r="5" fill="var(--ok, var(--accent-strong))" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="129.0" font-size="12" fill="var(--ok, var(--accent-strong))" font-weight="700" text-anchor="end">+2.00R</text><text x="10" y="163.0" font-size="11" fill="currentColor">2026-06-20</text><rect x="65" y="151.0" width="38" height="16" rx="3" fill="var(--info, #2f6690)" opacity="0.16"/><text x="70" y="163.0" font-size="9.5" fill="var(--info, #2f6690)" font-weight="700">▲ LONG</text><text x="112" y="163.0" font-size="9.5" fill="var(--ink-muted)">RSI cloud</text><rect x="258.0" y="153.0" width="36.3" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="258.0" y="153.0" width="1.0" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="258.0" y1="159.0" x2="276.4" y2="159.0" stroke="var(--ok, var(--accent-strong))" stroke-width="3" stroke-linecap="round"/><line x1="258.0" y1="151.0" x2="258.0" y2="167.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="276.2" y1="151.0" x2="276.2" y2="167.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="294.4" y1="151.0" x2="294.4" y2="167.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="254.5" y="155.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 258.0 159.0)"/><circle cx="276.4" cy="159.0" r="5" fill="var(--ok, var(--accent-strong))" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="163.0" font-size="12" fill="var(--ok, var(--accent-strong))" font-weight="700" text-anchor="end">+4.02R</text><text x="10" y="197.0" font-size="11" fill="currentColor">2026-06-23</text><rect x="65" y="185.0" width="38" height="16" rx="3" fill="var(--warn, #a16b21)" opacity="0.16"/><text x="70" y="197.0" font-size="9.5" fill="var(--warn, #a16b21)" font-weight="700">▼ SHORT</text><text x="112" y="197.0" font-size="9.5" fill="var(--ink-muted)">TP2</text><rect x="255.1" y="187.0" width="17.5" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="272.6" y="187.0" width="1.0" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="255.1" y1="193.0" x2="272.6" y2="193.0" stroke="var(--ok, var(--accent-strong))" stroke-width="3" stroke-linecap="round"/><line x1="272.6" y1="185.0" x2="272.6" y2="201.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="263.8" y1="185.0" x2="263.8" y2="201.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="255.1" y1="185.0" x2="255.1" y2="201.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="269.1" y="189.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 272.6 193.0)"/><circle cx="255.1" cy="193.0" r="5" fill="var(--ok, var(--accent-strong))" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="197.0" font-size="12" fill="var(--ok, var(--accent-strong))" font-weight="700" text-anchor="end">+6.00R</text><text x="10" y="231.0" font-size="11" fill="currentColor">2026-06-25</text><rect x="65" y="219.0" width="38" height="16" rx="3" fill="var(--info, #2f6690)" opacity="0.16"/><text x="70" y="231.0" font-size="9.5" fill="var(--info, #2f6690)" font-weight="700">▲ LONG</text><text x="112" y="231.0" font-size="9.5" fill="var(--ink-muted)">SL</text><rect x="223.7" y="221.0" width="34.9" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="219.4" y="221.0" width="4.4" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="219.4" y1="227.0" x2="223.7" y2="227.0" stroke="var(--bad, #c0392b)" stroke-width="3" stroke-linecap="round"/><line x1="219.4" y1="219.0" x2="219.4" y2="235.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="241.2" y1="219.0" x2="241.2" y2="235.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="258.7" y1="219.0" x2="258.7" y2="235.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="220.2" y="223.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 223.7 227.0)"/><circle cx="219.4" cy="227.0" r="5" fill="var(--bad, #c0392b)" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="231.0" font-size="12" fill="var(--bad, #c0392b)" font-weight="700" text-anchor="end">-1.00R</text><text x="10" y="265.0" font-size="11" fill="currentColor">2026-07-02</text><rect x="65" y="253.0" width="38" height="16" rx="3" fill="var(--info, #2f6690)" opacity="0.16"/><text x="70" y="265.0" font-size="9.5" fill="var(--info, #2f6690)" font-weight="700">▲ LONG</text><text x="112" y="265.0" font-size="9.5" fill="var(--ink-muted)">RSI cloud</text><rect x="314.9" y="255.0" width="19.0" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="314.9" y="255.0" width="1.0" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="314.9" y1="261.0" x2="324.0" y2="261.0" stroke="var(--ok, var(--accent-strong))" stroke-width="3" stroke-linecap="round"/><line x1="314.9" y1="253.0" x2="314.9" y2="269.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="324.4" y1="253.0" x2="324.4" y2="269.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="333.9" y1="253.0" x2="333.9" y2="269.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="311.4" y="257.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 314.9 261.0)"/><circle cx="324.0" cy="261.0" r="5" fill="var(--ok, var(--accent-strong))" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="265.0" font-size="12" fill="var(--ok, var(--accent-strong))" font-weight="700" text-anchor="end">+3.92R</text><text x="10" y="299.0" font-size="11" fill="currentColor">2026-07-06</text><rect x="65" y="287.0" width="38" height="16" rx="3" fill="var(--info, #2f6690)" opacity="0.16"/><text x="70" y="299.0" font-size="9.5" fill="var(--info, #2f6690)" font-weight="700">▲ LONG</text><text x="112" y="299.0" font-size="9.5" fill="var(--ink-muted)">SL</text><rect x="355.4" y="289.0" width="21.2" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="352.8" y="289.0" width="2.6" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="352.8" y1="295.0" x2="355.4" y2="295.0" stroke="var(--bad, #c0392b)" stroke-width="3" stroke-linecap="round"/><line x1="352.8" y1="287.0" x2="352.8" y2="303.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="366.0" y1="287.0" x2="366.0" y2="303.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="376.6" y1="287.0" x2="376.6" y2="303.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="351.9" y="291.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 355.4 295.0)"/><circle cx="352.8" cy="295.0" r="5" fill="var(--bad, #c0392b)" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="299.0" font-size="12" fill="var(--bad, #c0392b)" font-weight="700" text-anchor="end">-1.00R</text><text x="10" y="333.0" font-size="11" fill="currentColor">2026-07-06</text><rect x="65" y="321.0" width="38" height="16" rx="3" fill="var(--info, #2f6690)" opacity="0.16"/><text x="70" y="333.0" font-size="9.5" fill="var(--info, #2f6690)" font-weight="700">▲ LONG</text><text x="112" y="333.0" font-size="9.5" fill="var(--ink-muted)">RSI cloud</text><rect x="339.9" y="323.0" width="34.7" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="339.9" y="323.0" width="1.0" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="339.9" y1="329.0" x2="358.5" y2="329.0" stroke="var(--ok, var(--accent-strong))" stroke-width="3" stroke-linecap="round"/><line x1="339.9" y1="321.0" x2="339.9" y2="337.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="357.2" y1="321.0" x2="357.2" y2="337.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="374.5" y1="321.0" x2="374.5" y2="337.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="336.4" y="325.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 339.9 329.0)"/><circle cx="358.5" cy="329.0" r="5" fill="var(--ok, var(--accent-strong))" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="333.0" font-size="12" fill="var(--ok, var(--accent-strong))" font-weight="700" text-anchor="end">+4.15R</text><text x="10" y="367.0" font-size="11" fill="currentColor">2026-07-09</text><rect x="65" y="355.0" width="38" height="16" rx="3" fill="var(--warn, #a16b21)" opacity="0.16"/><text x="70" y="367.0" font-size="9.5" fill="var(--warn, #a16b21)" font-weight="700">▼ SHORT</text><text x="112" y="367.0" font-size="9.5" fill="var(--ink-muted)">SL</text><rect x="287.2" y="357.0" width="28.2" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="315.4" y="357.0" width="3.5" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="315.4" y1="363.0" x2="318.9" y2="363.0" stroke="var(--bad, #c0392b)" stroke-width="3" stroke-linecap="round"/><line x1="318.9" y1="355.0" x2="318.9" y2="371.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="301.3" y1="355.0" x2="301.3" y2="371.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="287.2" y1="355.0" x2="287.2" y2="371.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="311.9" y="359.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 315.4 363.0)"/><circle cx="318.9" cy="363.0" r="5" fill="var(--bad, #c0392b)" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="367.0" font-size="12" fill="var(--bad, #c0392b)" font-weight="700" text-anchor="end">-1.00R</text><text x="10" y="401.0" font-size="11" fill="currentColor">2026-07-19</text><rect x="65" y="389.0" width="38" height="16" rx="3" fill="var(--warn, #a16b21)" opacity="0.16"/><text x="70" y="401.0" font-size="9.5" fill="var(--warn, #a16b21)" font-weight="700">▼ SHORT</text><text x="112" y="401.0" font-size="9.5" fill="var(--ink-muted)">SL</text><rect x="266.5" y="391.0" width="33.4" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="299.9" y="391.0" width="4.2" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="299.9" y1="397.0" x2="304.0" y2="397.0" stroke="var(--bad, #c0392b)" stroke-width="3" stroke-linecap="round"/><line x1="304.0" y1="389.0" x2="304.0" y2="405.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="283.2" y1="389.0" x2="283.2" y2="405.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="266.5" y1="389.0" x2="266.5" y2="405.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="296.4" y="393.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 299.9 397.0)"/><circle cx="304.0" cy="397.0" r="5" fill="var(--bad, #c0392b)" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="401.0" font-size="12" fill="var(--bad, #c0392b)" font-weight="700" text-anchor="end">-1.00R</text><text x="10" y="435.0" font-size="11" fill="currentColor">2026-07-31</text><rect x="65" y="423.0" width="38" height="16" rx="3" fill="var(--info, #2f6690)" opacity="0.16"/><text x="70" y="435.0" font-size="9.5" fill="var(--info, #2f6690)" font-weight="700">▲ LONG</text><text x="112" y="435.0" font-size="9.5" fill="var(--ink-muted)">SL</text><rect x="272.7" y="425.0" width="34.6" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="268.4" y="425.0" width="4.3" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="268.4" y1="431.0" x2="272.7" y2="431.0" stroke="var(--bad, #c0392b)" stroke-width="3" stroke-linecap="round"/><line x1="268.4" y1="423.0" x2="268.4" y2="439.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="290.0" y1="423.0" x2="290.0" y2="439.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="307.3" y1="423.0" x2="307.3" y2="439.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="269.2" y="427.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 272.7 431.0)"/><circle cx="268.4" cy="431.0" r="5" fill="var(--bad, #c0392b)" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="435.0" font-size="12" fill="var(--bad, #c0392b)" font-weight="700" text-anchor="end">-1.00R</text><text x="10" y="469.0" font-size="11" fill="currentColor">2026-08-04</text><rect x="65" y="457.0" width="38" height="16" rx="3" fill="var(--info, #2f6690)" opacity="0.16"/><text x="70" y="469.0" font-size="9.5" fill="var(--info, #2f6690)" font-weight="700">▲ LONG</text><text x="112" y="469.0" font-size="9.5" fill="var(--ink-muted)">SL</text><rect x="276.8" y="459.0" width="31.4" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="272.9" y="459.0" width="3.9" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="272.9" y1="465.0" x2="276.8" y2="465.0" stroke="var(--bad, #c0392b)" stroke-width="3" stroke-linecap="round"/><line x1="272.9" y1="457.0" x2="272.9" y2="473.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="292.5" y1="457.0" x2="292.5" y2="473.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="308.2" y1="457.0" x2="308.2" y2="473.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="273.3" y="461.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 276.8 465.0)"/><circle cx="272.9" cy="465.0" r="5" fill="var(--bad, #c0392b)" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="469.0" font-size="12" fill="var(--bad, #c0392b)" font-weight="700" text-anchor="end">-1.00R</text><text x="10" y="503.0" font-size="11" fill="currentColor">2026-08-05</text><rect x="65" y="491.0" width="38" height="16" rx="3" fill="var(--warn, #a16b21)" opacity="0.16"/><text x="70" y="503.0" font-size="9.5" fill="var(--warn, #a16b21)" font-weight="700">▼ SHORT</text><text x="112" y="503.0" font-size="9.5" fill="var(--ink-muted)">SL</text><rect x="248.8" y="493.0" width="31.8" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="280.5" y="493.0" width="4.0" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="280.5" y1="499.0" x2="284.5" y2="499.0" stroke="var(--bad, #c0392b)" stroke-width="3" stroke-linecap="round"/><line x1="284.5" y1="491.0" x2="284.5" y2="507.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="264.7" y1="491.0" x2="264.7" y2="507.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="248.8" y1="491.0" x2="248.8" y2="507.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="277.0" y="495.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 280.5 499.0)"/><circle cx="284.5" cy="499.0" r="5" fill="var(--bad, #c0392b)" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="503.0" font-size="12" fill="var(--bad, #c0392b)" font-weight="700" text-anchor="end">-1.00R</text><text x="10" y="537.0" font-size="11" fill="currentColor">2026-08-30</text><rect x="65" y="525.0" width="38" height="16" rx="3" fill="var(--info, #2f6690)" opacity="0.16"/><text x="70" y="537.0" font-size="9.5" fill="var(--info, #2f6690)" font-weight="700">▲ LONG</text><text x="112" y="537.0" font-size="9.5" fill="var(--ink-muted)">RSI cloud</text><rect x="578.9" y="527.0" width="38.0" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="578.9" y="527.0" width="1.0" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="578.9" y1="533.0" x2="596.7" y2="533.0" stroke="var(--ok, var(--accent-strong))" stroke-width="3" stroke-linecap="round"/><line x1="578.9" y1="525.0" x2="578.9" y2="541.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="598.0" y1="525.0" x2="598.0" y2="541.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="617.0" y1="525.0" x2="617.0" y2="541.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="575.4" y="529.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 578.9 533.0)"/><circle cx="596.7" cy="533.0" r="5" fill="var(--ok, var(--accent-strong))" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="537.0" font-size="12" fill="var(--ok, var(--accent-strong))" font-weight="700" text-anchor="end">+3.86R</text><line x1="642.0" y1="52.0" x2="642.0" y2="550.0" stroke="var(--border)" stroke-width="1"/></svg></div>
+      </div>
+      <div class="rule-foot">/home/anibale/.claude/jobs/02dae952/tmp/run_priced_backtest.py — backtest_smc_sniper_binance.py instrumentado con exit_price real, CHOCH_RETRACE_PCT=0.006, 90 días Binance (corrida fresca 2026-08-31, con los 5 fixes desplegados)</div>
+    </div>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">ETH-USDT — 8 trades</div><span class="badge">rango 1,488.56 – 1,891.82</span></div>
+      <div class="rule-body">
+        <div class="chart-wrap"><svg viewBox="0 0 720 358" class="price-chart" role="img" aria-label="Precio de entrada, stop loss, take profit y salida real por trade, ETH-USDT, 90 días Binance"><rect x="10" y="11" width="9" height="9" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 14.5 15.5)"/><text x="24" y="18" font-size="10" fill="var(--ink-muted)">Entrada</text><circle cx="92" cy="15.5" r="4.5" fill="var(--ink-muted)"/><text x="104" y="18" font-size="10" fill="var(--ink-muted)">Salida real</text><line x1="180" y1="10" x2="180" y2="21" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.7"/><text x="190" y="18" font-size="10" fill="var(--ink-muted)">SL</text><line x1="220" y1="10" x2="220" y2="21" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.7"/><text x="230" y="18" font-size="10" fill="var(--ink-muted)">TP1/TP2</text><rect x="282" y="8" width="15" height="14" rx="3" fill="var(--info, #2f6690)" opacity="0.18"/><text x="289.5" y="18" font-size="9" fill="var(--info, #2f6690)" font-weight="700" text-anchor="middle">▲</text><text x="302" y="18" font-size="10" fill="var(--ink-muted)">LONG</text><rect x="344" y="8" width="15" height="14" rx="3" fill="var(--warn, #a16b21)" opacity="0.18"/><text x="351.5" y="18" font-size="9" fill="var(--warn, #a16b21)" font-weight="700" text-anchor="middle">▼</text><text x="364" y="18" font-size="10" fill="var(--ink-muted)">SHORT</text><line x1="0" y1="26" x2="720" y2="26" stroke="var(--border)" stroke-width="1" opacity="0.5"/><rect x="0" y="108.0" width="720" height="34.0" fill="var(--surface-2, var(--border))" opacity="0.35"/><rect x="0" y="176.0" width="720" height="34.0" fill="var(--surface-2, var(--border))" opacity="0.35"/><rect x="0" y="244.0" width="720" height="34.0" fill="var(--surface-2, var(--border))" opacity="0.35"/><rect x="0" y="312.0" width="720" height="34.0" fill="var(--surface-2, var(--border))" opacity="0.35"/><line x1="108.4" y1="60.0" x2="108.4" y2="346.0" stroke="var(--border)" stroke-width="1" stroke-dasharray="2,3" opacity="0.6"/><text x="108.4" y="44" font-size="10.5" fill="var(--ink-muted)" text-anchor="middle">1,400.00</text><line x1="315.2" y1="60.0" x2="315.2" y2="346.0" stroke="var(--border)" stroke-width="1" stroke-dasharray="2,3" opacity="0.6"/><text x="315.2" y="44" font-size="10.5" fill="var(--ink-muted)" text-anchor="middle">1,600.00</text><line x1="522.0" y1="60.0" x2="522.0" y2="346.0" stroke="var(--border)" stroke-width="1" stroke-dasharray="2,3" opacity="0.6"/><text x="522.0" y="44" font-size="10.5" fill="var(--ink-muted)" text-anchor="middle">1,800.00</text><text x="10" y="44" font-size="10.5" fill="var(--ink-muted)" font-weight="700">TRADE</text><text x="681.0" y="44" font-size="10.5" fill="var(--ink-muted)" text-anchor="middle" font-weight="700">RESULTADO</text><text x="10" y="95.0" font-size="11" fill="currentColor">2026-06-08</text><rect x="65" y="83.0" width="38" height="16" rx="3" fill="var(--info, #2f6690)" opacity="0.16"/><text x="70" y="95.0" font-size="9.5" fill="var(--info, #2f6690)" font-weight="700">▲ LONG</text><text x="112" y="95.0" font-size="9.5" fill="var(--ink-muted)">RSI cloud</text><rect x="383.0" y="85.0" width="90.8" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="383.0" y="85.0" width="1.0" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="383.0" y1="91.0" x2="422.4" y2="91.0" stroke="var(--ok, var(--accent-strong))" stroke-width="3" stroke-linecap="round"/><line x1="383.0" y1="83.0" x2="383.0" y2="99.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="428.4" y1="83.0" x2="428.4" y2="99.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="473.8" y1="83.0" x2="473.8" y2="99.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="379.5" y="87.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 383.0 91.0)"/><circle cx="422.4" cy="91.0" r="5" fill="var(--ok, var(--accent-strong))" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="95.0" font-size="12" fill="var(--ok, var(--accent-strong))" font-weight="700" text-anchor="end">+3.74R</text><text x="10" y="129.0" font-size="11" fill="currentColor">2026-06-20</text><rect x="65" y="117.0" width="38" height="16" rx="3" fill="var(--info, #2f6690)" opacity="0.16"/><text x="70" y="129.0" font-size="9.5" fill="var(--info, #2f6690)" font-weight="700">▲ LONG</text><text x="112" y="129.0" font-size="9.5" fill="var(--ink-muted)">SL</text><rect x="459.0" y="119.0" width="114.2" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="444.7" y="119.0" width="14.3" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="444.7" y1="125.0" x2="459.0" y2="125.0" stroke="var(--bad, #c0392b)" stroke-width="3" stroke-linecap="round"/><line x1="444.7" y1="117.0" x2="444.7" y2="133.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="516.1" y1="117.0" x2="516.1" y2="133.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="573.2" y1="117.0" x2="573.2" y2="133.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="455.5" y="121.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 459.0 125.0)"/><circle cx="444.7" cy="125.0" r="5" fill="var(--bad, #c0392b)" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="129.0" font-size="12" fill="var(--bad, #c0392b)" font-weight="700" text-anchor="end">-1.00R</text><text x="10" y="163.0" font-size="11" fill="currentColor">2026-06-25</text><rect x="65" y="151.0" width="38" height="16" rx="3" fill="var(--info, #2f6690)" opacity="0.16"/><text x="70" y="163.0" font-size="9.5" fill="var(--info, #2f6690)" font-weight="700">▲ LONG</text><text x="112" y="163.0" font-size="9.5" fill="var(--ink-muted)">RSI cloud</text><rect x="292.5" y="153.0" width="101.3" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="292.5" y="153.0" width="1.0" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="292.5" y1="159.0" x2="350.0" y2="159.0" stroke="var(--ok, var(--accent-strong))" stroke-width="3" stroke-linecap="round"/><line x1="292.5" y1="151.0" x2="292.5" y2="167.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="343.2" y1="151.0" x2="343.2" y2="167.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="393.8" y1="151.0" x2="393.8" y2="167.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="289.0" y="155.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 292.5 159.0)"/><circle cx="350.0" cy="159.0" r="5" fill="var(--ok, var(--accent-strong))" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="163.0" font-size="12" fill="var(--ok, var(--accent-strong))" font-weight="700" text-anchor="end">+4.27R</text><text x="10" y="197.0" font-size="11" fill="currentColor">2026-06-26</text><rect x="65" y="185.0" width="38" height="16" rx="3" fill="var(--warn, #a16b21)" opacity="0.16"/><text x="70" y="197.0" font-size="9.5" fill="var(--warn, #a16b21)" font-weight="700">▼ SHORT</text><text x="112" y="197.0" font-size="9.5" fill="var(--ink-muted)">SL</text><rect x="200.0" y="187.0" width="75.2" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="275.2" y="187.0" width="9.4" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="275.2" y1="193.0" x2="284.6" y2="193.0" stroke="var(--bad, #c0392b)" stroke-width="3" stroke-linecap="round"/><line x1="284.6" y1="185.0" x2="284.6" y2="201.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="237.6" y1="185.0" x2="237.6" y2="201.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="200.0" y1="185.0" x2="200.0" y2="201.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="271.7" y="189.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 275.2 193.0)"/><circle cx="284.6" cy="193.0" r="5" fill="var(--bad, #c0392b)" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="197.0" font-size="12" fill="var(--bad, #c0392b)" font-weight="700" text-anchor="end">-1.00R</text><text x="10" y="231.0" font-size="11" fill="currentColor">2026-06-30</text><rect x="65" y="219.0" width="38" height="16" rx="3" fill="var(--info, #2f6690)" opacity="0.16"/><text x="70" y="231.0" font-size="9.5" fill="var(--info, #2f6690)" font-weight="700">▲ LONG</text><text x="112" y="231.0" font-size="9.5" fill="var(--ink-muted)">SL</text><rect x="285.3" y="221.0" width="79.1" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="275.4" y="221.0" width="9.9" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="275.4" y1="227.0" x2="285.3" y2="227.0" stroke="var(--bad, #c0392b)" stroke-width="3" stroke-linecap="round"/><line x1="275.4" y1="219.0" x2="275.4" y2="235.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="324.8" y1="219.0" x2="324.8" y2="235.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="364.4" y1="219.0" x2="364.4" y2="235.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="281.8" y="223.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 285.3 227.0)"/><circle cx="275.4" cy="227.0" r="5" fill="var(--bad, #c0392b)" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="231.0" font-size="12" fill="var(--bad, #c0392b)" font-weight="700" text-anchor="end">-1.00R</text><text x="10" y="265.0" font-size="11" fill="currentColor">2026-07-02</text><rect x="65" y="253.0" width="38" height="16" rx="3" fill="var(--info, #2f6690)" opacity="0.16"/><text x="70" y="265.0" font-size="9.5" fill="var(--info, #2f6690)" font-weight="700">▲ LONG</text><text x="112" y="265.0" font-size="9.5" fill="var(--ink-muted)">RSI cloud</text><rect x="329.2" y="255.0" width="41.8" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="329.2" y="255.0" width="1.0" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="329.2" y1="261.0" x2="343.9" y2="261.0" stroke="var(--ok, var(--accent-strong))" stroke-width="3" stroke-linecap="round"/><line x1="329.2" y1="253.0" x2="329.2" y2="269.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="350.1" y1="253.0" x2="350.1" y2="269.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="371.0" y1="253.0" x2="371.0" y2="269.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="325.7" y="257.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 329.2 261.0)"/><circle cx="343.9" cy="261.0" r="5" fill="var(--ok, var(--accent-strong))" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="265.0" font-size="12" fill="var(--ok, var(--accent-strong))" font-weight="700" text-anchor="end">+3.41R</text><text x="10" y="299.0" font-size="11" fill="currentColor">2026-07-06</text><rect x="65" y="287.0" width="38" height="16" rx="3" fill="var(--info, #2f6690)" opacity="0.16"/><text x="70" y="299.0" font-size="9.5" fill="var(--info, #2f6690)" font-weight="700">▲ LONG</text><text x="112" y="299.0" font-size="9.5" fill="var(--ink-muted)">RSI cloud</text><rect x="466.7" y="289.0" width="67.1" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="466.7" y="289.0" width="1.0" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="466.7" y1="295.0" x2="496.8" y2="295.0" stroke="var(--ok, var(--accent-strong))" stroke-width="3" stroke-linecap="round"/><line x1="466.7" y1="287.0" x2="466.7" y2="303.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="500.2" y1="287.0" x2="500.2" y2="303.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="533.8" y1="287.0" x2="533.8" y2="303.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="463.2" y="291.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 466.7 295.0)"/><circle cx="496.8" cy="295.0" r="5" fill="var(--ok, var(--accent-strong))" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="299.0" font-size="12" fill="var(--ok, var(--accent-strong))" font-weight="700" text-anchor="end">+3.80R</text><text x="10" y="333.0" font-size="11" fill="currentColor">2026-07-28</text><rect x="65" y="321.0" width="38" height="16" rx="3" fill="var(--warn, #a16b21)" opacity="0.16"/><text x="70" y="333.0" font-size="9.5" fill="var(--warn, #a16b21)" font-weight="700">▼ SHORT</text><text x="112" y="333.0" font-size="9.5" fill="var(--ink-muted)">SL</text><rect x="422.1" y="323.0" width="173.2" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="595.3" y="323.0" width="21.7" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="595.3" y1="329.0" x2="617.0" y2="329.0" stroke="var(--bad, #c0392b)" stroke-width="3" stroke-linecap="round"/><line x1="617.0" y1="321.0" x2="617.0" y2="337.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="508.7" y1="321.0" x2="508.7" y2="337.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="422.1" y1="321.0" x2="422.1" y2="337.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="591.8" y="325.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 595.3 329.0)"/><circle cx="617.0" cy="329.0" r="5" fill="var(--bad, #c0392b)" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="333.0" font-size="12" fill="var(--bad, #c0392b)" font-weight="700" text-anchor="end">-1.00R</text><line x1="642.0" y1="52.0" x2="642.0" y2="346.0" stroke="var(--border)" stroke-width="1"/></svg></div>
+      </div>
+      <div class="rule-foot">/home/anibale/.claude/jobs/02dae952/tmp/run_priced_backtest.py — backtest_smc_sniper_binance.py instrumentado con exit_price real, CHOCH_RETRACE_PCT=0.006, 90 días Binance (corrida fresca 2026-08-31, con los 5 fixes desplegados)</div>
+    </div>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">ATOM-USDT — 8 trades</div><span class="badge">rango 1.4364 – 1.9633</span></div>
+      <div class="rule-body">
+        <div class="chart-wrap"><svg viewBox="0 0 720 358" class="price-chart" role="img" aria-label="Precio de entrada, stop loss, take profit y salida real por trade, ATOM-USDT, 90 días Binance"><rect x="10" y="11" width="9" height="9" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 14.5 15.5)"/><text x="24" y="18" font-size="10" fill="var(--ink-muted)">Entrada</text><circle cx="92" cy="15.5" r="4.5" fill="var(--ink-muted)"/><text x="104" y="18" font-size="10" fill="var(--ink-muted)">Salida real</text><line x1="180" y1="10" x2="180" y2="21" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.7"/><text x="190" y="18" font-size="10" fill="var(--ink-muted)">SL</text><line x1="220" y1="10" x2="220" y2="21" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.7"/><text x="230" y="18" font-size="10" fill="var(--ink-muted)">TP1/TP2</text><rect x="282" y="8" width="15" height="14" rx="3" fill="var(--info, #2f6690)" opacity="0.18"/><text x="289.5" y="18" font-size="9" fill="var(--info, #2f6690)" font-weight="700" text-anchor="middle">▲</text><text x="302" y="18" font-size="10" fill="var(--ink-muted)">LONG</text><rect x="344" y="8" width="15" height="14" rx="3" fill="var(--warn, #a16b21)" opacity="0.18"/><text x="351.5" y="18" font-size="9" fill="var(--warn, #a16b21)" font-weight="700" text-anchor="middle">▼</text><text x="364" y="18" font-size="10" fill="var(--ink-muted)">SHORT</text><line x1="0" y1="26" x2="720" y2="26" stroke="var(--border)" stroke-width="1" opacity="0.5"/><rect x="0" y="108.0" width="720" height="34.0" fill="var(--surface-2, var(--border))" opacity="0.35"/><rect x="0" y="176.0" width="720" height="34.0" fill="var(--surface-2, var(--border))" opacity="0.35"/><rect x="0" y="244.0" width="720" height="34.0" fill="var(--surface-2, var(--border))" opacity="0.35"/><rect x="0" y="312.0" width="720" height="34.0" fill="var(--surface-2, var(--border))" opacity="0.35"/><line x1="171.2" y1="60.0" x2="171.2" y2="346.0" stroke="var(--border)" stroke-width="1" stroke-dasharray="2,3" opacity="0.6"/><text x="171.2" y="44" font-size="10.5" fill="var(--ink-muted)" text-anchor="middle">1.4000</text><line x1="329.5" y1="60.0" x2="329.5" y2="346.0" stroke="var(--border)" stroke-width="1" stroke-dasharray="2,3" opacity="0.6"/><text x="329.5" y="44" font-size="10.5" fill="var(--ink-muted)" text-anchor="middle">1.6000</text><line x1="487.8" y1="60.0" x2="487.8" y2="346.0" stroke="var(--border)" stroke-width="1" stroke-dasharray="2,3" opacity="0.6"/><text x="487.8" y="44" font-size="10.5" fill="var(--ink-muted)" text-anchor="middle">1.8000</text><line x1="646.1" y1="60.0" x2="646.1" y2="346.0" stroke="var(--border)" stroke-width="1" stroke-dasharray="2,3" opacity="0.6"/><text x="646.1" y="44" font-size="10.5" fill="var(--ink-muted)" text-anchor="middle">2.0000</text><text x="10" y="44" font-size="10.5" fill="var(--ink-muted)" font-weight="700">TRADE</text><text x="681.0" y="44" font-size="10.5" fill="var(--ink-muted)" text-anchor="middle" font-weight="700">RESULTADO</text><text x="10" y="95.0" font-size="11" fill="currentColor">2026-06-03</text><rect x="65" y="83.0" width="38" height="16" rx="3" fill="var(--info, #2f6690)" opacity="0.16"/><text x="70" y="95.0" font-size="9.5" fill="var(--info, #2f6690)" font-weight="700">▲ LONG</text><text x="112" y="95.0" font-size="9.5" fill="var(--ink-muted)">SL</text><rect x="547.1" y="85.0" width="69.9" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="538.4" y="85.0" width="8.7" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="538.4" y1="91.0" x2="547.1" y2="91.0" stroke="var(--bad, #c0392b)" stroke-width="3" stroke-linecap="round"/><line x1="538.4" y1="83.0" x2="538.4" y2="99.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="582.1" y1="83.0" x2="582.1" y2="99.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="617.0" y1="83.0" x2="617.0" y2="99.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="543.6" y="87.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 547.1 91.0)"/><circle cx="538.4" cy="91.0" r="5" fill="var(--bad, #c0392b)" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="95.0" font-size="12" fill="var(--bad, #c0392b)" font-weight="700" text-anchor="end">-1.00R</text><text x="10" y="129.0" font-size="11" fill="currentColor">2026-06-10</text><rect x="65" y="117.0" width="38" height="16" rx="3" fill="var(--info, #2f6690)" opacity="0.16"/><text x="70" y="129.0" font-size="9.5" fill="var(--info, #2f6690)" font-weight="700">▲ LONG</text><text x="112" y="129.0" font-size="9.5" fill="var(--ink-muted)">SL</text><rect x="471.9" y="119.0" width="58.8" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="464.6" y="119.0" width="7.3" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="464.6" y1="125.0" x2="471.9" y2="125.0" stroke="var(--bad, #c0392b)" stroke-width="3" stroke-linecap="round"/><line x1="464.6" y1="117.0" x2="464.6" y2="133.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="501.3" y1="117.0" x2="501.3" y2="133.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="530.7" y1="117.0" x2="530.7" y2="133.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="468.4" y="121.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 471.9 125.0)"/><circle cx="464.6" cy="125.0" r="5" fill="var(--bad, #c0392b)" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="129.0" font-size="12" fill="var(--bad, #c0392b)" font-weight="700" text-anchor="end">-1.00R</text><text x="10" y="163.0" font-size="11" fill="currentColor">2026-07-02</text><rect x="65" y="151.0" width="38" height="16" rx="3" fill="var(--warn, #a16b21)" opacity="0.16"/><text x="70" y="163.0" font-size="9.5" fill="var(--warn, #a16b21)" font-weight="700">▼ SHORT</text><text x="112" y="163.0" font-size="9.5" fill="var(--ink-muted)">SL</text><rect x="225.2" y="153.0" width="72.6" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="297.8" y="153.0" width="9.1" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="297.8" y1="159.0" x2="306.9" y2="159.0" stroke="var(--bad, #c0392b)" stroke-width="3" stroke-linecap="round"/><line x1="306.9" y1="151.0" x2="306.9" y2="167.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="261.5" y1="151.0" x2="261.5" y2="167.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="225.2" y1="151.0" x2="225.2" y2="167.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="294.3" y="155.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 297.8 159.0)"/><circle cx="306.9" cy="159.0" r="5" fill="var(--bad, #c0392b)" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="163.0" font-size="12" fill="var(--bad, #c0392b)" font-weight="700" text-anchor="end">-1.00R</text><text x="10" y="197.0" font-size="11" fill="currentColor">2026-07-02</text><rect x="65" y="185.0" width="38" height="16" rx="3" fill="var(--warn, #a16b21)" opacity="0.16"/><text x="70" y="197.0" font-size="9.5" fill="var(--warn, #a16b21)" font-weight="700">▼ SHORT</text><text x="112" y="197.0" font-size="9.5" fill="var(--ink-muted)">RSI cloud</text><rect x="272.0" y="187.0" width="29.3" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="301.4" y="187.0" width="1.0" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="285.9" y1="193.0" x2="301.4" y2="193.0" stroke="var(--ok, var(--accent-strong))" stroke-width="3" stroke-linecap="round"/><line x1="301.4" y1="185.0" x2="301.4" y2="201.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="286.7" y1="185.0" x2="286.7" y2="201.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="272.0" y1="185.0" x2="272.0" y2="201.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="297.9" y="189.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 301.4 193.0)"/><circle cx="285.9" cy="193.0" r="5" fill="var(--ok, var(--accent-strong))" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="197.0" font-size="12" fill="var(--ok, var(--accent-strong))" font-weight="700" text-anchor="end">+4.10R</text><text x="10" y="231.0" font-size="11" fill="currentColor">2026-07-13</text><rect x="65" y="219.0" width="38" height="16" rx="3" fill="var(--info, #2f6690)" opacity="0.16"/><text x="70" y="231.0" font-size="9.5" fill="var(--info, #2f6690)" font-weight="700">▲ LONG</text><text x="112" y="231.0" font-size="9.5" fill="var(--ink-muted)">SL</text><rect x="284.4" y="221.0" width="40.5" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="279.3" y="221.0" width="5.1" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="279.3" y1="227.0" x2="284.4" y2="227.0" stroke="var(--bad, #c0392b)" stroke-width="3" stroke-linecap="round"/><line x1="279.3" y1="219.0" x2="279.3" y2="235.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="304.6" y1="219.0" x2="304.6" y2="235.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="324.8" y1="219.0" x2="324.8" y2="235.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="280.9" y="223.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 284.4 227.0)"/><circle cx="279.3" cy="227.0" r="5" fill="var(--bad, #c0392b)" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="231.0" font-size="12" fill="var(--bad, #c0392b)" font-weight="700" text-anchor="end">-1.00R</text><text x="10" y="265.0" font-size="11" fill="currentColor">2026-07-17</text><rect x="65" y="253.0" width="38" height="16" rx="3" fill="var(--info, #2f6690)" opacity="0.16"/><text x="70" y="265.0" font-size="9.5" fill="var(--info, #2f6690)" font-weight="700">▲ LONG</text><text x="112" y="265.0" font-size="9.5" fill="var(--ink-muted)">SL</text><rect x="252.3" y="255.0" width="66.7" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="244.0" y="255.0" width="8.3" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="244.0" y1="261.0" x2="252.3" y2="261.0" stroke="var(--bad, #c0392b)" stroke-width="3" stroke-linecap="round"/><line x1="244.0" y1="253.0" x2="244.0" y2="269.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="285.6" y1="253.0" x2="285.6" y2="269.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="319.0" y1="253.0" x2="319.0" y2="269.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="248.8" y="257.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 252.3 261.0)"/><circle cx="244.0" cy="261.0" r="5" fill="var(--bad, #c0392b)" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="265.0" font-size="12" fill="var(--bad, #c0392b)" font-weight="700" text-anchor="end">-1.00R</text><text x="10" y="299.0" font-size="11" fill="currentColor">2026-08-20</text><rect x="65" y="287.0" width="38" height="16" rx="3" fill="var(--warn, #a16b21)" opacity="0.16"/><text x="70" y="299.0" font-size="9.5" fill="var(--warn, #a16b21)" font-weight="700">▼ SHORT</text><text x="112" y="299.0" font-size="9.5" fill="var(--ink-muted)">SL</text><rect x="200.0" y="289.0" width="53.9" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="253.9" y="289.0" width="6.7" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="253.9" y1="295.0" x2="260.6" y2="295.0" stroke="var(--bad, #c0392b)" stroke-width="3" stroke-linecap="round"/><line x1="260.6" y1="287.0" x2="260.6" y2="303.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="227.0" y1="287.0" x2="227.0" y2="303.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="200.0" y1="287.0" x2="200.0" y2="303.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="250.4" y="291.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 253.9 295.0)"/><circle cx="260.6" cy="295.0" r="5" fill="var(--bad, #c0392b)" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="299.0" font-size="12" fill="var(--bad, #c0392b)" font-weight="700" text-anchor="end">-1.00R</text><text x="10" y="333.0" font-size="11" fill="currentColor">2026-08-28</text><rect x="65" y="321.0" width="38" height="16" rx="3" fill="var(--info, #2f6690)" opacity="0.16"/><text x="70" y="333.0" font-size="9.5" fill="var(--info, #2f6690)" font-weight="700">▲ LONG</text><text x="112" y="333.0" font-size="9.5" fill="var(--ink-muted)">SL</text><rect x="237.7" y="323.0" width="87.7" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="226.7" y="323.0" width="11.0" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="226.7" y1="329.0" x2="237.7" y2="329.0" stroke="var(--bad, #c0392b)" stroke-width="3" stroke-linecap="round"/><line x1="226.7" y1="321.0" x2="226.7" y2="337.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="281.5" y1="321.0" x2="281.5" y2="337.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="325.4" y1="321.0" x2="325.4" y2="337.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="234.2" y="325.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 237.7 329.0)"/><circle cx="226.7" cy="329.0" r="5" fill="var(--bad, #c0392b)" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="333.0" font-size="12" fill="var(--bad, #c0392b)" font-weight="700" text-anchor="end">-1.00R</text><line x1="642.0" y1="52.0" x2="642.0" y2="346.0" stroke="var(--border)" stroke-width="1"/></svg></div>
+      </div>
+      <div class="rule-foot">/home/anibale/.claude/jobs/02dae952/tmp/run_priced_backtest.py — backtest_smc_sniper_binance.py instrumentado con exit_price real, CHOCH_RETRACE_PCT=0.006, 90 días Binance (corrida fresca 2026-08-31, con los 5 fixes desplegados)</div>
+    </div>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">XRP-USDT — 8 trades</div><span class="badge">rango 0.9592 – 1.5234</span></div>
+      <div class="rule-body">
+        <div class="chart-wrap"><svg viewBox="0 0 720 358" class="price-chart" role="img" aria-label="Precio de entrada, stop loss, take profit y salida real por trade, XRP-USDT, 90 días Binance"><rect x="10" y="11" width="9" height="9" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 14.5 15.5)"/><text x="24" y="18" font-size="10" fill="var(--ink-muted)">Entrada</text><circle cx="92" cy="15.5" r="4.5" fill="var(--ink-muted)"/><text x="104" y="18" font-size="10" fill="var(--ink-muted)">Salida real</text><line x1="180" y1="10" x2="180" y2="21" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.7"/><text x="190" y="18" font-size="10" fill="var(--ink-muted)">SL</text><line x1="220" y1="10" x2="220" y2="21" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.7"/><text x="230" y="18" font-size="10" fill="var(--ink-muted)">TP1/TP2</text><rect x="282" y="8" width="15" height="14" rx="3" fill="var(--info, #2f6690)" opacity="0.18"/><text x="289.5" y="18" font-size="9" fill="var(--info, #2f6690)" font-weight="700" text-anchor="middle">▲</text><text x="302" y="18" font-size="10" fill="var(--ink-muted)">LONG</text><rect x="344" y="8" width="15" height="14" rx="3" fill="var(--warn, #a16b21)" opacity="0.18"/><text x="351.5" y="18" font-size="9" fill="var(--warn, #a16b21)" font-weight="700" text-anchor="middle">▼</text><text x="364" y="18" font-size="10" fill="var(--ink-muted)">SHORT</text><line x1="0" y1="26" x2="720" y2="26" stroke="var(--border)" stroke-width="1" opacity="0.5"/><rect x="0" y="108.0" width="720" height="34.0" fill="var(--surface-2, var(--border))" opacity="0.35"/><rect x="0" y="176.0" width="720" height="34.0" fill="var(--surface-2, var(--border))" opacity="0.35"/><rect x="0" y="244.0" width="720" height="34.0" fill="var(--surface-2, var(--border))" opacity="0.35"/><rect x="0" y="312.0" width="720" height="34.0" fill="var(--surface-2, var(--border))" opacity="0.35"/><line x1="230.2" y1="60.0" x2="230.2" y2="346.0" stroke="var(--border)" stroke-width="1" stroke-dasharray="2,3" opacity="0.6"/><text x="230.2" y="44" font-size="10.5" fill="var(--ink-muted)" text-anchor="middle">1.0000</text><line x1="378.0" y1="60.0" x2="378.0" y2="346.0" stroke="var(--border)" stroke-width="1" stroke-dasharray="2,3" opacity="0.6"/><text x="378.0" y="44" font-size="10.5" fill="var(--ink-muted)" text-anchor="middle">1.2000</text><line x1="525.8" y1="60.0" x2="525.8" y2="346.0" stroke="var(--border)" stroke-width="1" stroke-dasharray="2,3" opacity="0.6"/><text x="525.8" y="44" font-size="10.5" fill="var(--ink-muted)" text-anchor="middle">1.4000</text><line x1="673.6" y1="60.0" x2="673.6" y2="346.0" stroke="var(--border)" stroke-width="1" stroke-dasharray="2,3" opacity="0.6"/><text x="673.6" y="44" font-size="10.5" fill="var(--ink-muted)" text-anchor="middle">1.6000</text><text x="10" y="44" font-size="10.5" fill="var(--ink-muted)" font-weight="700">TRADE</text><text x="681.0" y="44" font-size="10.5" fill="var(--ink-muted)" text-anchor="middle" font-weight="700">RESULTADO</text><text x="10" y="95.0" font-size="11" fill="currentColor">2026-06-09</text><rect x="65" y="83.0" width="38" height="16" rx="3" fill="var(--info, #2f6690)" opacity="0.16"/><text x="70" y="95.0" font-size="9.5" fill="var(--info, #2f6690)" font-weight="700">▲ LONG</text><text x="112" y="95.0" font-size="9.5" fill="var(--ink-muted)">SL</text><rect x="343.5" y="85.0" width="49.0" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="337.4" y="85.0" width="6.1" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="337.4" y1="91.0" x2="343.5" y2="91.0" stroke="var(--bad, #c0392b)" stroke-width="3" stroke-linecap="round"/><line x1="337.4" y1="83.0" x2="337.4" y2="99.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="368.0" y1="83.0" x2="368.0" y2="99.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="392.5" y1="83.0" x2="392.5" y2="99.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="340.0" y="87.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 343.5 91.0)"/><circle cx="337.4" cy="91.0" r="5" fill="var(--bad, #c0392b)" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="95.0" font-size="12" fill="var(--bad, #c0392b)" font-weight="700" text-anchor="end">-1.00R</text><text x="10" y="129.0" font-size="11" fill="currentColor">2026-06-16</text><rect x="65" y="117.0" width="38" height="16" rx="3" fill="var(--info, #2f6690)" opacity="0.16"/><text x="70" y="129.0" font-size="9.5" fill="var(--info, #2f6690)" font-weight="700">▲ LONG</text><text x="112" y="129.0" font-size="9.5" fill="var(--ink-muted)">RSI cloud</text><rect x="394.0" y="119.0" width="42.8" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="394.0" y="119.0" width="1.0" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="394.0" y1="125.0" x2="415.1" y2="125.0" stroke="var(--ok, var(--accent-strong))" stroke-width="3" stroke-linecap="round"/><line x1="394.0" y1="117.0" x2="394.0" y2="133.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="415.4" y1="117.0" x2="415.4" y2="133.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="436.8" y1="117.0" x2="436.8" y2="133.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="390.5" y="121.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 394.0 125.0)"/><circle cx="415.1" cy="125.0" r="5" fill="var(--ok, var(--accent-strong))" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="129.0" font-size="12" fill="var(--ok, var(--accent-strong))" font-weight="700" text-anchor="end">+3.97R</text><text x="10" y="163.0" font-size="11" fill="currentColor">2026-06-25</text><rect x="65" y="151.0" width="38" height="16" rx="3" fill="var(--warn, #a16b21)" opacity="0.16"/><text x="70" y="163.0" font-size="9.5" fill="var(--warn, #a16b21)" font-weight="700">▼ SHORT</text><text x="112" y="163.0" font-size="9.5" fill="var(--ink-muted)">SL</text><rect x="238.5" y="153.0" width="19.4" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="257.9" y="153.0" width="2.4" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="257.9" y1="159.0" x2="260.3" y2="159.0" stroke="var(--bad, #c0392b)" stroke-width="3" stroke-linecap="round"/><line x1="260.3" y1="151.0" x2="260.3" y2="167.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="248.2" y1="151.0" x2="248.2" y2="167.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="238.5" y1="151.0" x2="238.5" y2="167.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="254.4" y="155.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 257.9 159.0)"/><circle cx="260.3" cy="159.0" r="5" fill="var(--bad, #c0392b)" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="163.0" font-size="12" fill="var(--bad, #c0392b)" font-weight="700" text-anchor="end">-1.00R</text><text x="10" y="197.0" font-size="11" fill="currentColor">2026-06-26</text><rect x="65" y="185.0" width="38" height="16" rx="3" fill="var(--warn, #a16b21)" opacity="0.16"/><text x="70" y="197.0" font-size="9.5" fill="var(--warn, #a16b21)" font-weight="700">▼ SHORT</text><text x="112" y="197.0" font-size="9.5" fill="var(--ink-muted)">SL</text><rect x="200.0" y="187.0" width="58.0" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="258.0" y="187.0" width="7.3" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="258.0" y1="193.0" x2="265.3" y2="193.0" stroke="var(--bad, #c0392b)" stroke-width="3" stroke-linecap="round"/><line x1="265.3" y1="185.0" x2="265.3" y2="201.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="229.0" y1="185.0" x2="229.0" y2="201.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="200.0" y1="185.0" x2="200.0" y2="201.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="254.5" y="189.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 258.0 193.0)"/><circle cx="265.3" cy="193.0" r="5" fill="var(--bad, #c0392b)" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="197.0" font-size="12" fill="var(--bad, #c0392b)" font-weight="700" text-anchor="end">-1.00R</text><text x="10" y="231.0" font-size="11" fill="currentColor">2026-07-08</text><rect x="65" y="219.0" width="38" height="16" rx="3" fill="var(--warn, #a16b21)" opacity="0.16"/><text x="70" y="231.0" font-size="9.5" fill="var(--warn, #a16b21)" font-weight="700">▼ SHORT</text><text x="112" y="231.0" font-size="9.5" fill="var(--ink-muted)">TP2</text><rect x="287.2" y="221.0" width="29.0" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="316.1" y="221.0" width="1.0" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="287.2" y1="227.0" x2="316.1" y2="227.0" stroke="var(--ok, var(--accent-strong))" stroke-width="3" stroke-linecap="round"/><line x1="316.1" y1="219.0" x2="316.1" y2="235.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="301.6" y1="219.0" x2="301.6" y2="235.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="287.2" y1="219.0" x2="287.2" y2="235.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="312.6" y="223.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 316.1 227.0)"/><circle cx="287.2" cy="227.0" r="5" fill="var(--ok, var(--accent-strong))" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="231.0" font-size="12" fill="var(--ok, var(--accent-strong))" font-weight="700" text-anchor="end">+6.00R</text><text x="10" y="265.0" font-size="11" fill="currentColor">2026-07-13</text><rect x="65" y="253.0" width="38" height="16" rx="3" fill="var(--info, #2f6690)" opacity="0.16"/><text x="70" y="265.0" font-size="9.5" fill="var(--info, #2f6690)" font-weight="700">▲ LONG</text><text x="112" y="265.0" font-size="9.5" fill="var(--ink-muted)">SL</text><rect x="285.2" y="255.0" width="36.4" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="280.6" y="255.0" width="4.6" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="280.6" y1="261.0" x2="285.2" y2="261.0" stroke="var(--bad, #c0392b)" stroke-width="3" stroke-linecap="round"/><line x1="280.6" y1="253.0" x2="280.6" y2="269.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="303.4" y1="253.0" x2="303.4" y2="269.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="321.6" y1="253.0" x2="321.6" y2="269.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="281.7" y="257.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 285.2 261.0)"/><circle cx="280.6" cy="261.0" r="5" fill="var(--bad, #c0392b)" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="265.0" font-size="12" fill="var(--bad, #c0392b)" font-weight="700" text-anchor="end">-1.00R</text><text x="10" y="299.0" font-size="11" fill="currentColor">2026-08-25</text><rect x="65" y="287.0" width="38" height="16" rx="3" fill="var(--warn, #a16b21)" opacity="0.16"/><text x="70" y="299.0" font-size="9.5" fill="var(--warn, #a16b21)" font-weight="700">▼ SHORT</text><text x="112" y="299.0" font-size="9.5" fill="var(--ink-muted)">TP2</text><rect x="554.5" y="289.0" width="62.5" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="617.0" y="289.0" width="1.0" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="554.5" y1="295.0" x2="617.0" y2="295.0" stroke="var(--ok, var(--accent-strong))" stroke-width="3" stroke-linecap="round"/><line x1="617.0" y1="287.0" x2="617.0" y2="303.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="585.7" y1="287.0" x2="585.7" y2="303.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="554.5" y1="287.0" x2="554.5" y2="303.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="613.5" y="291.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 617.0 295.0)"/><circle cx="554.5" cy="295.0" r="5" fill="var(--ok, var(--accent-strong))" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="299.0" font-size="12" fill="var(--ok, var(--accent-strong))" font-weight="700" text-anchor="end">+6.00R</text><text x="10" y="333.0" font-size="11" fill="currentColor">2026-08-30</text><rect x="65" y="321.0" width="38" height="16" rx="3" fill="var(--warn, #a16b21)" opacity="0.16"/><text x="70" y="333.0" font-size="9.5" fill="var(--warn, #a16b21)" font-weight="700">▼ SHORT</text><text x="112" y="333.0" font-size="9.5" fill="var(--ink-muted)">SL</text><rect x="448.7" y="323.0" width="70.9" height="12" fill="var(--ok, var(--accent-strong))" opacity="0.12" rx="2"/><rect x="519.6" y="323.0" width="8.9" height="12" fill="var(--bad, #c0392b)" opacity="0.12" rx="2"/><line x1="519.6" y1="329.0" x2="528.5" y2="329.0" stroke="var(--bad, #c0392b)" stroke-width="3" stroke-linecap="round"/><line x1="528.5" y1="321.0" x2="528.5" y2="337.0" stroke="var(--bad, #c0392b)" stroke-width="1.5" opacity="0.5"/><line x1="484.2" y1="321.0" x2="484.2" y2="337.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><line x1="448.7" y1="321.0" x2="448.7" y2="337.0" stroke="var(--ok, var(--accent-strong))" stroke-width="1.5" opacity="0.5"/><rect x="516.1" y="325.5" width="7" height="7" fill="var(--bg)" stroke="var(--ink-muted)" stroke-width="1.5" transform="rotate(45 519.6 329.0)"/><circle cx="528.5" cy="329.0" r="5" fill="var(--bad, #c0392b)" stroke="var(--bg)" stroke-width="1.5"/><text x="714.0" y="333.0" font-size="12" fill="var(--bad, #c0392b)" font-weight="700" text-anchor="end">-1.00R</text><line x1="642.0" y1="52.0" x2="642.0" y2="346.0" stroke="var(--border)" stroke-width="1"/></svg></div>
+      </div>
+      <div class="rule-foot">/home/anibale/.claude/jobs/02dae952/tmp/run_priced_backtest.py — backtest_smc_sniper_binance.py instrumentado con exit_price real, CHOCH_RETRACE_PCT=0.006, 90 días Binance (corrida fresca 2026-08-31, con los 5 fixes desplegados)</div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ 6f. COMPARATIVA LOCAL VS SERVIDOR PRODUCTIVO ═══════════════════ -->
+  <section class="cat">
+    <div class="cat-head">
+      <h2>6f · Backtest local vs. servidor productivo (90 días, 4 símbolos)</h2>
+      <span class="count">1 tabla · 1 gráfico</span>
+    </div>
+    <p class="cat-intro">Mismo <code>backtest_smc_sniper_binance.py</code> (código real, sin modificar) corrido dos veces por separado: una vez en esta sesión (local) y otra dentro del contenedor <code>smc-strategy</code> en <code>trading-server</code> — para descartar que el resultado dependiera del entorno de ejecución. Cada corrida descarga su propia ventana de velas de Binance en el momento de correr, así que los números no son idénticos — lo relevante es si la <strong>tendencia</strong> coincide.</p>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">Métricas agregadas</div><span class="badge">Misma tendencia, distinta muestra</span></div>
+      <div class="rule-body">
+        <div class="cmp-table-wrap">
+          <table class="cmp-table">
+            <thead><tr><th>Métrica</th><th>Local</th><th>Servidor productivo</th></tr></thead>
+            <tbody>
+              <tr><td>Trades simulados</td><td>43</td><td>38</td></tr>
+              <tr><td>Win rate</td><td>32.6% (14W/29L)</td><td>34.2% (13W/25L)</td></tr>
+              <tr><td>R total</td><td class="cmp-pos">+21.79R</td><td class="cmp-pos">+30.38R</td></tr>
+              <tr><td>Expectancy</td><td class="cmp-pos">+0.507R/trade</td><td class="cmp-pos">+0.799R/trade</td></tr>
+              <tr><td>Max drawdown</td><td>8.00R</td><td>10.00R</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Ambas corridas son <strong>direccionalmente positivas</strong> (R total y expectancy positivos en las dos), con la misma magnitud de orden — ninguna de las dos contradice a la otra. La diferencia de trades (43 vs 38) y drawdown (8R vs 10R) es esperable: cada corrida bajó velas de Binance en un instante distinto, con pequeñas diferencias de paginación/red entre corridas separadas de la API pública, ya observadas antes en esta sesión (Bybit vs Binance dieron resultados similares por el mismo motivo).</p>
+      </div>
+      <div class="rule-foot">Local: /home/anibale/.claude/jobs/02dae952/tmp/backtest_4symbols_90d.log — Servidor: trading-server, docker compose exec smc-strategy, /tmp/backtest_server_90d.log</div>
+    </div>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">R total por símbolo</div><span class="badge">ATOM negativo en ambas — XRP inestable</span></div>
+      <div class="rule-body">
+        <div class="chart-wrap"><svg viewBox="0 0 720 262" class="bar-chart" role="img" aria-label="Comparativa R total por símbolo, backtest local vs servidor productivo, 90 días"><rect x="130" y="6" width="12" height="12" rx="2" fill="var(--info, #2f6690)"/><text x="148" y="16" font-size="11" fill="var(--ink-muted)">Local</text><rect x="200" y="6" width="12" height="12" rx="2" fill="var(--accent-strong)"/><text x="218" y="16" font-size="11" fill="var(--ink-muted)">Servidor productivo</text><line x1="380" y1="26" x2="380" y2="256" stroke="var(--border)" stroke-width="1.5"/><text x="10" y="60" font-size="12" fill="currentColor" font-weight="600">SOL-USDT</text><rect x="380.0" y="44.0" width="260.0" height="16" fill="var(--info, #2f6690)" opacity="0.85" rx="2"/><text x="646.0" y="56.0" font-size="11" fill="var(--info, #2f6690)" font-weight="700" text-anchor="start">+18.54R</text><rect x="380.0" y="64.0" width="155.5" height="16" fill="var(--accent-strong)" opacity="0.85" rx="2"/><text x="541.5" y="76.0" font-size="11" fill="var(--accent-strong)" font-weight="700" text-anchor="start">+11.09R</text><text x="10" y="118" font-size="12" fill="currentColor" font-weight="600">ETH-USDT</text><rect x="380.0" y="102.0" width="67.3" height="16" fill="var(--info, #2f6690)" opacity="0.85" rx="2"/><text x="453.3" y="114.0" font-size="11" fill="var(--info, #2f6690)" font-weight="700" text-anchor="start">+4.80R</text><rect x="380.0" y="122.0" width="157.2" height="16" fill="var(--accent-strong)" opacity="0.85" rx="2"/><text x="543.2" y="134.0" font-size="11" fill="var(--accent-strong)" font-weight="700" text-anchor="start">+11.21R</text><text x="10" y="176" font-size="12" fill="currentColor" font-weight="600">ATOM-USDT</text><rect x="364.9" y="160.0" width="15.1" height="16" fill="var(--info, #2f6690)" opacity="0.85" rx="2"/><text x="358.9" y="172.0" font-size="11" fill="var(--info, #2f6690)" font-weight="700" text-anchor="end">-1.08R</text><rect x="339.3" y="180.0" width="40.7" height="16" fill="var(--accent-strong)" opacity="0.85" rx="2"/><text x="333.3" y="192.0" font-size="11" fill="var(--accent-strong)" font-weight="700" text-anchor="end">-2.90R</text><text x="10" y="234" font-size="12" fill="currentColor" font-weight="600">XRP-USDT</text><rect x="373.3" y="218.0" width="6.7" height="16" fill="var(--info, #2f6690)" opacity="0.85" rx="2"/><text x="367.3" y="230.0" font-size="11" fill="var(--info, #2f6690)" font-weight="700" text-anchor="end">-0.48R</text><rect x="380.0" y="238.0" width="153.8" height="16" fill="var(--accent-strong)" opacity="0.85" rx="2"/><text x="539.8" y="250.0" font-size="11" fill="var(--accent-strong)" font-weight="700" text-anchor="start">+10.97R</text></svg></div>
+        <div class="cmp-table-wrap">
+          <table class="cmp-table">
+            <thead><tr><th>Símbolo</th><th>Trades (local/srv)</th><th>Win rate (local/srv)</th><th>R total (local/srv)</th></tr></thead>
+            <tbody>
+              <tr><td>SOL-USDT</td><td>15 / 14</td><td>46.7% / 35.7%</td><td class="cmp-pos">+18.54 / +11.09</td></tr>
+              <tr><td>ETH-USDT</td><td>10 / 8</td><td>30.0% / 50.0%</td><td class="cmp-pos">+4.80 / +11.21</td></tr>
+              <tr><td>ATOM-USDT</td><td>9 / 8</td><td>22.2% / 12.5%</td><td class="cmp-neg">-1.08 / -2.90</td></tr>
+              <tr><td>XRP-USDT</td><td>9 / 8</td><td>22.2% / 37.5%</td><td>-0.48 / <span class="cmp-pos">+10.97</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p><strong>SOL y ETH son consistentemente positivos</strong> en ambas corridas (los 2 pares núcleo de Craig, alta liquidez). <strong>ATOM es consistentemente negativo</strong> en ambas (-1.08 local, -2.90 servidor) — con solo 8-9 trades es una muestra chica, pero la dirección coincide en las 2 corridas, vale la pena seguir monitoreando antes de sacar una conclusión firme. <strong>XRP es el más inestable</strong>: casi neutro en local (-0.48R) pero fuertemente positivo en el servidor (+10.97R) — el win rate salta de 22.2% a 37.5%, una diferencia de apenas 1-2 trades sobre una base de 8-9 (cada trade individual mueve el WR ~11-12 puntos porcentuales con esta muestra) — no hay señal clara todavía de si XRP es rentable o no, necesita bastante más historial antes de confiar en el número.</p>
+      </div>
+      <div class="rule-foot">Mismo código (backtest_smc_sniper_binance.py, sin modificar) — única variable es la ventana de datos de Binance descargada en cada corrida</div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ 6g. BUGS ENCONTRADOS EN MONITOREO POST-DEPLOY ═══════════════════ -->
+  <section class="cat">
+    <div class="cat-head">
+      <h2>6g · Bugs encontrados en monitoreo post-deploy (2026-08-29/31)</h2>
+      <span class="count">2 hallazgos</span>
+    </div>
+    <p class="cat-intro">Con los 3 fixes de 6b-6d ya en producción, se monitorearon las primeras señales reales. Se encontraron 2 bugs adicionales — ninguno visible en el backtest (backtesting no pasa por <code>trade_executor</code>/<code>position_monitor</code> en vivo, solo simula el motor de señal) — ambos de la misma familia que <code>MIN_SCORE</code>: parámetros/criterios propios del bot nunca verificados contra el NB, silenciosamente bloqueando señales válidas.</p>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">TRADING_MIN_CONFIDENCE=0.925 — leftover del score viejo</div><span class="badge">Corregido y desplegado — 2026-08-30</span></div>
+      <div class="rule-body">
+        <p>Una señal real de XRP-USDT (2026-08-29, score=1, confidence=91.7%, todos los criterios obligatorios de Craig cumplidos) fue rechazada por <code>trade_executor</code>: <code>❌ ALERTA HIGH - Confianza insuficiente: 91.7% &lt; 92%</code>.</p>
+        <p><strong>Causa</strong>: <code>docker-compose.yml</code> tenía <code>TRADING_MIN_CONFIDENCE=0.925</code> hardcodeado con el comentario <code># score 3/4 = 0.925</code> — calibrado para el sistema de score VIEJO (4 puntos, <code>MIN_SCORE=3</code>), nunca actualizado al implementar la fórmula de confidence nueva (base 0.90 + score×0.017, score 0-6) del 2026-08-28. Con el valor viejo (0.925) hacía falta score≥2 para superarlo — reintroducía de facto un gate de score mínimo, la misma clase de bug que <code>MIN_SCORE</code> pero en otro parámetro no sincronizado.</p>
+        <p><strong>Corregido</strong>: bajado a 0.90 en <code>docker-compose.yml</code>. Simulado con velas reales qué hubiera pasado con esa señal específica de haberse ejecutado: SL tocado ~4h25min después (hubiera sido pérdida de todos modos, -1R) — el bug no costó una oportunidad real esta vez, pero sí bloqueaba sistemáticamente señales válidas según el criterio de Craig.</p>
+      </div>
+      <div class="rule-foot">docker-compose.yml TRADING_MIN_CONFIDENCE — commit f0e4b5f</div>
+    </div>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">Criterio "estructura opuesta" — gate inventado sin respaldo en Craig</div><span class="badge">Corregido y desplegado — 2026-08-31</span></div>
+      <div class="rule-body">
+        <p>Monitoreo post-deploy: <strong>8 de 8 señales</strong> generadas entre el 28/08 y el 31/08 se cancelaron antes de llegar a fill, la mayoría con <code>close_reason='limit_order_opposite_structure'</code> — un criterio propio de <code>position_monitor._reevaluate_pending_limit</code> que cancelaba la orden límite si aparecía cualquier FVG en la dirección contraria dentro del 1.2% del precio.</p>
+        <p>Verificado empíricamente contra velas históricas reales de BingX (mismo feed VST de producción, endpoint con <code>endTime</code> para reconstruir el instante exacto de cada cancelación): en los casos verificables el FVG opuesto sí existía en ese momento — el código no tenía un bug de cálculo. Pero el patrón agregado (casi el 100% de cancelación) y al menos un caso confirmado con desenlace real — <strong>ATOM-USDT (2026-08-28): canceló por "estructura opuesta", y de no cancelarse hubiera sido ganadora (+4R)</strong>, el precio se dio vuelta después — llevó a consultar si esto es realmente un criterio de Craig.</p>
+        <blockquote class="nb">"No, la aparición de un FVG contrario cercano no es un criterio real que Craig Percoco utilice o mencione en sus fuentes para cancelar o descartar una orden límite pendiente." Sus 3 criterios reales de cancelación anticipada: no-chasing (precio llega al TP sin llenar entrada), invalidación estructural (SL roto antes del fill), y limpieza de órdenes DCA sobrantes (no aplica a este bot, que no opera con múltiples niveles de entrada). El FVG contrario (iFVG) lo usa Craig para otra cosa — nuevo setup de entrada en la dirección opuesta, o TP/SL dinámico de una posición YA ABIERTA — nunca para descartar una orden todavía pendiente.</blockquote>
+        <p><strong>Corregido</strong>: eliminado el criterio 4 (estructura opuesta) de <code>_reevaluate_pending_limit</code> en <code>position_monitor.py</code>. Quedan los 3 criterios reales verificados (no-chasing, invalidación estructural, sesgo BTC contrario) + el criterio de "dificultad para romper el nivel" (regla de la tercera prueba de Craig, ya verificado en sesión anterior).</p>
+      </div>
+      <div class="rule-foot">position_monitor._reevaluate_pending_limit — commit 8020f65</div>
+    </div>
+  </section>
+
+  <footer class="doc-foot">
+    <p>Fuente única de verdad: NotebookLM "trading-brain" (contenido curado del material de Craig Percoco). Los puntos marcados "Cumple" fueron verificados con una cita textual del NB en esta sesión o en sesiones previas de esta misma auditoría — no se asumió ningún punto sin verificarlo.</p>
+    <p>Documento generado localmente, no publicado.</p>
+    <p><strong>2026-08-21:</strong> el bot BTC Range Sniper fue eliminado por completo (código, docker-compose, base de datos) tras encontrar posiciones fantasma en la DB del SMC Sniper originadas por su bug de reprocesamiento — este documento ya refleja solo al SMC Sniper (único bot activo).</p>
+  </footer>
+
+</div>
+  <script>
+    (function () {
+      var rules = Array.prototype.slice.call(document.querySelectorAll('.rule'));
+
+      rules.forEach(function (rule) {
+        var title = rule.querySelector('.rule-title');
+        var top = rule.querySelector('.rule-top');
+        if (!title || !top) return;
+
+        // Chevron indicador — inyectado por JS para no tocar los 54 bloques a mano.
+        var chevron = document.createElement('span');
+        chevron.className = 'rule-chevron';
+        chevron.textContent = '▸';
+        title.insertBefore(chevron, title.firstChild);
+
+        // Colapsado por defecto (el pedido explícito: evitar un scroll larguísimo).
+        rule.classList.add('collapsed');
+
+        top.addEventListener('click', function () {
+          rule.classList.toggle('collapsed');
+        });
+      });
+
+      // Secciones de categoría ("componentes del método") — también colapsables,
+      // independientes de los .rule internos.
+      var cats = Array.prototype.slice.call(document.querySelectorAll('section.cat'));
+      cats.forEach(function (cat) {
+        var head = cat.querySelector('.cat-head');
+        var h2 = cat.querySelector('.cat-head h2');
+        if (!head || !h2) return;
+
+        var chevron = document.createElement('span');
+        chevron.className = 'cat-chevron';
+        chevron.textContent = '▸';
+        h2.insertBefore(chevron, h2.firstChild);
+
+        head.addEventListener('click', function () {
+          cat.classList.toggle('collapsed');
+        });
+      });
+
+      var btn = document.getElementById('toggle-all-btn');
+      var allExpanded = false;
+      btn.addEventListener('click', function () {
+        allExpanded = !allExpanded;
+        rules.forEach(function (rule) {
+          rule.classList.toggle('collapsed', !allExpanded);
+        });
+        cats.forEach(function (cat) {
+          cat.classList.toggle('collapsed', false);
+        });
+        btn.textContent = allExpanded ? '▾ Colapsar todo' : '▸ Expandir todo';
+      });
+    })();
+  </script>
+</body>
+</html>

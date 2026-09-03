@@ -197,10 +197,10 @@ services:
       # backtest corriendo en un contenedor separado, ver docker-compose.yml
       # de ese repo) — mismo patrón "file system como bus", sin API interna.
       - ${NAUTILUS_TRADING_DATA_DIR:-../../nautilus-trading/data}:/nautilus-data
-      # Páginas de auditoría de método (HTML autocontenido) — mismo
-      # directorio que servía dashboard-simple, montado read-only acá para
-      # poder dar de baja ese sitio aparte.
-      - ${NAUTILUS_AUDITS_DIR:-../../nautilus-trading/dashboard-simple/templates}:/nautilus-audits:ro
+      # Páginas de auditoría de método (HTML autocontenido) — viven dentro
+      # del propio repo (backend/audits/), TradeTally ya no depende de que
+      # el repo de nautilus-trading exista al lado.
+      - ${NAUTILUS_AUDITS_DIR:-./backend/audits}:/nautilus-audits:ro
     networks:
       - trader-network
     restart: unless-stopped
