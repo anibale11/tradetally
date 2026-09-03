@@ -367,6 +367,24 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/analysis/nautilus-backtest',
+      name: 'nautilus-backtest',
+      component: () => import('@/views/backtest/NautilusBacktestView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/analysis/method-audits',
+      name: 'method-audits',
+      component: () => import('@/views/backtest/MethodAuditsView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/analysis/method-audits/:methodId',
+      name: 'method-audit-detail',
+      component: () => import('@/views/backtest/MethodAuditDetailView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/price-alerts',
       name: 'price-alerts',
       component: () => import('@/views/PriceAlertsView.vue'),

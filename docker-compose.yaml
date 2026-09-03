@@ -22,7 +22,9 @@ services:
   # Application (Frontend + Backend)
   # Build locally to ensure latest features including chart fixes
   app:
-    image: potentialmidas/tradetally:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: tradetally-app
     depends_on:
       postgres:
@@ -185,12 +187,20 @@ services:
       RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-1000}
       RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-900000}
     ports:
-      - "8080:80"
+      - "8091:80"
     volumes:
       - ./backend/src/logs:/app/backend/src/logs
       - ./backend/src/data:/app/backend/src/data
       - ./backend/uploads:/app/backend/uploads
       - ${APNS_KEY_PATH:-/dev/null}:/run/secrets/tradetally-apns-key.p8:ro
+      # Volumen compartido con el proyecto nautilus-trading (watcher del
+      # backtest corriendo en un contenedor separado, ver docker-compose.yml
+      # de ese repo) — mismo patrón "file system como bus", sin API interna.
+      - ${NAUTILUS_TRADING_DATA_DIR:-../../nautilus-trading/data}:/nautilus-data
+      # Páginas de auditoría de método (HTML autocontenido) — mismo
+      # directorio que servía dashboard-simple, montado read-only acá para
+      # poder dar de baja ese sitio aparte.
+      - ${NAUTILUS_AUDITS_DIR:-../../nautilus-trading/dashboard-simple/templates}:/nautilus-audits:ro
     networks:
       - trader-network
     restart: unless-stopped
