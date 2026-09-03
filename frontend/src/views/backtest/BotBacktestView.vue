@@ -2,16 +2,16 @@
   <div class="content-wrapper py-8">
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-        SMC Sniper — Nautilus (paralelo)
+        SMC Sniper — Producción
       </h1>
     </div>
 
     <div class="card mb-6">
       <div class="card-body">
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-          Backtest real de <code>CraigSMCStrategy</code> (NautilusTrader + OKX) — corre en el
-          proyecto <code>nautilus-trading</code>, descarga velas reales de OKX y ejecuta el motor
-          de backtest completo. Puede tardar varios minutos.
+          Backtest real de <code>smc_sniper_strategy.py</code> (bot_trading, BingX) — descarga
+          velas reales (Bybit) y simula el pipeline completo de señales. Puede tardar varios minutos.
+          Reportado en unidades R (sin PnL en $ — el script no usa un riesgo fijo en dólares).
         </p>
         <div class="flex items-center gap-3">
           <select v-model="days" class="input w-32" :disabled="running">
@@ -33,10 +33,10 @@
     >
       <div class="text-xs font-mono text-gray-500 dark:text-gray-400">
         Corrido {{ new Date(result.run_at).toLocaleString('es-AR') }} · {{ result.days }} días ·
-        {{ (result.symbols || []).join(', ') }} · riesgo ${{ result.risk_usdt }}/trade
+        {{ (result.symbols || []).join(', ') }} · {{ result.scans ?? '—' }} ciclos evaluados
       </div>
 
-      <div class="grid grid-cols-2 md:grid-cols-6 gap-3">
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
         <div class="card"><div class="card-body text-center">
           <div class="text-xl font-bold font-mono">{{ result.trades_closed ?? 0 }}</div>
           <div class="text-xs text-gray-500">Trades</div>
@@ -58,10 +58,6 @@
         <div class="card"><div class="card-body text-center">
           <div class="text-xl font-bold font-mono">{{ fmt(result.max_dd, 2) }}R</div>
           <div class="text-xs text-gray-500">Max DD</div>
-        </div></div>
-        <div class="card"><div class="card-body text-center">
-          <div class="text-xl font-bold font-mono">{{ result.fills ?? 0 }}</div>
-          <div class="text-xs text-gray-500">Fills</div>
         </div></div>
       </div>
 
@@ -93,8 +89,9 @@
             <thead>
               <tr class="text-left text-xs uppercase text-gray-500 dark:text-gray-400">
                 <th class="pb-2">Símbolo</th><th class="pb-2">Dir</th><th class="pb-2">Entrada</th>
-                <th class="pb-2">Salida</th><th class="pb-2">Cierre (UTC)</th>
-                <th class="pb-2">Duración</th><th class="pb-2">PnL</th><th class="pb-2">R</th>
+                <th class="pb-2">SL</th><th class="pb-2">TP1</th>
+                <th class="pb-2">Cierre (UTC)</th><th class="pb-2">Duración</th>
+                <th class="pb-2">Score</th><th class="pb-2">R</th>
               </tr>
             </thead>
             <tbody>
@@ -103,11 +100,12 @@
                 <td class="py-2" :class="t.direction === 'long' ? 'text-success' : 'text-danger'">
                   {{ t.direction === 'long' ? 'LONG' : 'SHORT' }}
                 </td>
-                <td class="py-2 font-mono">${{ fmt(t.entry_price, 4) }}</td>
-                <td class="py-2 font-mono">${{ fmt(t.exit_price, 4) }}</td>
+                <td class="py-2 font-mono">{{ fmt(t.entry_price, 4) }}</td>
+                <td class="py-2 font-mono">{{ fmt(t.stop_loss, 4) }}</td>
+                <td class="py-2 font-mono">{{ fmt(t.take_profit, 4) }}</td>
                 <td class="py-2 font-mono">{{ t.close_time ? new Date(t.close_time).toLocaleString('es-AR') : '—' }}</td>
                 <td class="py-2 font-mono">{{ fmt(t.duration_min, 0) }}min</td>
-                <td class="py-2 font-mono" :class="rClass(t.pnl)">{{ sign(t.pnl) }}${{ fmt(t.pnl, 2) }}</td>
+                <td class="py-2 font-mono">{{ t.score }}{{ t.is_unicorn ? ' 🦄' : '' }}</td>
                 <td class="py-2 font-mono" :class="rClass(t.r)">{{ sign(t.r) }}{{ fmt(t.r, 2) }}R</td>
               </tr>
             </tbody>
@@ -145,16 +143,16 @@ function rClass(n) {
 
 async function loadLast() {
   try {
-    const { data } = await api.get('/nautilus-backtest/last')
+    const { data } = await api.get('/bot-backtest/last')
     if (data && data.run_at) result.value = data
   } catch (e) {
-    // sin resultado todavía, no es un error real
+    // sin resultado todavía
   }
 }
 
 async function pollStatus() {
   try {
-    const { data } = await api.get('/nautilus-backtest/status')
+    const { data } = await api.get('/bot-backtest/status')
     if (data.status === 'pending') {
       statusText.value = 'En cola…'
     } else if (data.status === 'running') {
@@ -176,7 +174,7 @@ async function pollStatus() {
       pollTimer = null
     }
   } catch (e) {
-    // red intermitente — seguir intentando en el próximo tick
+    // red intermitente
   }
 }
 
@@ -184,7 +182,7 @@ async function runBacktest() {
   running.value = true
   statusText.value = 'Solicitando…'
   try {
-    await api.post(`/nautilus-backtest/run?days=${days.value}`)
+    await api.post(`/bot-backtest/run?days=${days.value}`)
     statusText.value = 'En cola…'
     if (pollTimer) clearInterval(pollTimer)
     pollTimer = setInterval(pollStatus, 5000)

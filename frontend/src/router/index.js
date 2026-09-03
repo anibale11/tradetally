@@ -373,6 +373,12 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/analysis/bot-backtest',
+      name: 'bot-backtest',
+      component: () => import('@/views/backtest/BotBacktestView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/analysis/method-audits',
       name: 'method-audits',
       component: () => import('@/views/backtest/MethodAuditsView.vue'),

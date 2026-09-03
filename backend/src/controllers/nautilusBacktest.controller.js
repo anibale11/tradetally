@@ -22,6 +22,11 @@ function readJson(filePath, fallback) {
 function writeJson(filePath, data) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+  // El watcher de nautilus-trading (proceso Python, uid distinto al de
+  // este contenedor) también reescribe este mismo archivo — sin esto, el
+  // dueño/permiso que deja el último proceso en escribir puede bloquear
+  // al otro (EACCES real visto con el equivalente de bot_trading).
+  try { fs.chmodSync(filePath, 0o666); } catch (e) { /* best-effort */ }
 }
 
 exports.run = (req, res) => {

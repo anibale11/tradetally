@@ -78,7 +78,7 @@
   }
 
   .wrap {
-    max-width: 900px;
+    max-width: 1400px;
     margin: 0 auto;
     padding: 56px 24px 96px;
   }
@@ -108,7 +108,6 @@
   .doc-head p.lede {
     font-size: 16.5px;
     color: var(--ink-muted);
-    max-width: 62ch;
     margin: 0 0 8px;
   }
   .doc-head .meta {
@@ -211,7 +210,6 @@
     color: var(--ink-muted);
     font-size: 14.5px;
     margin: -10px 0 22px;
-    max-width: 68ch;
   }
 
   /* ── Rule card ──────────────────────────────────────── */
@@ -299,7 +297,6 @@
   .rule-body {
     font-size: 14px;
     color: var(--ink-muted);
-    max-width: 74ch;
   }
   .rule-body p { margin: 6px 0; }
   .rule-body code {
@@ -332,7 +329,7 @@
     font-size: 13px;
     color: var(--ink-faint);
   }
-  footer.doc-foot p { margin: 4px 0; max-width: 70ch; }
+  footer.doc-foot p { margin: 4px 0; }
 
   @media (max-width: 640px) {
     .stats { grid-template-columns: repeat(2, 1fr); }
@@ -1031,6 +1028,81 @@
         <p><strong>Corregido</strong>: eliminado el criterio 4 (estructura opuesta) de <code>_reevaluate_pending_limit</code> en <code>position_monitor.py</code>. Quedan los 3 criterios reales verificados (no-chasing, invalidación estructural, sesgo BTC contrario) + el criterio de "dificultad para romper el nivel" (regla de la tercera prueba de Craig, ya verificado en sesión anterior).</p>
       </div>
       <div class="rule-foot">position_monitor._reevaluate_pending_limit — commit 8020f65</div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ 7. CONCEPTOS NUEVOS — 14 VIDEOS CARGADOS AL NB (2026-09-03) ═══════════════════ -->
+  <section class="cat">
+    <div class="cat-head">
+      <h2>7 · Conceptos nuevos encontrados en 14 videos adicionales (2026-09-03)</h2>
+      <span class="count">11 hallazgos</span>
+    </div>
+    <p class="cat-intro">Se cargaron 14 videos más de Craig Percoco al NB <code>trading-brain</code> (9 de método/estrategia + 5 de live trading). Consultado el NB explícitamente por conceptos NO cubiertos en las secciones 1-6 — <strong>ninguno de estos 11 puntos está implementado ni verificado empíricamente todavía</strong>, son hallazgos crudos del NB pendientes de análisis y decisión sobre si portarlos.</p>
+
+    <div class="rule gap">
+      <div class="rule-top"><div class="rule-title">Ondas de Elliott — conteo 5 ondas + corrección ABC</div><span class="badge">No implementado</span></div>
+      <div class="rule-body"><p>Craig usa el conteo de Elliott para contexto/madurez de tendencia — regla de oro: no entrar en largos durante la 5ta onda (fase de agotamiento). Reglas de validación mecánica: onda 3 nunca la más corta, onda 4 no invade el territorio de onda 1, regla de alternancia (onda 2 simple → onda 4 compleja, o viceversa). No hay nada de esto en <code>smc_sniper_strategy.py</code>/<code>smc_bias_analyzer.py</code> — el bot usa <code>_detect_mechanical_swings</code> (ZigZag) sin conteo de ondas.</p></div>
+      <div class="rule-foot">NB trading-brain — sin verificar contra código, sin decisión de implementación</div>
+    </div>
+
+    <div class="rule gap">
+      <div class="rule-top"><div class="rule-title">Extensiones de Fibonacci (1.618/2.618/3.618) para proyectar TP</div><span class="badge">No implementado</span></div>
+      <div class="rule-body"><p>Además del descuento 50%-78.6% ya implementado (<code>_fib_discount_zone</code>), Craig usa extensiones de Fibonacci basadas en tendencia (3 puntos de anclaje) para proyectar de antemano dónde puede agotarse el movimiento — la confluencia con 2.618/3.618 la trata como imán institucional de toma de ganancias. El TP1/TP2 actual del bot es un ratio fijo 1:4/1:8 sobre la distancia al SL, no una proyección de Fibonacci. Candidato más directo a portar de los 11 — mejoraría el cálculo de TP sin tocar la lógica de entrada.</p></div>
+      <div class="rule-foot">NB trading-brain — sin verificar contra código, sin decisión de implementación</div>
+    </div>
+
+    <div class="rule gap">
+      <div class="rule-top"><div class="rule-title">Caja de apertura de Nueva York (8:30-9:30 EST)</div><span class="badge">No implementado</span></div>
+      <div class="rule-body"><p>Craig marca máximo/mínimo de la hora previa a la apertura de NY y espera que una vela rompa y cierre con cuerpo fuera de ese rango para elegir la dirección de la sesión — no opera de forma reactiva dentro de la caja. Distinto de la "zona gris" 8-11am EST ya documentada en la sección 6 (esa es una ventana de no-operar por baja liquidez; esto es una herramienta de dirección de sesión). No implementado, y como <code>SESSION_FILTER_ENABLED=false</code> actualmente, sería moot hasta que se reactive el filtro de sesión.</p></div>
+      <div class="rule-foot">NB trading-brain — sin verificar contra código, sin decisión de implementación</div>
+    </div>
+
+    <div class="rule gap">
+      <div class="rule-top"><div class="rule-title">iFVG (Inverse FVG / Breaker)</div><span class="badge">No implementado</span></div>
+      <div class="rule-body"><p>Cuando un FVG se invalida por completo (el precio lo atraviesa y una vela cierra con cuerpo en la dirección contraria), la zona cambia de polaridad y Craig usa el midpoint de ese FVG invertido como zona de reversión rápida o de salida. El bot tiene <code>_fvg_invalidated</code> (usado para la alerta de "Consequential Encroachment", solo informativa) pero no reutiliza ese FVG invalidado como una zona nueva — extiende lógica ya existente, segundo candidato más directo a portar.</p></div>
+      <div class="rule-foot">NB trading-brain — sin verificar contra código, sin decisión de implementación</div>
+    </div>
+
+    <div class="rule gap">
+      <div class="rule-top"><div class="rule-title">PDH/PDL como imanes de liquidez — barrido + ChoCh/FVG en 1m</div><span class="badge">Parcial</span></div>
+      <div class="rule-body"><p>El bot ya tiene PDH/PDL como confluencia opcional (suma puntaje si el precio está cerca, ver sección de confluencias en <code>smc_sniper_strategy.py</code>). El NB describe un uso más específico: tratar PDH/PDL como imán de liquidez, esperar que el precio los "barra" (rompa y vuelva), y recién ahí buscar confirmación de reversión con ChoCh + FVG en 1m — una secuencia de eventos, no solo cercanía de precio. Es una versión más elaborada de lo que ya existe, no un gap desde cero.</p></div>
+      <div class="rule-foot">NB trading-brain — sin verificar contra código, sin decisión de implementación</div>
+    </div>
+
+    <div class="rule gap">
+      <div class="rule-top"><div class="rule-title">Canal paralelo de 3 puntos</div><span class="badge">No implementado</span></div>
+      <div class="rule-body"><p>Herramienta de trazado distinta a una línea de tendencia simple — canal anclado en 3 puntos de la estructura (ej. máximo 1 a máximo 3, arrastrado hasta el mínimo de la onda 2) para predecir zonas dinámicas de agotamiento del retroceso. No hay equivalente en el código — el bot no traza canales, solo detecta swings puntuales.</p></div>
+      <div class="rule-foot">NB trading-brain — sin verificar contra código, sin decisión de implementación</div>
+    </div>
+
+    <div class="rule gap">
+      <div class="rule-top"><div class="rule-title">Head and Shoulders — confluencia en onda 5 + divergencia RSI</div><span class="badge">No implementado</span></div>
+      <div class="rule-body"><p>Craig suma el patrón clásico Hombro-Cabeza-Hombro como confluencia adicional únicamente cuando coincide con el fin de una onda 5 y una divergencia bajista de RSI — no es un patrón independiente en su sistema. Depende del conteo de ondas de Elliott (punto 1 de esta sección, tampoco implementado), así que no se puede portar de forma aislada.</p></div>
+      <div class="rule-foot">NB trading-brain — sin verificar contra código, sin decisión de implementación</div>
+    </div>
+
+    <div class="rule info">
+      <div class="rule-top"><div class="rule-title">Retiro fijo del 25% de cada ganancia</div><span class="badge">No aplica al bot</span></div>
+      <div class="rule-body"><p>Regla de gestión de capital personal de Craig (retira 25% de cada trade ganador, reinvierte el 75% restante) — no es una regla de señal/entrada/salida, es una política de manejo de cuenta que el usuario aplicaría manualmente sobre las ganancias del bot, no algo que el código del bot deba ejecutar.</p></div>
+      <div class="rule-foot">NB trading-brain — gestión de capital, fuera del alcance de la lógica de señal</div>
+    </div>
+
+    <div class="rule info">
+      <div class="rule-top"><div class="rule-title">DCA Range Trading — entradas múltiples en cascada</div><span class="badge">No aplica al modelo actual</span></div>
+      <div class="rule-body"><p>En vez de una sola entrada, Craig divide la orden en 3 niveles (Entry + Limit1 + Limit2) para promediar mejor el precio si el retroceso es profundo. El bot actual coloca una única orden límite en el midpoint del FVG — adoptar esto implicaría rediseñar el módulo de ejecución (<code>trade_executor.py</code>), no un ajuste puntual.</p></div>
+      <div class="rule-foot">NB trading-brain — cambio de arquitectura de ejecución, no un fix puntual</div>
+    </div>
+
+    <div class="rule info">
+      <div class="rule-top"><div class="rule-title">Teorema del Límite Central — mínimo 30 trades antes de evaluar expectancy</div><span class="badge">No aplica al código</span></div>
+      <div class="rule-body"><p>Regla estadística/psicológica de Craig: hace falta una muestra de ~30 trades idénticos antes de poder decir si una estrategia tiene ventaja real o fue suerte — para desconectar el impacto emocional de rachas perdedoras cortas. No es una regla que el bot deba ejecutar, es un criterio de interpretación humana de los resultados (relevante al leer los backtests de las secciones 6c-6g).</p></div>
+      <div class="rule-foot">NB trading-brain — criterio de interpretación, no de señal</div>
+    </div>
+
+    <div class="rule info">
+      <div class="rule-top"><div class="rule-title">Lectura obligatoria: "Trading in the Zone" (Mark Douglas)</div><span class="badge">No aplica al código</span></div>
+      <div class="rule-body"><p>Craig considera la psicología del trader tan importante como el sistema técnico — recomienda este libro como paso de educación fundamental. No tiene equivalente en código, es una recomendación para el usuario, no para el bot.</p></div>
+      <div class="rule-foot">NB trading-brain — psicología del trader, no aplicable al bot</div>
     </div>
   </section>
 
