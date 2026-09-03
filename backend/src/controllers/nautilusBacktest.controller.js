@@ -61,5 +61,20 @@ exports.audit = (req, res) => {
   if (!fs.existsSync(filePath)) {
     return res.status(404).send('Detalle no encontrado para este método');
   }
+
+  // El middleware de seguridad global (security.js) manda X-Frame-Options:
+  // DENY + frame-ancestors 'none' en TODAS las respuestas (anti-clickjacking
+  // OWASP) — bloquea incluso el iframe same-origin que usa
+  // MethodAuditDetailView.vue para embeber esto dentro del shell de la app.
+  // Acá, deliberadamente, se relaja SOLO para esta ruta a 'self': el
+  // contenido es HTML propio (no de terceros), servido detrás del mismo
+  // middleware de auth que el resto de la API.
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.removeHeader('X-FRAME-OPTIONS');
+  res.setHeader('Content-Security-Policy', "frame-ancestors 'self'");
+  res.setHeader('X-Content-Security-Policy', "frame-ancestors 'self'");
+  res.setHeader('X-Webkit-CSP', "frame-ancestors 'self'");
+  res.setHeader('X-WebKit-CSP', "frame-ancestors 'self'");
+
   res.type('html').send(fs.readFileSync(filePath, 'utf8'));
 };
