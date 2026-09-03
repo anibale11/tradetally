@@ -27,10 +27,7 @@
       </div>
     </div>
 
-    <div
-      v-if="result && result.run_at"
-      class="space-y-6 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 md:p-6 max-h-[75vh] overflow-y-auto"
-    >
+    <div v-if="result && result.run_at" class="space-y-6">
       <div class="text-xs font-mono text-gray-500 dark:text-gray-400">
         Corrido {{ new Date(result.run_at).toLocaleString('es-AR') }} · {{ result.days }} días ·
         {{ (result.symbols || []).join(', ') }} · {{ result.scans ?? '—' }} ciclos evaluados
