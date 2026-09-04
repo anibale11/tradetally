@@ -84,6 +84,8 @@
         </div>
       </div>
 
+      <TradeChartPanel v-if="result.trades && result.trades.length" :trades="result.trades" />
+
       <div class="card">
         <div class="card-body overflow-x-auto">
           <h2 class="text-lg font-semibold mb-3">Trades (más reciente primero)</h2>
@@ -124,6 +126,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import api from '@/services/api'
+import TradeChartPanel from '@/components/backtest/TradeChartPanel.vue'
 
 const days = ref(90)
 const running = ref(false)
