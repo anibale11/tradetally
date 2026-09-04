@@ -95,6 +95,7 @@
             <thead>
               <tr class="text-left text-xs uppercase text-gray-500 dark:text-gray-400">
                 <th class="pb-2">Símbolo</th><th class="pb-2">Dir</th><th class="pb-2">Entrada</th>
+                <th class="pb-2">SL</th><th class="pb-2">TP1</th><th class="pb-2">TP2</th>
                 <th class="pb-2">Salida</th><th class="pb-2">Apertura (UTC)</th><th class="pb-2">Cierre (UTC)</th>
                 <th class="pb-2">Duración</th><th class="pb-2">PnL</th><th class="pb-2">R</th>
               </tr>
@@ -110,6 +111,9 @@
                   {{ t.direction === 'long' ? 'LONG' : 'SHORT' }}
                 </td>
                 <td class="py-2 font-mono">${{ fmt(t.entry_price, 4) }}</td>
+                <td class="py-2 font-mono">{{ t.stop_loss != null ? '$' + fmt(t.stop_loss, 4) : '—' }}</td>
+                <td class="py-2 font-mono">{{ t.take_profit != null ? '$' + fmt(t.take_profit, 4) : '—' }}</td>
+                <td class="py-2 font-mono">{{ t.tp2 != null ? '$' + fmt(t.tp2, 4) : '—' }}</td>
                 <td class="py-2 font-mono">${{ fmt(t.exit_price, 4) }}</td>
                 <td class="py-2 font-mono">{{ formatUtc(t.open_time) }}</td>
                 <td class="py-2 font-mono">{{ formatUtc(t.close_time) }}</td>
