@@ -521,6 +521,7 @@ const navItems = computed(() => {
         { name: 'Playbooks & Grading', to: '/analysis/playbooks', route: 'playbooks', badge: 'pro' },
         { name: 'Backtest Sandbox', to: '/analysis/backtest', route: 'backtest', badge: 'pro' },
         { name: 'Backtest Bots', to: '/analysis/backtest-bots', route: 'backtest-bots' },
+        { name: 'Method Audits', to: '/analysis/method-audits', route: 'method-audits' },
         { name: 'Prop Firm', to: '/analysis/prop-firm', route: 'prop-firm' }
       ]
     },

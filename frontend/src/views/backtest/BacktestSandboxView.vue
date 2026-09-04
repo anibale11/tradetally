@@ -102,7 +102,7 @@
                 v-if="form.instrument === 'crypto'"
                 id="backtest-symbol"
                 v-model="form.symbol"
-                class="input w-32"
+                class="input w-40"
                 required
               >
                 <option v-for="pair in cryptoSymbols" :key="pair" :value="pair">{{ pair }}</option>

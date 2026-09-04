@@ -70,7 +70,17 @@ const clockLabel = computed(() => {
     minute: '2-digit',
     hour12: false
   })
-  return `${time} ET`
+  // Bug preexistente: el sufijo quedaba hardcodeado en "ET" sin importar
+  // qué timezone se pasó realmente — nunca se notaba porque solo existían
+  // sesiones stock/futuros (siempre NY). Ahora las sesiones crypto pasan
+  // timezone="UTC" (ver replayDataService.cryptoSessionWindowForDate) y
+  // el label decía "ET" mostrando en realidad la hora UTC. Deriva el
+  // sufijo del abreviado real de la zona en vez de un literal fijo.
+  const tzAbbr = new Intl.DateTimeFormat('en-US', {
+    timeZone: props.timezone,
+    timeZoneName: 'short'
+  }).formatToParts(date).find((p) => p.type === 'timeZoneName')?.value || props.timezone
+  return `${time} ${tzAbbr}`
 })
 
 function pnlClass(value) {
