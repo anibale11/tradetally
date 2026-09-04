@@ -25,12 +25,6 @@
               <router-link :to="method.backtestPath" class="btn-primary text-sm px-3 py-1.5">
                 ▶ Ejecutar backtest
               </router-link>
-              <router-link
-                :to="`/analysis/method-audits/${method.auditId}`"
-                class="text-sm text-primary-600 dark:text-primary-400 hover:underline"
-              >
-                Ver auditoría →
-              </router-link>
             </div>
           </div>
         </div>

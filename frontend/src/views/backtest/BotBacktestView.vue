@@ -1,6 +1,11 @@
 <template>
   <div class="content-wrapper py-8">
-    <div class="flex items-center justify-between mb-6">
+    <div class="flex items-center gap-3 mb-6">
+      <router-link to="/analysis/backtest-bots" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+      </router-link>
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
         SMC Sniper — Producción
       </h1>
