@@ -88,16 +88,14 @@
         </div>
       </div>
 
-      <TradeChartPanel v-if="result.trades && result.trades.length" ref="chartPanel" :trades="result.trades" />
-
       <div class="card">
         <div class="card-body overflow-x-auto">
-          <h2 class="text-lg font-semibold mb-3">Trades (más reciente primero) — click en una fila para verla en el gráfico</h2>
+          <h2 class="text-lg font-semibold mb-3">Trades (más reciente primero)</h2>
           <table class="min-w-full text-sm">
             <thead>
               <tr class="text-left text-xs uppercase text-gray-500 dark:text-gray-400">
                 <th class="pb-2">Símbolo</th><th class="pb-2">Dir</th><th class="pb-2">Entrada</th>
-                <th class="pb-2">Salida</th><th class="pb-2">Cierre (UTC)</th>
+                <th class="pb-2">Salida</th><th class="pb-2">Apertura (UTC)</th><th class="pb-2">Cierre (UTC)</th>
                 <th class="pb-2">Duración</th><th class="pb-2">PnL</th><th class="pb-2">R</th>
               </tr>
             </thead>
@@ -105,8 +103,7 @@
               <tr
                 v-for="(t, i) in reversedTrades"
                 :key="i"
-                class="border-t border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
-                @click="showTradeOnChart(i)"
+                class="border-t border-gray-100 dark:border-gray-700"
               >
                 <td class="py-2 font-medium">{{ t.symbol }}</td>
                 <td class="py-2" :class="t.direction === 'long' ? 'text-success' : 'text-danger'">
@@ -114,6 +111,7 @@
                 </td>
                 <td class="py-2 font-mono">${{ fmt(t.entry_price, 4) }}</td>
                 <td class="py-2 font-mono">${{ fmt(t.exit_price, 4) }}</td>
+                <td class="py-2 font-mono">{{ formatUtc(t.open_time) }}</td>
                 <td class="py-2 font-mono">{{ formatUtc(t.close_time) }}</td>
                 <td class="py-2 font-mono">{{ fmt(t.duration_min, 0) }}min</td>
                 <td class="py-2 font-mono" :class="rClass(t.pnl)">{{ sign(t.pnl) }}${{ fmt(t.pnl, 2) }}</td>
@@ -133,27 +131,15 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import api from '@/services/api'
-import TradeChartPanel from '@/components/backtest/TradeChartPanel.vue'
 import { formatUtc } from '@/utils/backtestTime'
 
 const days = ref(90)
 const running = ref(false)
 const statusText = ref('')
 const result = ref(null)
-const chartPanel = ref(null)
 let pollTimer = null
 
 const reversedTrades = computed(() => [...(result.value?.trades || [])].reverse())
-
-// reversedTrades está invertida respecto a result.trades (que es lo que
-// recibe TradeChartPanel) — mapear el índice de la fila clickeada de
-// vuelta al índice real en el array original.
-function showTradeOnChart(reversedIndex) {
-  const total = result.value?.trades?.length || 0
-  const originalIndex = total - 1 - reversedIndex
-  chartPanel.value?.selectTrade(originalIndex)
-  chartPanel.value?.$el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-}
 
 function fmt(n, d = 1) {
   return n === null || n === undefined ? '—' : Number(n).toFixed(d)
