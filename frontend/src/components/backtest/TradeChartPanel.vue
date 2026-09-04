@@ -95,6 +95,14 @@ function activate() {
   loadCandles()
 }
 
+// Llamado desde la tabla de trades (click en una fila) — selecciona ESE
+// trade puntual y activa el gráfico si todavía no lo estaba.
+function selectTrade(index) {
+  selectedIndex.value = index
+  activate()
+}
+defineExpose({ selectTrade })
+
 const selectedTrade = computed(() => props.trades[selectedIndex.value] || null)
 
 // Nautilus reporta el símbolo como "SOL-USDT-SWAP.OKX"; bot_trading ya usa

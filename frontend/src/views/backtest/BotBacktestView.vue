@@ -84,11 +84,11 @@
         </div>
       </div>
 
-      <TradeChartPanel v-if="result.trades && result.trades.length" :trades="result.trades" />
+      <TradeChartPanel v-if="result.trades && result.trades.length" ref="chartPanel" :trades="result.trades" />
 
       <div class="card">
         <div class="card-body overflow-x-auto">
-          <h2 class="text-lg font-semibold mb-3">Trades (más reciente primero)</h2>
+          <h2 class="text-lg font-semibold mb-3">Trades (más reciente primero) — click en una fila para verla en el gráfico</h2>
           <table class="min-w-full text-sm">
             <thead>
               <tr class="text-left text-xs uppercase text-gray-500 dark:text-gray-400">
@@ -99,7 +99,12 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(t, i) in reversedTrades" :key="i" class="border-t border-gray-100 dark:border-gray-700">
+              <tr
+                v-for="(t, i) in reversedTrades"
+                :key="i"
+                class="border-t border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+                @click="showTradeOnChart(i)"
+              >
                 <td class="py-2 font-medium">{{ t.symbol }}</td>
                 <td class="py-2" :class="t.direction === 'long' ? 'text-success' : 'text-danger'">
                   {{ t.direction === 'long' ? 'LONG' : 'SHORT' }}
@@ -133,9 +138,20 @@ const days = ref(90)
 const running = ref(false)
 const statusText = ref('')
 const result = ref(null)
+const chartPanel = ref(null)
 let pollTimer = null
 
 const reversedTrades = computed(() => [...(result.value?.trades || [])].reverse())
+
+// reversedTrades está invertida respecto a result.trades (que es lo que
+// recibe TradeChartPanel) — mapear el índice de la fila clickeada de
+// vuelta al índice real en el array original.
+function showTradeOnChart(reversedIndex) {
+  const total = result.value?.trades?.length || 0
+  const originalIndex = total - 1 - reversedIndex
+  chartPanel.value?.selectTrade(originalIndex)
+  chartPanel.value?.$el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+}
 
 function fmt(n, d = 1) {
   return n === null || n === undefined ? '—' : Number(n).toFixed(d)
