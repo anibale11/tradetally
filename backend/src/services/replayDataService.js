@@ -20,6 +20,7 @@ const marketData = require('../utils/finnhub');
 const alphaVantage = require('../utils/alphaVantage');
 const databento = require('../utils/databento');
 const yahooFinance = require('../utils/yahooFinance');
+const binancePublic = require('../utils/binancePublic');
 const { resolvePriceScale, applyPriceScale } = require('../utils/candlePriceScale');
 const {
   getFuturesPointValue,
@@ -209,6 +210,22 @@ function sessionWindowForDate(year, month, day) {
 function sessionWindowForEntry(entryEpochSeconds) {
   const p = wallClockPartsInZone(entryEpochSeconds * 1000, NY_TZ);
   return sessionWindowForDate(p.year, p.month, p.day);
+}
+
+/**
+ * Compute the full-day UTC window for a crypto session — crypto trades
+ * 24/7, so unlike stocks/futures there's no exchange session to align to;
+ * a calendar day (00:00-23:59:59 UTC) is the whole "session".
+ */
+function cryptoSessionWindowForDate(year, month, day) {
+  const fromTs = Math.floor(Date.UTC(year, month - 1, day, 0, 0, 0) / 1000);
+  const toTs = Math.floor(Date.UTC(year, month - 1, day, 23, 59, 0) / 1000);
+  const pad = (n) => String(n).padStart(2, '0');
+  return {
+    date: `${year}-${pad(month)}-${pad(day)}`,
+    fromTs,
+    toTs
+  };
 }
 
 /**
@@ -491,6 +508,23 @@ function loadFuturesSessionBars(root, session) {
 }
 
 /**
+ * Load 1-min bars for a crypto session from Binance's public klines
+ * endpoint. Cached under the same "BTC-USDT" symbol used everywhere else
+ * (bot_trading, nautilus-trading) — no API key, no per-symbol billing.
+ */
+function loadCryptoSessionBars(symbol, session) {
+  return loadBarsWithCache(
+    symbol,
+    session,
+    async () => {
+      const bars = await binancePublic.getCandles(symbol, session.fromTs, session.toTs);
+      return dedupeSortBars(bars).filter((bar) => bar.time >= session.fromTs && bar.time <= session.toTs);
+    },
+    'binance'
+  );
+}
+
+/**
  * Build KLine-compatible chart data for a futures trade. Intraday requests
  * reuse the replay cache's immutable 1-minute Globex session and aggregate it
  * locally. Daily requests use Databento's daily schema to provide the same
@@ -743,8 +777,11 @@ async function getTradeReplayData(trade, userId) {
  * @param {string} userId
  */
 async function getBacktestSessionData(symbol, sessionDate, userId, options = {}) {
-  const instrument = options.instrument === 'future' ? 'future' : 'stock';
+  const instrument = options.instrument === 'future' ? 'future'
+    : options.instrument === 'crypto' ? 'crypto'
+    : 'stock';
   const isFutures = instrument === 'future';
+  const isCrypto = instrument === 'crypto';
 
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(sessionDate || ''));
   if (!match) {
@@ -762,20 +799,23 @@ async function getBacktestSessionData(symbol, sessionDate, userId, options = {})
     throw error;
   }
 
-  // Session dates are Mon-Fri for both instruments. Futures trade Sunday
+  // Session dates are Mon-Fri for stocks/futures. Futures trade Sunday
   // evening, but on Globex those hours belong to Monday's trading date.
-  const weekday = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
-  if (weekday === 6) {
-    const error = new Error('Markets are closed on Saturdays. Pick a weekday session.');
-    error.statusCode = 422;
-    throw error;
-  }
-  if (weekday === 0) {
-    const error = new Error(isFutures
-      ? "Sunday evening trading belongs to Monday's session. Pick Monday's date."
-      : 'Markets are closed on weekends. Pick a weekday session.');
-    error.statusCode = 422;
-    throw error;
+  // Crypto trades 24/7 — no weekday restriction at all.
+  if (!isCrypto) {
+    const weekday = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+    if (weekday === 6) {
+      const error = new Error('Markets are closed on Saturdays. Pick a weekday session.');
+      error.statusCode = 422;
+      throw error;
+    }
+    if (weekday === 0) {
+      const error = new Error(isFutures
+        ? "Sunday evening trading belongs to Monday's session. Pick Monday's date."
+        : 'Markets are closed on weekends. Pick a weekday session.');
+      error.statusCode = 422;
+      throw error;
+    }
   }
 
   if (isFutures && !databento.isConfigured()) {
@@ -783,9 +823,14 @@ async function getBacktestSessionData(symbol, sessionDate, userId, options = {})
     error.statusCode = 422;
     throw error;
   }
+  if (isCrypto && !binancePublic.isSupportedSymbol(symbol)) {
+    const error = new Error(`Unsupported crypto pair. Supported: ${binancePublic.supportedSymbols().join(', ')}`);
+    error.statusCode = 400;
+    throw error;
+  }
 
-  const session = isFutures
-    ? futuresSessionWindowForDate(year, month, day)
+  const session = isFutures ? futuresSessionWindowForDate(year, month, day)
+    : isCrypto ? cryptoSessionWindowForDate(year, month, day)
     : sessionWindowForDate(year, month, day);
   const nowSeconds = Math.floor(Date.now() / 1000);
   if (session.toTs + SESSION_CLOSE_BUFFER_SECONDS > nowSeconds) {
@@ -796,13 +841,15 @@ async function getBacktestSessionData(symbol, sessionDate, userId, options = {})
 
   let loaded;
   try {
-    loaded = isFutures
-      ? await loadFuturesSessionBars(symbol, session)
+    loaded = isFutures ? await loadFuturesSessionBars(symbol, session)
+      : isCrypto ? await loadCryptoSessionBars(symbol, session)
       : await loadSessionBars(symbol, session, userId);
   } catch (intradayError) {
     if (isQuotaError(intradayError) || intradayError.statusCode) throw intradayError;
     const error = new Error(isFutures
       ? `No futures data available for ${symbol} on ${session.date}: ${intradayError.message}`
+      : isCrypto
+      ? `No crypto data available for ${symbol} on ${session.date}: ${intradayError.message}`
       : `No intraday data available for ${symbol} on ${session.date}. The market may have been closed, or the symbol may not be supported by the market data provider.`);
     error.statusCode = 404;
     throw error;
@@ -826,8 +873,11 @@ async function getBacktestSessionData(symbol, sessionDate, userId, options = {})
       date: session.date,
       from_ts: session.fromTs,
       to_ts: session.toTs,
-      timezone: NY_TZ,
-      display_offset_seconds: Math.floor(tzOffsetMs(session.fromTs * 1000, NY_TZ) / 1000)
+      // Crypto sessions are already true UTC (24/7, no exchange TZ to
+      // align to) — no offset to shift display by, unlike NY-anchored
+      // stock/futures sessions.
+      timezone: isCrypto ? 'UTC' : NY_TZ,
+      display_offset_seconds: isCrypto ? 0 : Math.floor(tzOffsetMs(session.fromTs * 1000, NY_TZ) / 1000)
     },
     candles: loaded.candles
   };
@@ -871,6 +921,7 @@ module.exports = {
   sessionWindowForDate,
   futuresSessionWindowForEntry,
   futuresSessionWindowForDate,
+  cryptoSessionWindowForDate,
   toEpochSeconds,
   aggregateBars,
   futuresRootForTrade

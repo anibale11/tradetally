@@ -2,6 +2,7 @@ const TierService = require('../services/tierService');
 const replayDataService = require('../services/replayDataService');
 const backtestService = require('../services/backtestService');
 const databento = require('../utils/databento');
+const binancePublic = require('../utils/binancePublic');
 const { resolveFuturesRoot, getFuturesPointValue } = require('../utils/futuresUtils');
 const { getTierLimits } = require('../config/tierLimits');
 
@@ -47,10 +48,19 @@ function parseSymbol(raw) {
   return SYMBOL_REGEX.test(symbol) ? symbol : null;
 }
 
-// 'stock' (default) or 'future'; null for anything else
+// 'stock' (default), 'future', or 'crypto'; null for anything else
 function parseInstrument(raw) {
   if (raw === undefined || raw === null || raw === '' || raw === 'stock') return 'stock';
-  return raw === 'future' ? 'future' : null;
+  if (raw === 'future') return 'future';
+  if (raw === 'crypto') return 'crypto';
+  return null;
+}
+
+// Crypto symbols come from a fixed allowlist (Binance's 5 supported pairs,
+// same as bot_trading/nautilus-trading) — never free text.
+function parseCryptoSymbol(raw) {
+  const symbol = String(raw || '').trim().toUpperCase();
+  return binancePublic.isSupportedSymbol(symbol) ? symbol : null;
 }
 
 function parseSessionDate(raw) {
@@ -89,19 +99,26 @@ const backtestController = {
       const sessionDate = parseSessionDate(req.query.date);
 
       if (!instrument) {
-        return res.status(400).json({ error: 'Instrument must be "stock" or "future"' });
+        return res.status(400).json({ error: 'Instrument must be "stock", "future", or "crypto"' });
       }
       if (!sessionDate) {
         return res.status(400).json({ error: 'Session date must be in YYYY-MM-DD format' });
       }
 
       // Futures accept a root or contract symbol, normalized to the root so
-      // quota and cache never double-charge MNQM6 vs MNQ.
+      // quota and cache never double-charge MNQM6 vs MNQ. Crypto only
+      // accepts the fixed allowlist of pairs bot_trading/nautilus-trading
+      // actually operate.
       let symbol;
       if (instrument === 'future') {
         symbol = resolveFuturesRoot(req.query.symbol);
         if (!symbol) {
           return res.status(400).json({ error: 'Unknown futures root. Supported roots include ES, NQ, YM, RTY, MES, MNQ, MYM, M2K, CL, GC, and other CME contracts.' });
+        }
+      } else if (instrument === 'crypto') {
+        symbol = parseCryptoSymbol(req.query.symbol);
+        if (!symbol) {
+          return res.status(400).json({ error: `Unsupported crypto pair. Supported: ${binancePublic.supportedSymbols().join(', ')}` });
         }
       } else {
         symbol = parseSymbol(req.query.symbol);
@@ -147,7 +164,7 @@ const backtestController = {
       const sessionDate = parseSessionDate(req.body.session_date);
 
       if (!instrument) {
-        return res.status(400).json({ error: 'Instrument must be "stock" or "future"' });
+        return res.status(400).json({ error: 'Instrument must be "stock", "future", or "crypto"' });
       }
       if (!sessionDate) {
         return res.status(400).json({ error: 'Session date must be in YYYY-MM-DD format' });
@@ -162,6 +179,11 @@ const backtestController = {
           return res.status(400).json({ error: 'Unknown futures root' });
         }
         multiplier = getFuturesPointValue(symbol);
+      } else if (instrument === 'crypto') {
+        symbol = parseCryptoSymbol(req.body.symbol);
+        if (!symbol) {
+          return res.status(400).json({ error: `Unsupported crypto pair. Supported: ${binancePublic.supportedSymbols().join(', ')}` });
+        }
       } else {
         symbol = parseSymbol(req.body.symbol);
         if (!symbol) {
@@ -172,6 +194,8 @@ const backtestController = {
       const notes = req.body.notes == null ? null : String(req.body.notes).slice(0, 5000);
       const window = instrument === 'future'
         ? replayDataService.futuresSessionWindowForDate(sessionDate.year, sessionDate.month, sessionDate.day)
+        : instrument === 'crypto'
+        ? replayDataService.cryptoSessionWindowForDate(sessionDate.year, sessionDate.month, sessionDate.day)
         : replayDataService.sessionWindowForDate(sessionDate.year, sessionDate.month, sessionDate.day);
       const fills = backtestService.normalizeSessionFills(req.body.fills, {
         from_ts: window.fromTs,

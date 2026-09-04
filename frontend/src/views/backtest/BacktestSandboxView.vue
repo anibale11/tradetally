@@ -84,11 +84,31 @@
                 >
                   Futures
                 </button>
+                <button
+                  type="button"
+                  @click="selectCrypto"
+                  class="px-3 py-2 text-sm font-medium border-l border-gray-300 dark:border-gray-600"
+                  :class="form.instrument === 'crypto'
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'"
+                >
+                  Crypto
+                </button>
               </div>
             </div>
             <div>
               <label class="label" for="backtest-symbol">Symbol</label>
+              <select
+                v-if="form.instrument === 'crypto'"
+                id="backtest-symbol"
+                v-model="form.symbol"
+                class="input w-32"
+                required
+              >
+                <option v-for="pair in cryptoSymbols" :key="pair" :value="pair">{{ pair }}</option>
+              </select>
               <input
+                v-else
                 id="backtest-symbol"
                 v-model="form.symbol"
                 type="text"
@@ -117,6 +137,10 @@
           <p v-if="form.instrument === 'future'" class="text-xs text-gray-500 dark:text-gray-400 mt-3">
             Root or contract symbol (MNQ, ES, MNQM6...). Data: CME Globex continuous front-month,
             session runs 6:00 PM ET the prior evening through 5:00 PM ET.
+          </p>
+          <p v-if="form.instrument === 'crypto'" class="text-xs text-gray-500 dark:text-gray-400 mt-3">
+            Same pairs the trading bots operate. Data: Binance public klines,
+            session runs the full UTC calendar day (crypto trades 24/7).
           </p>
           <p v-if="error" class="text-sm text-red-600 dark:text-red-400 mt-3">{{ error }}</p>
         </div>
@@ -152,6 +176,12 @@
                       class="ml-1 text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 font-medium"
                     >
                       FUT
+                    </span>
+                    <span
+                      v-else-if="session.instrument_type === 'crypto'"
+                      class="ml-1 text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 font-medium"
+                    >
+                      CRYPTO
                     </span>
                   </td>
                   <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ formatSessionDate(session.session_date) }}</td>
@@ -415,6 +445,17 @@ const quota = ref(null)
 const form = reactive({ symbol: '', date: '', instrument: 'stock' })
 const sessions = ref([])
 const confirmDeleteId = ref(null)
+
+// Fixed allowlist, same pairs the trading bots operate — matches the
+// backend's binancePublic.SUPPORTED_PAIRS.
+const cryptoSymbols = ['BTC-USDT', 'ETH-USDT', 'SOL-USDT', 'ATOM-USDT', 'XRP-USDT']
+
+function selectCrypto() {
+  form.instrument = 'crypto'
+  if (!cryptoSymbols.includes(form.symbol)) {
+    form.symbol = cryptoSymbols[0]
+  }
+}
 
 const orderQuantity = ref(100)
 const notes = ref('')
