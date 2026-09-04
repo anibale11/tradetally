@@ -55,6 +55,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import ReplayChart from '@/components/replay/ReplayChart.vue'
 import api from '@/services/api'
+import { parseUtcEpochSeconds, formatUtc } from '@/utils/backtestTime'
 
 // Ventana de referencia de velas alrededor del trade seleccionado — 1m,
 // mismo dato real que usa el Backtest Sandbox (Binance público). Padding
@@ -85,14 +86,7 @@ function normalizeSymbol(raw) {
 const binanceSymbol = computed(() => selectedTrade.value ? normalizeSymbol(selectedTrade.value.symbol) : '')
 const supported = computed(() => SUPPORTED.includes(binanceSymbol.value))
 
-function toEpochSeconds(raw) {
-  if (!raw) return null
-  // Pandas a veces serializa "YYYY-MM-DD HH:MM:SS+00:00" (espacio en vez
-  // de "T") — Date lo parsea bien en Chrome, pero se normaliza por las dudas.
-  const iso = String(raw).includes('T') ? raw : String(raw).replace(' ', 'T')
-  const ms = new Date(iso).getTime()
-  return Number.isFinite(ms) ? Math.floor(ms / 1000) : null
-}
+const toEpochSeconds = parseUtcEpochSeconds
 
 // nautilus reporta exit_price real; bot_trading solo reporta el resultado
 // en R (unidades de riesgo) — usar el TP1/SL como fallback ingenuo mostraba
@@ -160,11 +154,7 @@ async function loadCandles() {
   }
 }
 
-function formatDate(raw) {
-  const ts = toEpochSeconds(raw)
-  if (ts === null) return '—'
-  return new Date(ts * 1000).toLocaleString('es-AR', { timeZone: 'UTC' })
-}
+const formatDate = formatUtc
 
 watch(selectedIndex, loadCandles)
 onMounted(loadCandles)

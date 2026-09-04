@@ -109,7 +109,7 @@
                 </td>
                 <td class="py-2 font-mono">${{ fmt(t.entry_price, 4) }}</td>
                 <td class="py-2 font-mono">${{ fmt(t.exit_price, 4) }}</td>
-                <td class="py-2 font-mono">{{ t.close_time ? new Date(t.close_time).toLocaleString('es-AR') : '—' }}</td>
+                <td class="py-2 font-mono">{{ formatUtc(t.close_time) }}</td>
                 <td class="py-2 font-mono">{{ fmt(t.duration_min, 0) }}min</td>
                 <td class="py-2 font-mono" :class="rClass(t.pnl)">{{ sign(t.pnl) }}${{ fmt(t.pnl, 2) }}</td>
                 <td class="py-2 font-mono" :class="rClass(t.r)">{{ sign(t.r) }}{{ fmt(t.r, 2) }}R</td>
@@ -129,6 +129,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import api from '@/services/api'
 import TradeChartPanel from '@/components/backtest/TradeChartPanel.vue'
+import { formatUtc } from '@/utils/backtestTime'
 
 const days = ref(90)
 const running = ref(false)

@@ -1045,10 +1045,10 @@
       <div class="rule-foot">NB trading-brain — sin verificar contra código, sin decisión de implementación</div>
     </div>
 
-    <div class="rule gap">
-      <div class="rule-top"><div class="rule-title">Extensiones de Fibonacci (1.618/2.618/3.618) para proyectar TP</div><span class="badge">No implementado</span></div>
-      <div class="rule-body"><p>Además del descuento 50%-78.6% ya implementado (<code>_fib_discount_zone</code>), Craig usa extensiones de Fibonacci basadas en tendencia (3 puntos de anclaje) para proyectar de antemano dónde puede agotarse el movimiento — la confluencia con 2.618/3.618 la trata como imán institucional de toma de ganancias. El TP1/TP2 actual del bot es un ratio fijo 1:4/1:8 sobre la distancia al SL, no una proyección de Fibonacci. Candidato más directo a portar de los 11 — mejoraría el cálculo de TP sin tocar la lógica de entrada.</p></div>
-      <div class="rule-foot">NB trading-brain — sin verificar contra código, sin decisión de implementación</div>
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">Extensiones de Fibonacci (1.618/2.618) para proyectar TP</div><span class="badge">Implementado 2026-09-04</span></div>
+      <div class="rule-body"><p>Además del descuento 50%-78.6% ya implementado (<code>_fib_discount_zone</code>), Craig usa extensiones de Fibonacci basadas en tendencia para proyectar de antemano dónde puede agotarse el movimiento. Implementado en <code>_fib_extension_targets()</code>: TP1 = extensión 1.618, TP2 = extensión 2.618, sobre el MISMO <code>swing_high</code>/<code>swing_low</code> ya usado para la zona de descuento (mismo anclaje, sin duplicar lógica) — el origen de la extensión es el propio <code>entry</code> (el retroceso ya validado dentro de la zona de descuento). Guardrail propio (salvaguarda técnica, no regla de Craig): si el swing da un R/R peor a 1:1.5, cae al ratio fijo 1:4/1:8 anterior — nunca opera con un R/R degenerado. Se agregó <code>tp_method</code> ("fib_ext"/"fixed_rr") a la señal para monitorear en producción cuál se usa.</p></div>
+      <div class="rule-foot">smc_sniper_strategy.py (_fib_extension_targets, _analyze_symbol) — verificado sin excepciones contra datos reales SOL/ETH/ATOM/XRP antes de deployar; portado también a nautilus-trading (smc_logic.py)</div>
     </div>
 
     <div class="rule gap">
@@ -1057,16 +1057,16 @@
       <div class="rule-foot">NB trading-brain — sin verificar contra código, sin decisión de implementación</div>
     </div>
 
-    <div class="rule gap">
-      <div class="rule-top"><div class="rule-title">iFVG (Inverse FVG / Breaker)</div><span class="badge">No implementado</span></div>
-      <div class="rule-body"><p>Cuando un FVG se invalida por completo (el precio lo atraviesa y una vela cierra con cuerpo en la dirección contraria), la zona cambia de polaridad y Craig usa el midpoint de ese FVG invertido como zona de reversión rápida o de salida. El bot tiene <code>_fvg_invalidated</code> (usado para la alerta de "Consequential Encroachment", solo informativa) pero no reutiliza ese FVG invalidado como una zona nueva — extiende lógica ya existente, segundo candidato más directo a portar.</p></div>
-      <div class="rule-foot">NB trading-brain — sin verificar contra código, sin decisión de implementación</div>
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">iFVG (Inverse FVG / Breaker)</div><span class="badge">Implementado 2026-09-04</span></div>
+      <div class="rule-body"><p>Cuando un FVG se invalida por completo (cierre de vela más allá del lado LEJANO del gap — no solo el midpoint, que es <code>_fvg_invalidated</code>/Consequential Encroachment, un concepto distinto), la zona cambia de polaridad. Implementado en <code>_detect_ifvgs()</code>: se suma al MISMO pool de candidatos que los FVG normales (<code>all_fvgs</code>) y pasa por los MISMOS gates obligatorios (zona 15m activa, fuerza relativa, zona clave, Fibonacci 50-78.6%) — sin atajos. <code>gen_high</code>/<code>gen_low</code> (usados para el SL) toman la vela de INVALIDACIÓN, no la generadora original — estructuralmente más correcto para un breaker.</p></div>
+      <div class="rule-foot">smc_sniper_strategy.py (_detect_ifvgs) — bug propio corregido antes de deployar: el gate <code>fvg["tf"]=="1m"</code> hubiera dejado pasar un iFVG de 1m ("1m-ifvg") sin el gate obligatorio por mismatch de string, corregido a .startswith("1m"); portado también a nautilus-trading (smc_logic.py)</div>
     </div>
 
-    <div class="rule gap">
-      <div class="rule-top"><div class="rule-title">PDH/PDL como imanes de liquidez — barrido + ChoCh/FVG en 1m</div><span class="badge">Parcial</span></div>
-      <div class="rule-body"><p>El bot ya tiene PDH/PDL como confluencia opcional (suma puntaje si el precio está cerca, ver sección de confluencias en <code>smc_sniper_strategy.py</code>). El NB describe un uso más específico: tratar PDH/PDL como imán de liquidez, esperar que el precio los "barra" (rompa y vuelva), y recién ahí buscar confirmación de reversión con ChoCh + FVG en 1m — una secuencia de eventos, no solo cercanía de precio. Es una versión más elaborada de lo que ya existe, no un gap desde cero.</p></div>
-      <div class="rule-foot">NB trading-brain — sin verificar contra código, sin decisión de implementación</div>
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">PDH/PDL como imanes de liquidez — barrido + rechazo</div><span class="badge">Implementado 2026-09-04 — opcional, no gate</span></div>
+      <div class="rule-body"><p>El bot ya tenía PDH/PDL como confluencia opcional simple (suma puntaje si el precio está cerca). Implementado <code>_pdh_pdl_sweep_confluence()</code>: exige que el precio haya BARRIDO el nivel (mecha que lo perfora) y CERRADO de vuelta del lado correcto (rechazo/reversión) en las últimas 30 velas de 1m — evidencia más específica que la simple proximidad. Prioriza la barrida sobre el toque simple con un <code>elif</code> (nunca suma las dos por el mismo evento, para no inflar el score). <strong>Decisión explícita del usuario</strong>: queda como confluencia OPCIONAL (nunca gate obligatorio) — a diferencia de otros gates de esta auditoría, acá se priorizó no reducir más la frecuencia de señales sobre la fidelidad estricta al método.</p></div>
+      <div class="rule-foot">smc_sniper_strategy.py (_pdh_pdl_sweep_confluence) — is_unicorn no se tocó (sigue usando el toque simple, sin efecto de este cambio); portado también a nautilus-trading (smc_logic.py)</div>
     </div>
 
     <div class="rule gap">
