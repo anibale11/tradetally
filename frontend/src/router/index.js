@@ -367,6 +367,14 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      // Landing page agrupada por bot — cada bot puede correr varias
+      // estrategias, cada una con su propia tarjeta (backtest + auditoría).
+      path: '/analysis/backtest-bots',
+      name: 'backtest-bots',
+      component: () => import('@/views/backtest/BacktestBotsView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/analysis/nautilus-backtest',
       name: 'nautilus-backtest',
       component: () => import('@/views/backtest/NautilusBacktestView.vue'),
