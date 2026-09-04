@@ -4,55 +4,71 @@
       <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
         <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
           Gráfico del trade
-          <span v-if="selectedTrade" class="text-gray-500 dark:text-gray-400 font-medium">
+          <span v-if="activated && selectedTrade" class="text-gray-500 dark:text-gray-400 font-medium">
             {{ selectedTrade.symbol }}
             <span :class="selectedTrade.direction === 'long' ? 'text-success' : 'text-danger'">
               {{ selectedTrade.direction === 'long' ? 'LONG' : 'SHORT' }}
             </span>
           </span>
         </h2>
-        <span v-if="selectedTrade" class="text-xs font-mono text-gray-500 dark:text-gray-400">
+        <span v-if="activated && selectedTrade" class="text-xs font-mono text-gray-500 dark:text-gray-400">
           {{ formatDate(selectedTrade.close_time) }} UTC · {{ selectedTrade.duration_min }}min
         </span>
       </div>
 
-      <div v-if="!supported" class="text-sm text-gray-500 dark:text-gray-400 py-8 text-center">
-        Símbolo no soportado para gráfico de referencia ({{ binanceSymbol || '—' }}).
+      <!-- No carga velas hasta que el usuario lo pide explícitamente — cada
+           trade consulta la API pública de Binance, no vale la pena gastar
+           esas llamadas si nadie va a mirar el gráfico. -->
+      <div v-if="!activated" class="text-center py-8">
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">
+          Gráfico de referencia sobre velas reales — útil para verificar puntualmente
+          un trade sospechoso (peor perdedor, duración rara, etc.), no pensado para
+          recorrer los {{ trades.length }} uno por uno.
+        </p>
+        <button class="btn-secondary text-sm px-3 py-1.5" @click="activate">
+          ▶ Cargar gráfico
+        </button>
       </div>
-      <div v-else-if="loading" class="flex justify-center py-16">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-      </div>
-      <div v-else-if="error" class="text-sm text-red-600 dark:text-red-400 py-8 text-center">{{ error }}</div>
-      <ReplayChart
-        v-else-if="candles.length"
-        :candles="candles"
-        :executed-fills="fills"
-        :cursor="candles.length - 1"
-        :trade="chartTrade"
-        :height="400"
-        :indicators="{ vwap: true, ema9: false, ema20: false, volume: true }"
-      />
 
-      <div class="mt-4">
-        <input
-          type="range"
-          min="0"
-          :max="trades.length - 1"
-          v-model.number="selectedIndex"
-          class="w-full"
-        />
-        <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-          <span>{{ trades.length ? formatDate(trades[0].close_time) : '' }}</span>
-          <span>Trade {{ selectedIndex + 1 }} / {{ trades.length }} — arrastrá para moverte en el tiempo</span>
-          <span>{{ trades.length ? formatDate(trades[trades.length - 1].close_time) : '' }}</span>
+      <template v-else>
+        <div v-if="!supported" class="text-sm text-gray-500 dark:text-gray-400 py-8 text-center">
+          Símbolo no soportado para gráfico de referencia ({{ binanceSymbol || '—' }}).
         </div>
-      </div>
+        <div v-else-if="loading" class="flex justify-center py-16">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+        </div>
+        <div v-else-if="error" class="text-sm text-red-600 dark:text-red-400 py-8 text-center">{{ error }}</div>
+        <ReplayChart
+          v-else-if="candles.length"
+          :candles="candles"
+          :executed-fills="fills"
+          :cursor="candles.length - 1"
+          :trade="chartTrade"
+          :height="400"
+          :indicators="{ vwap: true, ema9: false, ema20: false, volume: true }"
+        />
+
+        <div class="mt-4">
+          <input
+            type="range"
+            min="0"
+            :max="trades.length - 1"
+            v-model.number="selectedIndex"
+            class="w-full"
+          />
+          <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+            <span>{{ trades.length ? formatDate(trades[0].close_time) : '' }}</span>
+            <span>Trade {{ selectedIndex + 1 }} / {{ trades.length }} — arrastrá para moverte en el tiempo</span>
+            <span>{{ trades.length ? formatDate(trades[trades.length - 1].close_time) : '' }}</span>
+          </div>
+        </div>
+      </template>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch } from 'vue'
 import ReplayChart from '@/components/replay/ReplayChart.vue'
 import api from '@/services/api'
 import { parseUtcEpochSeconds, formatUtc } from '@/utils/backtestTime'
@@ -72,6 +88,12 @@ const selectedIndex = ref(Math.max(0, props.trades.length - 1))
 const candles = ref([])
 const loading = ref(false)
 const error = ref(null)
+const activated = ref(false)
+
+function activate() {
+  activated.value = true
+  loadCandles()
+}
 
 const selectedTrade = computed(() => props.trades[selectedIndex.value] || null)
 
@@ -156,6 +178,10 @@ async function loadCandles() {
 
 const formatDate = formatUtc
 
-watch(selectedIndex, loadCandles)
-onMounted(loadCandles)
+// Solo recarga al mover el slider si el usuario ya activó el panel — antes
+// cargaba el trade más reciente automáticamente al entrar a la página,
+// gastando una consulta a Binance aunque nadie fuera a mirar el gráfico.
+watch(selectedIndex, () => {
+  if (activated.value) loadCandles()
+})
 </script>
