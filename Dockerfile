@@ -75,7 +75,8 @@ RUN apk update && apk upgrade --no-cache && \
     libc6-compat \
     su-exec \
     fontconfig \
-    font-dejavu && \
+    font-dejavu \
+    git && \
     mkdir -p /run/nginx /var/lib/nginx /var/lib/nginx/tmp /var/log/nginx && \
     chown -R nginx:nginx /run/nginx /var/lib/nginx /var/log/nginx
 WORKDIR /app
@@ -97,6 +98,11 @@ RUN chmod +x /app/start.sh /app/docker-entrypoint.sh
 # run as the 'nginx' user. The Node.js backend is started as 'appuser' in start.sh.
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup && \
     chown -R appuser:appgroup /app
+
+# Los repos de bot_trading/nautilus-trading se montan RO desde el host (uid del
+# dueño no coincide con appuser) — git rechaza operar ahí por "dubious
+# ownership" salvo que se marquen como safe.directory explícitamente.
+RUN git config --system --add safe.directory '*'
 
 EXPOSE 80 3000
 CMD ["/app/start.sh"]

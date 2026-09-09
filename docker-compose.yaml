@@ -205,6 +205,14 @@ services:
       # del propio repo (backend/audits/), TradeTally ya no depende de que
       # el repo de nautilus-trading exista al lado.
       - ${NAUTILUS_AUDITS_DIR:-./backend/audits}:/nautilus-audits:ro
+      # Repos completos (con .git real, no un worktree) de solo lectura —
+      # para el historial de cambios (git log real de ambos bots). Usar el
+      # checkout PRINCIPAL de bot_trading (no el worktree de esta sesión,
+      # que tiene un .git-file con ruta absoluta al host, imposible de
+      # resolver dentro del contenedor) — main es la fuente de verdad real
+      # de lo que está desplegado de todos modos.
+      - ${BOT_TRADING_REPO_DIR:-../../bot_trading}:/repos/bot-trading:ro
+      - ${NAUTILUS_TRADING_REPO_DIR:-../../nautilus-trading}:/repos/nautilus-trading:ro
     networks:
       - trader-network
     restart: unless-stopped

@@ -387,6 +387,12 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/analysis/changelog',
+      name: 'changelog',
+      component: () => import('@/views/backtest/ChangelogView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/analysis/method-audits',
       name: 'method-audits',
       component: () => import('@/views/backtest/MethodAuditsView.vue'),
