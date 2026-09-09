@@ -2,13 +2,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 
-// Regression tests for the Dashboard advanced-filter wiring (GitHub issue #350).
-// These bugs lived in the view's handler/computed wiring (badge counting,
-// clear/reset store write-through, hiding the duplicate date control), which
-// util-level tests on tradeFilterState.js cannot see, so we mount the real
-// DashboardView.
+// Mount the real dashboard and vuedraggable item slots: replacing the draggable
+// with an empty stub misses render errors that it displays as red stack traces.
+// Heavy child cards remain stubbed; these tests cover view loading and filters.
 
-const { apiMock, stub } = vi.hoisted(() => {
+const { apiMock, defaultGetImplementation, stub } = vi.hoisted(() => {
   // __esModule marks the mock as an ES module namespace so Vue's
   // defineAsyncComponent unwraps `.default` (several of these components are now
   // lazy-loaded). Without it, Vitest's mock-namespace proxy throws when Vue
@@ -18,7 +16,7 @@ const { apiMock, stub } = vi.hoisted(() => {
     default: { name, template: `<div data-stub="${name}"></div>` }
   })
 
-  const get = vi.fn((url) => {
+  const defaultGetImplementation = (url) => {
     if (typeof url === 'string') {
       if (url.startsWith('/settings')) {
         return Promise.resolve({ data: { settings: { statisticsCalculation: 'average' } } })
@@ -37,14 +35,18 @@ const { apiMock, stub } = vi.hoisted(() => {
       if (url.startsWith('/trades?')) {
         return Promise.resolve({ data: { trades: [] } })
       }
+      if (url === '/trades/open-positions-quotes') {
+        return Promise.resolve({ data: { positions: [] } })
+      }
     }
     return Promise.resolve({ data: {} })
-  })
+  }
 
   return {
     stub,
+    defaultGetImplementation,
     apiMock: {
-      get,
+      get: vi.fn(defaultGetImplementation),
       post: vi.fn(() => Promise.resolve({ data: {} })),
       put: vi.fn(() => Promise.resolve({ data: {} })),
       delete: vi.fn(() => Promise.resolve({ data: {} }))
@@ -74,15 +76,6 @@ vi.mock('@/lib/chartSetup', () => {
   }
   return { Chart: ChartStub, default: ChartStub }
 })
-
-vi.mock('vuedraggable', () => ({
-  default: {
-    name: 'draggable',
-    props: ['modelValue', 'list', 'itemKey', 'handle', 'disabled', 'animation', 'ghostClass', 'dragClass'],
-    emits: ['update:modelValue', 'start', 'end', 'change'],
-    template: '<div data-stub="draggable"></div>'
-  }
-}))
 
 vi.mock('@/composables/useGlobalAccountFilter', async () => {
   const { ref, computed } = await import('vue')
@@ -141,7 +134,7 @@ import { useTradesStore } from '@/stores/trades'
 
 const FILTER_BUTTON_SELECTOR = 'button[aria-label="More filters"]'
 
-describe('DashboardView advanced filter wiring (issue #350)', () => {
+describe('DashboardView loading and advanced filter wiring', () => {
   let wrapper
   let pinia
 
@@ -149,6 +142,8 @@ describe('DashboardView advanced filter wiring (issue #350)', () => {
     // One pinia shared by the mounted view and the test's useXStore() calls.
     pinia = createPinia()
     setActivePinia(pinia)
+    apiMock.get.mockImplementation(defaultGetImplementation)
+    sessionStorage.clear()
   })
 
   afterEach(() => {
@@ -169,6 +164,7 @@ describe('DashboardView advanced filter wiring (issue #350)', () => {
       }
     })
     await flushPromises()
+    expect(mounted.findAll('pre').map(node => node.text())).toEqual([])
     return mounted
   }
 
@@ -280,5 +276,135 @@ describe('DashboardView advanced filter wiring (issue #350)', () => {
       .map(([url]) => url)
       .filter((url) => typeof url === 'string' && url.startsWith('/trades/analytics'))
     expect(analyticsCalls.at(-1)).toContain('tags=a%2Cb')
+  })
+
+  it('keeps the initial loader visible until uncached dashboard data settles', async () => {
+    let resolveAnalytics
+    let resolveOpenPositions
+
+    apiMock.get.mockImplementation((url) => {
+      if (typeof url === 'string' && url.startsWith('/trades/analytics')) {
+        return new Promise((resolve) => { resolveAnalytics = resolve })
+      }
+      if (url === '/trades/open-positions-quotes') {
+        return new Promise((resolve) => { resolveOpenPositions = resolve })
+      }
+      return defaultGetImplementation(url)
+    })
+
+    wrapper = mount(DashboardView, {
+      global: {
+        plugins: [pinia],
+        stubs: {
+          RouterLink: { template: '<a><slot /></a>' }
+        }
+      }
+    })
+
+    await flushPromises()
+
+    expect(wrapper.find('.animate-spin.h-12.w-12').exists()).toBe(true)
+    expect(wrapper.findComponent({ name: 'draggable' }).exists()).toBe(false)
+
+    resolveAnalytics({
+      data: {
+        summary: {},
+        performanceBySymbol: [],
+        dailyPnL: [],
+        dailyWinRate: [],
+        topTrades: { best: [], worst: [] }
+      }
+    })
+    resolveOpenPositions({ data: { positions: [] } })
+    await flushPromises()
+
+    // fetchOpenTrades performs a fast request followed by the quote request.
+    resolveOpenPositions({ data: { positions: [] } })
+    await flushPromises()
+
+    expect(wrapper.find('.animate-spin.h-12.w-12').exists()).toBe(false)
+    expect(wrapper.findComponent({ name: 'draggable' }).exists()).toBe(true)
+    expect(wrapper.findAll('pre')).toHaveLength(0)
+  })
+
+  it.each([null, { summary: {} }, { summary: {}, topTrades: { best: null } }])('ignores incomplete cached analytics while fresh data loads: %j', async cached_data => {
+    wrapper = await mountDashboard()
+    const cache_key = wrapper.vm.getAnalyticsCacheKey()
+    expect(cache_key).toBeTruthy()
+    wrapper.unmount()
+    wrapper = null
+    sessionStorage.setItem(cache_key, JSON.stringify(cached_data))
+
+    let resolve_analytics
+    apiMock.get.mockImplementation(url => {
+      if (url.startsWith('/trades/analytics')) {
+        return new Promise(resolve => { resolve_analytics = resolve })
+      }
+      return defaultGetImplementation(url)
+    })
+    wrapper = await mountDashboard()
+    expect(wrapper.find('.animate-spin.h-12.w-12').exists()).toBe(true)
+    resolve_analytics(await defaultGetImplementation('/trades/analytics'))
+    await flushPromises()
+    expect(wrapper.find('.animate-spin.h-12.w-12').exists()).toBe(false)
+    expect(wrapper.findAll('pre')).toHaveLength(0)
+  })
+
+  it('does not render stale cached positions without their trade list', async () => {
+    wrapper = await mountDashboard()
+    const cache_key = wrapper.vm.getOpenPositionsCacheKey()
+    wrapper.unmount()
+    wrapper = null
+    sessionStorage.setItem(cache_key, JSON.stringify([{ symbol: 'PLTR', instrumentType: 'option', totalQuantity: 1 }]))
+    let resolve_positions
+    apiMock.get.mockImplementation(url => {
+      if (url === '/trades/open-positions-quotes') {
+        return new Promise(resolve => { resolve_positions = resolve })
+      }
+      return defaultGetImplementation(url)
+    })
+    wrapper = await mountDashboard()
+    expect(wrapper.find('.animate-spin.h-12.w-12').exists()).toBe(true)
+    resolve_positions({ data: { positions: [] } })
+    await flushPromises()
+    resolve_positions({ data: { positions: [] } })
+    await flushPromises()
+    expect(wrapper.findAll('pre')).toHaveLength(0)
+    expect(wrapper.findComponent({ name: 'draggable' }).exists()).toBe(true)
+  })
+
+  it('keeps valid cached content mounted through delayed and malformed refreshes', async () => {
+    const positions = [{
+      symbol: 'PLTR', side: 'short', instrumentType: 'option',
+      totalQuantity: 1, totalCost: 350, currentValue: null,
+      unrealizedPnL: null, requires_manual_price: true,
+      trades: [{ id: 'trade-1', quantity: 1, entry_price: 3.5 }]
+    }]
+    apiMock.get.mockImplementation(url => url === '/trades/open-positions-quotes'
+      ? Promise.resolve({ data: { positions } }) : defaultGetImplementation(url))
+    wrapper = await mountDashboard()
+    wrapper.unmount()
+    wrapper = null
+
+    let resolve_analytics
+    let resolve_positions
+    apiMock.get.mockImplementation(url => {
+      if (url.startsWith('/trades/analytics')) return new Promise(resolve => { resolve_analytics = resolve })
+      if (url === '/trades/open-positions-quotes') return new Promise(resolve => { resolve_positions = resolve })
+      return defaultGetImplementation(url)
+    })
+    wrapper = await mountDashboard()
+    const dashboard_element = wrapper.findComponent({ name: 'draggable' }).element
+    expect(wrapper.find('.animate-spin.h-12.w-12').exists()).toBe(false)
+    expect(wrapper.text()).toContain('PLTR')
+
+    resolve_analytics({ data: null })
+    resolve_positions({ data: { positions: [{ symbol: 'PLTR' }] } })
+    await flushPromises()
+    resolve_positions({ data: { positions: null } })
+    await flushPromises()
+    expect(wrapper.findAll('pre')).toHaveLength(0)
+    expect(wrapper.findComponent({ name: 'draggable' }).element).toBe(dashboard_element)
+    expect(wrapper.text()).toContain('PLTR')
   })
 })
