@@ -54,5 +54,12 @@ const methods = [
     statusLabel: 'En vivo — OKX demo',
     source: 'nautilus-trading — CraigSMCStrategy',
   },
+  {
+    id: 'dca-range-trading',
+    name: 'DCA Range Trading (Craig Percoco)',
+    status: 'evaluated',
+    statusLabel: 'No implementado — evaluado',
+    source: 'Método aparte de Craig — solo investigación',
+  },
 ]
 </script>

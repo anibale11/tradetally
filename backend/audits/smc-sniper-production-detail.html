@@ -1084,9 +1084,9 @@
   <section class="cat">
     <div class="cat-head">
       <h2>7 · Conceptos nuevos encontrados en 14 videos adicionales (2026-09-03)</h2>
-      <span class="count">11 hallazgos</span>
+      <span class="count">10 hallazgos</span>
     </div>
-    <p class="cat-intro">Se cargaron 14 videos más de Craig Percoco al NB <code>trading-brain</code> (9 de método/estrategia + 5 de live trading). Consultado el NB explícitamente por conceptos NO cubiertos en las secciones 1-6 — <strong>ninguno de estos 11 puntos está implementado ni verificado empíricamente todavía</strong>, son hallazgos crudos del NB pendientes de análisis y decisión sobre si portarlos.</p>
+    <p class="cat-intro">Se cargaron 14 videos más de Craig Percoco al NB <code>trading-brain</code> (9 de método/estrategia + 5 de live trading). Consultado el NB explícitamente por conceptos NO cubiertos en las secciones 1-6 — <strong>ninguno de estos 10 puntos está implementado ni verificado empíricamente todavía</strong>, son hallazgos crudos del NB pendientes de análisis y decisión sobre si portarlos. (Un 11er punto, DCA Range Trading, se separó a su propia auditoría — es un método completo aparte, no un concepto suelto del SMC Sniper: ver <a href="/analysis/method-audits/dca-range-trading" target="_blank" rel="noopener">DCA Range Trading</a> en Method Audits.)</p>
 
     <div class="rule gap">
       <div class="rule-top"><div class="rule-title">Ondas de Elliott — conteo 5 ondas + corrección ABC</div><span class="badge">No implementado</span></div>
@@ -1144,39 +1144,6 @@
         <p class="rule-foot" style="margin-top:8px">Gateado por la muestra de 30 trades de arriba — revisar de nuevo cuando esa barra llegue al 100%.</p>
       </div>
       <div class="rule-foot">NB trading-brain — gestión de capital, fuera del alcance de la lógica de señal</div>
-    </div>
-
-    <div class="rule info">
-      <div class="rule-top"><div class="rule-title">DCA Range Trading (TCL / FIB &amp; EMA Continuation) — 2do método completo de Craig, no una variante</div><span class="badge">Evaluado — factible a futuro (2026-09-10)</span></div>
-      <div class="rule-body">
-        <p>Verificado contra NB (2026-09-10): esto NO es una variante del ChoCh+FVG ni un ajuste de ejecución — es un <strong>segundo método completo e independiente</strong>, que Craig activa según el estado del mercado, nunca mezclado con el otro en la misma sesión/símbolo:</p>
-        <table style="width:100%; border-collapse:collapse; margin:8px 0; font-size:13px;">
-          <tr style="border-bottom:1px solid var(--border,#3335)"><th style="text-align:left; padding:4px 8px 4px 0">Criterio</th><th style="text-align:left; padding:4px 8px">DCA Range Trading</th><th style="text-align:left; padding:4px 0">SMC Sniper (actual)</th></tr>
-          <tr><td style="padding:4px 8px 4px 0">Condición de mercado</td><td style="padding:4px 8px">Tendencia en desarrollo, EMAs 20/50/200 alineadas</td><td style="padding:4px 0">Reversión/giro contra FVG 15m o PDH/PDL</td></tr>
-          <tr><td style="padding:4px 8px 4px 0">Tipo de movimiento</td><td style="padding:4px 8px">Retrocesos graduales, laterales ("choppy")</td><td style="padding:4px 0">Vela de desplazamiento, ChoCh</td></tr>
-          <tr><td style="padding:4px 8px 4px 0">Timeframe</td><td style="padding:4px 8px">1m/3m/5m directo</td><td style="padding:4px 0">Top-down: 15m filtro + 1m gatillo</td></tr>
-          <tr><td style="padding:4px 8px 4px 0">Perfil</td><td style="padding:4px 8px">Win rate 80-90%+, R/R bajo</td><td style="padding:4px 0">Win rate 35-50%, R/R 1:4 a 1:10+</td></tr>
-        </table>
-
-        <p><strong>Evaluación de factibilidad (para implementar a futuro) — qué está cuantificado con precisión vs. qué es discrecional:</strong></p>
-        <p>✅ <strong>Cuantificado con precisión, directamente programable:</strong></p>
-        <ul style="margin:4px 0 8px 20px; padding:0;">
-          <li>EMAs 20/50/200 en 1m/3m/5m, condición binaria de apilamiento (20&gt;50&gt;200 largos, invertido cortos)</li>
-          <li>Niveles Fibonacci exactos: Entry 0.618, Limit1 0.382, Limit2 0.170/0.172, SL -0.05, TP inicial 1.272</li>
-          <li>Fórmula de precio promedio ponderado estándar (acumulación de lotes) tras llenar Limit1/Limit2</li>
-          <li>Riesgo total: 10% de la cuenta distribuido entre las 3 órdenes (pérdida máxima exacta si toca SL con las 3 llenas)</li>
-          <li>Filtro horario objetivo: caja de apertura NY 8:00-11:00 AM EST — prohibido operar dentro de esa ventana</li>
-          <li>Lista de símbolos: SOL, ETH, ADA, LTC, LINK, MANA, APE (altcoins de alta liquidez) — excluye explícitamente low-cap/ilíquidas</li>
-        </ul>
-        <p>⚠️ <strong>Discrecional / sin cuantificar — requeriría calibración empírica propia (mismo método ya usado para <code>CHOCH_RETRACE_PCT</code>):</strong></p>
-        <ul style="margin:4px 0 8px 20px; padding:0;">
-          <li>Tolerancia de separación entre EMAs ("muestra fuerza/sobreextensión" pero sin fórmula ni mínimo — puramente visual)</li>
-          <li>Detección objetiva de "choppy price action" fuera de la caja de NY (zig-zag visual, sin criterio numérico)</li>
-          <li>Peso exacto de cada orden de la cascada (Limit1/Limit2 "progresivamente mayores", sin ratio específico)</li>
-        </ul>
-        <p><strong>Veredicto</strong>: ~70% del método es directamente programable con los valores exactos que da Craig. Los 3 puntos discrecionales no son un bloqueo — son exactamente el mismo tipo de vacío que ya se resolvió antes (<code>CHOCH_RETRACE_PCT</code>, sección 6b): elegir un valor candidato razonable y calibrarlo con backtest real contra datos históricos. Implementarlo requeriría un módulo de ejecución nuevo (3 órdenes simultáneas + recálculo de precio promedio/TP), no un ajuste sobre <code>trade_executor.py</code> actual — pero es factible.</p>
-      </div>
-      <div class="rule-foot">NB trading-brain — 2do método completo, evaluado para implementación futura, no iniciado</div>
     </div>
 
     <div class="rule info">

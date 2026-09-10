@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>DCA Range Trading (Craig Percoco) — Auditoría de método</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Mismo shell visual que smc-sniper-production-detail.html — paleta y
+     componentes (.rule/.cat/.badge/.cmp-table) copiados verbatim para que
+     ambos documentos, embebidos en el mismo iframe de MethodAuditDetailView,
+     se vean consistentes. */
+  :root {
+    --bg: #111827;
+    --surface: #1f2937;
+    --surface-2: #283548;
+    --ink: #f3f4f6;
+    --ink-muted: #9ca3af;
+    --ink-faint: #6b7280;
+    --border: #374151;
+    --accent: #F0812A;
+    --accent-strong: #f78f2f;
+    --accent-bg: rgba(240, 129, 42, 0.12);
+    --ok: #10b981;
+    --ok-bg: rgba(16, 185, 129, 0.12);
+    --ok-border: rgba(16, 185, 129, 0.35);
+    --bad: #ef4444;
+    --bad-bg: rgba(239, 68, 68, 0.12);
+    --bad-border: rgba(239, 68, 68, 0.35);
+    --warn: #f59e0b;
+    --warn-bg: rgba(245, 158, 11, 0.12);
+    --warn-border: rgba(245, 158, 11, 0.35);
+    --info: #60a5fa;
+    --info-bg: rgba(96, 165, 250, 0.12);
+    --info-border: rgba(96, 165, 250, 0.35);
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 20px rgba(0,0,0,0.35);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #111827; --surface: #1f2937; --surface-2: #283548;
+      --ink: #f3f4f6; --ink-muted: #9ca3af; --ink-faint: #6b7280;
+      --border: #374151; --accent: #F0812A; --accent-strong: #f78f2f;
+      --accent-bg: rgba(240, 129, 42, 0.12); --ok: #10b981; --ok-bg: rgba(16, 185, 129, 0.12);
+      --ok-border: rgba(16, 185, 129, 0.35); --bad: #ef4444; --bad-bg: rgba(239, 68, 68, 0.12);
+      --bad-border: rgba(239, 68, 68, 0.35); --warn: #f59e0b; --warn-bg: rgba(245, 158, 11, 0.12);
+      --warn-border: rgba(245, 158, 11, 0.35); --info: #60a5fa; --info-bg: rgba(96, 165, 250, 0.12);
+      --info-border: rgba(96, 165, 250, 0.35);
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 20px rgba(0,0,0,0.35);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #111827; --surface: #1f2937; --surface-2: #283548;
+    --ink: #f3f4f6; --ink-muted: #9ca3af; --ink-faint: #6b7280;
+    --border: #374151; --accent: #F0812A; --accent-strong: #f78f2f;
+    --accent-bg: rgba(240, 129, 42, 0.12); --ok: #10b981; --ok-bg: rgba(16, 185, 129, 0.12);
+    --ok-border: rgba(16, 185, 129, 0.35); --bad: #ef4444; --bad-bg: rgba(239, 68, 68, 0.12);
+    --bad-border: rgba(239, 68, 68, 0.35); --warn: #f59e0b; --warn-bg: rgba(245, 158, 11, 0.12);
+    --warn-border: rgba(245, 158, 11, 0.35); --info: #60a5fa; --info-bg: rgba(96, 165, 250, 0.12);
+    --info-border: rgba(96, 165, 250, 0.35);
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 20px rgba(0,0,0,0.35);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Inter", system-ui, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 56px 24px 96px;
+  }
+
+  code, .mono { font-family: "JetBrains Mono", ui-monospace, monospace; }
+
+  header.doc-head { margin-bottom: 40px; }
+  .eyebrow {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 14px;
+  }
+  h1 {
+    font-size: clamp(28px, 4vw, 38px);
+    line-height: 1.15;
+    margin: 0 0 12px;
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+  .doc-head p.lede { font-size: 16.5px; color: var(--ink-muted); margin: 0 0 8px; }
+  .doc-head .meta { font-family: "JetBrains Mono", monospace; font-size: 12.5px; color: var(--ink-faint); margin-top: 18px; }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 28px 0 44px;
+    box-shadow: var(--shadow);
+  }
+  .stat { background: var(--surface); padding: 18px 14px; text-align: center; }
+  .stat .n { font-family: "JetBrains Mono", monospace; font-variant-numeric: tabular-nums; font-size: 26px; font-weight: 600; line-height: 1; }
+  .stat .l { font-size: 11.5px; color: var(--ink-muted); margin-top: 8px; letter-spacing: 0.01em; }
+  .stat.ok .n { color: var(--ok); }
+  .stat.warn .n { color: var(--warn); }
+  .stat.info .n { color: var(--info); }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+    margin-bottom: 48px;
+    padding: 14px 18px;
+    background: var(--surface-2);
+    border-radius: 8px;
+    font-size: 12.5px;
+    color: var(--ink-muted);
+  }
+  .legend .item { display: flex; align-items: center; gap: 7px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+
+  section.cat { margin-bottom: 52px; }
+  .cat-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+    margin-bottom: 22px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .cat-head h2 { font-size: 20px; margin: 0; letter-spacing: -0.005em; display: flex; align-items: baseline; gap: 8px; }
+  .cat-chevron { display: inline-block; transition: transform 0.15s; transform: rotate(90deg); color: var(--ink-faint); font-size: 16px; }
+  section.cat.collapsed .cat-chevron { transform: rotate(0deg); }
+  section.cat.collapsed .cat-head { margin-bottom: 0; padding-bottom: 12px; }
+  section.cat.collapsed > *:not(.cat-head) { display: none; }
+  .cat-head .count { font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--ink-faint); white-space: nowrap; }
+  .cat-intro { color: var(--ink-muted); font-size: 14.5px; margin: -10px 0 22px; }
+
+  .rule {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--rule-color, var(--border));
+    border-radius: 8px;
+    padding: 18px 20px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow);
+  }
+  .rule.ok { --rule-color: var(--ok); }
+  .rule.fixed { --rule-color: var(--accent); }
+  .rule.gap { --rule-color: var(--bad); }
+  .rule.partial { --rule-color: var(--warn); }
+  .rule.info { --rule-color: var(--info); }
+
+  .rule-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 6px; cursor: pointer; user-select: none; }
+  .rule-title { font-size: 15px; font-weight: 600; line-height: 1.4; display: flex; align-items: flex-start; gap: 8px; }
+  .rule-chevron { flex: none; display: inline-block; color: var(--ink-faint); transition: transform 0.15s ease; transform: rotate(90deg); font-size: 11px; line-height: 1.6; }
+  .rule.collapsed .rule-chevron { transform: rotate(0deg); }
+  .rule.collapsed .rule-body, .rule.collapsed .rule-foot, .rule.collapsed .chart-wrap { display: none; }
+  .rule:not(.collapsed) .rule-top { margin-bottom: 6px; }
+
+  .toggle-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    color: var(--ink-muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 14px;
+    cursor: pointer;
+    margin-bottom: 20px;
+  }
+  .toggle-all:hover { color: var(--accent); border-color: var(--accent); }
+  .badge {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+    flex: none;
+  }
+  .rule.ok .badge { color: var(--ok); background: var(--ok-bg); border: 1px solid var(--ok-border); }
+  .rule.fixed .badge { color: var(--accent-strong); background: var(--accent-bg); border: 1px solid var(--accent); }
+  .rule.gap .badge { color: var(--bad); background: var(--bad-bg); border: 1px solid var(--bad-border); }
+  .rule.partial .badge { color: var(--warn); background: var(--warn-bg); border: 1px solid var(--warn-border); }
+  .rule.info .badge { color: var(--info); background: var(--info-bg); border: 1px solid var(--info-border); }
+
+  .rule-body { font-size: 14px; color: var(--ink-muted); }
+  .rule-body p { margin: 6px 0; }
+  .rule-body code { font-size: 12.5px; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; color: var(--ink); }
+  .rule-body ul { margin: 4px 0 8px 20px; padding: 0; }
+  .rule-body li { margin: 2px 0; }
+  blockquote.nb { margin: 10px 0 6px; padding: 8px 14px; border-left: 2px solid var(--ink-faint); font-size: 13px; font-style: italic; color: var(--ink-faint); }
+  .rule-foot { margin-top: 10px; font-family: "JetBrains Mono", monospace; font-size: 11.5px; color: var(--ink-faint); }
+
+  footer.doc-foot { margin-top: 60px; padding-top: 24px; border-top: 1px solid var(--border); font-size: 13px; color: var(--ink-faint); }
+  footer.doc-foot p { margin: 4px 0; }
+
+  @media (max-width: 640px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+
+  .cmp-table-wrap { margin: 16px 0; overflow-x: auto; }
+  .cmp-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 480px; }
+  .cmp-table th, .cmp-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+  .cmp-table thead th { color: var(--ink-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; border-bottom: 2px solid var(--border); }
+  .cmp-table tbody tr:last-child td { border-bottom: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="doc-head">
+    <p class="eyebrow">Auditoría interna · bot_trading</p>
+    <h1>DCA Range Trading (TCL / FIB &amp; EMA Continuation) — método Craig Percoco</h1>
+    <p class="lede">Segundo método completo de Craig Percoco, independiente del SMC Sniper (ChoCh + FVG) que sí está implementado y en producción. Evaluación de qué tan factible sería programarlo a futuro — qué está cuantificado con precisión por Craig y qué queda discrecional. Ningún código de este método existe todavía; este documento es puramente de investigación/planificación.</p>
+    <p class="meta">Generado 2026-09-10 · fuente: NB trading-brain (id eefd6f23-…) · solo para uso local</p>
+  </header>
+
+  <button type="button" class="toggle-all" id="toggle-all-btn">▸ Expandir todo</button>
+
+  <div class="stats">
+    <div class="stat ok"><div class="n">6</div><div class="l">Cuantificado con precisión</div></div>
+    <div class="stat warn"><div class="n">3</div><div class="l">Discrecional / a calibrar</div></div>
+    <div class="stat info"><div class="n">0</div><div class="l">Implementado</div></div>
+  </div>
+
+  <div class="legend">
+    <div class="item"><span class="dot" style="background:var(--ok)"></span>Cuantificado — Craig da el valor/fórmula exacta, programable directo</div>
+    <div class="item"><span class="dot" style="background:var(--warn)"></span>Discrecional — Craig describe el criterio cualitativamente, sin fórmula ni umbral numérico</div>
+    <div class="item"><span class="dot" style="background:var(--info)"></span>Informativo — contexto/comparación, no una regla en sí</div>
+  </div>
+
+  <!-- ═══════════════════ 1. QUÉ ES Y CUÁNDO SE ACTIVA ═══════════════════ -->
+  <section class="cat">
+    <div class="cat-head">
+      <h2>1 · Qué es y cuándo lo usa Craig (vs. el SMC Sniper)</h2>
+      <span class="count">1 comparación</span>
+    </div>
+    <p class="cat-intro">Verificado contra NB (2026-09-10): esto NO es una variante de ejecución del ChoCh+FVG — es un método completo e independiente, con su propia condición de activación. Craig los alterna según el estado del mercado, nunca los mezcla en la misma sesión/símbolo.</p>
+
+    <div class="rule info">
+      <div class="rule-top"><div class="rule-title">Condición de activación — tendencia + EMAs alineadas, vs. reversión + FVG 15m</div><span class="badge">Informativo</span></div>
+      <div class="rule-body">
+        <div class="cmp-table-wrap">
+          <table class="cmp-table">
+            <thead><tr><th>Criterio</th><th>DCA Range Trading</th><th>SMC Sniper (implementado)</th></tr></thead>
+            <tbody>
+              <tr><td>Condición de mercado</td><td>Tendencia en desarrollo, EMAs 20/50/200 alineadas</td><td>Reversión/giro contra FVG 15m o PDH/PDL</td></tr>
+              <tr><td>Tipo de movimiento</td><td>Retrocesos graduales, laterales ("choppy")</td><td>Vela de desplazamiento, ChoCh</td></tr>
+              <tr><td>Timeframe</td><td>1m/3m/5m directo</td><td>Top-down: 15m filtro + 1m gatillo</td></tr>
+              <tr><td>Perfil</td><td>Win rate 80-90%+, R/R bajo</td><td>Win rate 35-50%, R/R 1:4 a 1:10+</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <blockquote class="nb">Si el mercado está en un rango/tendencia ordenado con las EMAs alineadas, Craig aplica DCA Range Trading. Si el precio llega a un nivel institucional de 15m y rompe la estructura con un impulso agresivo en 1m, cambia el chip y ejecuta la entrada única con ChoCh + FVG.</blockquote>
+      </div>
+      <div class="rule-foot">NB trading-brain — 2do método completo, verificado 2026-09-10</div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ 2. CUANTIFICADO CON PRECISIÓN ═══════════════════ -->
+  <section class="cat">
+    <div class="cat-head">
+      <h2>2 · Reglas cuantificadas con precisión — directamente programables</h2>
+      <span class="count">6 puntos</span>
+    </div>
+    <p class="cat-intro">Craig da el valor numérico o la fórmula exacta para estos puntos — se podrían portar a código sin necesidad de calibración empírica propia.</p>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Alineación de EMAs 20/50/200 (condición binaria)</div><span class="badge">Cuantificado</span></div>
+      <div class="rule-body"><p>EMAs de 20, 50 y 200 períodos en gráficos de 1m, 3m o 5m. Apilamiento ordenado exigido: <code>EMA20 &gt; EMA50 &gt; EMA200</code> para largos, invertido para cortos. Condición binaria (cumple/no cumple), no hay zona gris en la dirección del apilamiento en sí.</p></div>
+      <div class="rule-foot">NB trading-brain — verificado 2026-09-10</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Niveles Fibonacci de la cascada (Entry/Limit1/Limit2/SL/TP)</div><span class="badge">Cuantificado</span></div>
+      <div class="rule-body"><p>Entry (Limit 0): nivel 0.618 (61.8% de descuento). Limit 1 (Dip Buy 1): nivel 0.382 (38.2%). Limit 2 (Dip Buy 2): nivel 0.170/0.172 (17.0%). Stop Loss: nivel -0.05 (Max Risk). Take Profit inicial (antes de cualquier ajuste): nivel 1.272 (o 1.00).</p></div>
+      <div class="rule-foot">NB trading-brain — verificado 2026-09-10</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Fórmula de precio promedio ponderado tras llenar Limit1/Limit2</div><span class="badge">Cuantificado</span></div>
+      <div class="rule-body"><p>Promedio ponderado estándar por acumulación de lotes: <code>precio_promedio = (P_entry·Q_entry + P_limit1·Q_limit1 + P_limit2·Q_limit2) / (Q_entry + Q_limit1 + Q_limit2)</code>. Al llenarse Limit1/Limit2, la calculadora recalcula este promedio y desplaza el TP hacia abajo (cerca del nivel de entrada original 61.8%) — basta un pequeño rebote para cerrar toda la posición combinada en ganancia neta.</p></div>
+      <div class="rule-foot">NB trading-brain — verificado 2026-09-10</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Riesgo total: 10% de la cuenta distribuido entre las 3 órdenes</div><span class="badge">Cuantificado</span></div>
+      <div class="rule-body"><p>La plantilla pública de Craig aplica un Riesgo Máximo total del 10% de la cuenta, distribuido entre Entry+Limit1+Limit2. Si el precio atraviesa Limit2 y toca el SL (-0.05), la pérdida combinada es exactamente ese 10%. Con el perfil estándar, un trade que solo llena la entrada inicial y sale en TP 1.272 rinde 2-2.5% de ganancia sobre el balance.</p></div>
+      <div class="rule-foot">NB trading-brain — verificado 2026-09-10</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Filtro horario objetivo: caja de apertura de NY (8:00-11:00 AM EST)</div><span class="badge">Cuantificado</span></div>
+      <div class="rule-body"><p>Regla binaria y objetiva (no discrecional, a diferencia de la detección de "choppy" fuera de esta ventana): prohibido operar dentro de la caja gris de apertura de NY. La volatilidad institucional de esa ventana genera latigazos que invalidan la lógica de la cascada.</p></div>
+      <div class="rule-foot">NB trading-brain — verificado 2026-09-10</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Símbolos habilitados — lista explícita, altcoins de alta liquidez</div><span class="badge">Cuantificado</span></div>
+      <div class="rule-body"><p>SOL, ETH, ADA, LTC, LINK, MANA, APE. Requisito indispensable: profundidad de mercado (depth of market) en exchanges con alto apalancamiento (Bybit, Phemex) para que las 3 órdenes límite y el TP ajustado se ejecuten sin slippage. Prohibido explícitamente en altcoins de baja capitalización o ilíquidas.</p></div>
+      <div class="rule-foot">NB trading-brain — verificado 2026-09-10</div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ 3. DISCRECIONAL / A CALIBRAR ═══════════════════ -->
+  <section class="cat">
+    <div class="cat-head">
+      <h2>3 · Discrecional — requeriría calibración empírica propia</h2>
+      <span class="count">3 puntos</span>
+    </div>
+    <p class="cat-intro">Craig describe estos criterios cualitativamente, sin fórmula ni umbral numérico — mismo tipo de vacío que ya se resolvió antes para el SMC Sniper (<code>CHOCH_RETRACE_PCT</code>, elegido por backtest real comparando valores candidatos). No son un bloqueo para implementar el método, solo trabajo de calibración pendiente.</p>
+
+    <div class="rule partial">
+      <div class="rule-top"><div class="rule-title">Tolerancia de separación entre EMAs</div><span class="badge">Discrecional</span></div>
+      <div class="rule-body"><p>Craig menciona que la distancia entre las EMAs "muestra la fuerza o sobreextensión de la tendencia", pero no da fórmula numérica, tolerancia exacta ni distancia mínima en % o pips. Evaluar si la separación es "adecuada" o "demasiado comprimida" es puramente visual en sus videos.</p></div>
+      <div class="rule-foot">NB trading-brain — sin cuantificar, requiere calibración propia</div>
+    </div>
+
+    <div class="rule partial">
+      <div class="rule-top"><div class="rule-title">Detección objetiva de "choppy price action" (fuera de la caja de NY)</div><span class="badge">Discrecional</span></div>
+      <div class="rule-body"><p>Fuera de la ventana de NY (que sí tiene una regla binaria, ver sección 2), la definición de "choppy" es visual: zig-zag lateral suave y continuo que respeta las EMAs, descartando velas gigantes verticales o movimientos por noticias. Sin criterio numérico objetivo (ej. ATR, ancho de canal, o similar).</p></div>
+      <div class="rule-foot">NB trading-brain — sin cuantificar, requiere calibración propia</div>
+    </div>
+
+    <div class="rule partial">
+      <div class="rule-top"><div class="rule-title">Peso exacto de cada orden de la cascada (Entry/Limit1/Limit2)</div><span class="badge">Discrecional</span></div>
+      <div class="rule-body"><p>Las cantidades NO son iguales entre niveles — la calculadora asigna cantidades progresivamente mayores a Limit1 y Limit2 para arrastrar el precio promedio hacia los niveles inferiores. Craig no da el ratio exacto entre niveles, solo la dirección (creciente).</p></div>
+      <div class="rule-foot">NB trading-brain — sin cuantificar, requiere calibración propia</div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ 4. VEREDICTO DE FACTIBILIDAD ═══════════════════ -->
+  <section class="cat">
+    <div class="cat-head">
+      <h2>4 · Veredicto de factibilidad</h2>
+      <span class="count">1 conclusión</span>
+    </div>
+
+    <div class="rule info">
+      <div class="rule-top"><div class="rule-title">~70% del método es programable directo con los valores que da Craig</div><span class="badge">Evaluado — no iniciado</span></div>
+      <div class="rule-body">
+        <p>Los 6 gates duros (EMA stack, niveles Fibonacci, fórmula de precio promedio, riesgo 10%, filtro horario NY, lista de símbolos) son binarios/numéricos y programables tal cual. Los 3 puntos discrecionales no son un bloqueo real — son exactamente el mismo tipo de vacío que ya se resolvió para el SMC Sniper (elegir un valor candidato razonable y calibrarlo con backtest real contra datos históricos, en vez de asumir un número sin verificar).</p>
+        <p>Implementarlo requeriría un <strong>módulo de ejecución nuevo</strong> (3 órdenes límite simultáneas + recálculo de precio promedio/TP dinámico) — no es un ajuste sobre <code>trade_executor.py</code> actual, que hoy coloca una única orden límite. Tampoco reutiliza la lógica de detección de <code>smc_sniper_strategy.py</code> (FVG/ChoCh) — necesitaría su propio detector de alineación de EMAs y estructura "choppy". Es un proyecto separado, no un fix.</p>
+      </div>
+      <div class="rule-foot">NB trading-brain — evaluación de factibilidad, sin código todavía</div>
+    </div>
+  </section>
+
+  <footer class="doc-foot">
+    <p>Fuente única de verdad: NotebookLM "trading-brain" (contenido curado del material de Craig Percoco). Todos los puntos de este documento fueron verificados con cita textual del NB el 2026-09-10 — no se asumió ningún valor sin verificarlo.</p>
+    <p>Documento generado localmente, no publicado. Separado de la auditoría del SMC Sniper (<code>smc-sniper-production-detail.html</code>) porque es un método completo e independiente, no un concepto suelto o una variante de ejecución de ese bot.</p>
+  </footer>
+
+</div>
+  <script>
+    (function () {
+      var rules = Array.prototype.slice.call(document.querySelectorAll('.rule'));
+
+      rules.forEach(function (rule) {
+        var title = rule.querySelector('.rule-title');
+        var top = rule.querySelector('.rule-top');
+        if (!title || !top) return;
+
+        var chevron = document.createElement('span');
+        chevron.className = 'rule-chevron';
+        chevron.textContent = '▸';
+        title.insertBefore(chevron, title.firstChild);
+
+        rule.classList.add('collapsed');
+
+        top.addEventListener('click', function () {
+          rule.classList.toggle('collapsed');
+        });
+      });
+
+      var cats = Array.prototype.slice.call(document.querySelectorAll('section.cat'));
+      cats.forEach(function (cat) {
+        var head = cat.querySelector('.cat-head');
+        var h2 = cat.querySelector('.cat-head h2');
+        if (!head || !h2) return;
+
+        var chevron = document.createElement('span');
+        chevron.className = 'cat-chevron';
+        chevron.textContent = '▸';
+        h2.insertBefore(chevron, h2.firstChild);
+
+        head.addEventListener('click', function () {
+          cat.classList.toggle('collapsed');
+        });
+      });
+
+      var btn = document.getElementById('toggle-all-btn');
+      var allExpanded = false;
+      btn.addEventListener('click', function () {
+        allExpanded = !allExpanded;
+        rules.forEach(function (rule) {
+          rule.classList.toggle('collapsed', !allExpanded);
+        });
+        cats.forEach(function (cat) {
+          cat.classList.toggle('collapsed', false);
+        });
+        btn.textContent = allExpanded ? '▾ Colapsar todo' : '▸ Expandir todo';
+      });
+    })();
+  </script>
+</body>
+</html>
