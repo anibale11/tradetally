@@ -1142,8 +1142,19 @@
     </div>
 
     <div class="rule info">
-      <div class="rule-top"><div class="rule-title">Teorema del Límite Central — mínimo 30 trades antes de evaluar expectancy</div><span class="badge">No aplica al código</span></div>
-      <div class="rule-body"><p>Regla estadística/psicológica de Craig: hace falta una muestra de ~30 trades idénticos antes de poder decir si una estrategia tiene ventaja real o fue suerte — para desconectar el impacto emocional de rachas perdedoras cortas. No es una regla que el bot deba ejecutar, es un criterio de interpretación humana de los resultados (relevante al leer los backtests de las secciones 6c-6g).</p></div>
+      <div class="rule-top"><div class="rule-title">Teorema del Límite Central — mínimo 30 trades antes de evaluar expectancy</div><span class="badge">Actualizado 2026-09-09</span></div>
+      <div class="rule-body">
+        <p>Regla estadística/psicológica de Craig: hace falta una muestra de ~30 trades idénticos antes de poder decir si una estrategia tiene ventaja real o fue suerte — para desconectar el impacto emocional de rachas perdedoras cortas. No es una regla que el bot deba ejecutar, es un criterio de interpretación humana de los resultados (relevante al leer los backtests de las secciones 6c-6g).</p>
+        <p><strong>Progreso real hacia la muestra de 30</strong>: trades del SMC Sniper que realmente llegaron a abrir posición (excluye órdenes límite canceladas/expiradas sin fill — <code>limit_order_*</code>), desde su adopción el 30/06/2026 hasta hoy.</p>
+        <div class="chart-wrap"><svg viewBox="0 0 640 60" class="bar-chart" role="img" aria-label="Progreso hacia 30 trades reales del SMC Sniper">
+    <g>
+      <text x="10" y="28" font-size="12" fill="currentColor">25 de 30 trades reales</text>
+      <rect x="200" y="11" width="400" height="26" fill="var(--accent)" opacity="0.25"/>
+      <rect x="200" y="11" width="333.3" height="26" fill="var(--accent-strong)"/>
+      <text x="608" y="28" font-size="12" fill="currentColor" font-weight="600">83%</text>
+    </g></svg></div>
+        <p class="rule-foot" style="margin-top:8px">Faltan ~5 trades reales más para alcanzar la muestra mínima de Craig — recién ahí empieza a tener sentido leer el win rate/expectancy del SMC Sniper en producción como algo más que ruido de muestra chica. Cifra al 2026-09-09 (trades.db, <code>strategy='smc_sniper'</code>) — actualizar manualmente al revisar esta sección de nuevo.</p>
+      </div>
       <div class="rule-foot">NB trading-brain — criterio de interpretación, no de señal</div>
     </div>
 
