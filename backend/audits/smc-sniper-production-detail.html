@@ -1130,8 +1130,18 @@
     </div>
 
     <div class="rule info">
-      <div class="rule-top"><div class="rule-title">Retiro fijo del 25% de cada ganancia</div><span class="badge">No aplica al bot</span></div>
-      <div class="rule-body"><p>Regla de gestión de capital personal de Craig (retira 25% de cada trade ganador, reinvierte el 75% restante) — no es una regla de señal/entrada/salida, es una política de manejo de cuenta que el usuario aplicaría manualmente sobre las ganancias del bot, no algo que el código del bot deba ejecutar.</p></div>
+      <div class="rule-top"><div class="rule-title">Retiro fijo del 25% de cada ganancia</div><span class="badge">Actualizado 2026-09-09</span></div>
+      <div class="rule-body">
+        <p>Regla de gestión de capital personal de Craig (retira 25% de cada trade ganador, reinvierte el 75% restante) — no es una regla de señal/entrada/salida, es una política de manejo de cuenta que el usuario aplicaría manualmente sobre las ganancias del bot, no algo que el código del bot deba ejecutar.</p>
+        <p><strong>Estado real de aplicación: 0%</strong>, y deliberadamente así hasta cumplir el requisito de la sección anterior (Teorema del Límite Central, hoy 25/30 trades reales). Retirar ganancias de un sistema que todavía no tiene una muestra suficiente para distinguir ventaja real de suerte no tiene sentido — solo empieza a aplicarse una vez alcanzada esa muestra mínima y confirmado un edge real.</p>
+        <div class="chart-wrap"><svg viewBox="0 0 640 60" class="bar-chart" role="img" aria-label="Estado de aplicación de la regla de retiro del 25%">
+    <g>
+      <text x="10" y="28" font-size="12" fill="currentColor">Retiro del 25% aplicado</text>
+      <rect x="200" y="11" width="400" height="26" fill="var(--accent)" opacity="0.25"/>
+      <text x="608" y="28" font-size="12" fill="currentColor" font-weight="600">0%</text>
+    </g></svg></div>
+        <p class="rule-foot" style="margin-top:8px">Gateado por la muestra de 30 trades de arriba — revisar de nuevo cuando esa barra llegue al 100%.</p>
+      </div>
       <div class="rule-foot">NB trading-brain — gestión de capital, fuera del alcance de la lógica de señal</div>
     </div>
 
