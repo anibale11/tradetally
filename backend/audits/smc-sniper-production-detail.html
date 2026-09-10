@@ -1090,9 +1090,15 @@
     </div>
 
     <div class="rule fixed">
-      <div class="rule-top"><div class="rule-title">Extensiones de Fibonacci (1.618/2.618) para proyectar TP</div><span class="badge">Implementado 2026-09-04</span></div>
-      <div class="rule-body"><p>Además del descuento 50%-78.6% ya implementado (<code>_fib_discount_zone</code>), Craig usa extensiones de Fibonacci basadas en tendencia para proyectar de antemano dónde puede agotarse el movimiento. Implementado en <code>_fib_extension_targets()</code>: TP1 = extensión 1.618, TP2 = extensión 2.618, sobre el MISMO <code>swing_high</code>/<code>swing_low</code> ya usado para la zona de descuento (mismo anclaje, sin duplicar lógica) — el origen de la extensión es el propio <code>entry</code> (el retroceso ya validado dentro de la zona de descuento). Guardrail propio (salvaguarda técnica, no regla de Craig): si el swing da un R/R peor a 1:1.5, cae al ratio fijo 1:4/1:8 anterior — nunca opera con un R/R degenerado. Se agregó <code>tp_method</code> ("fib_ext"/"fixed_rr") a la señal para monitorear en producción cuál se usa.</p></div>
-      <div class="rule-foot">smc_sniper_strategy.py (_fib_extension_targets, _analyze_symbol) — verificado sin excepciones contra datos reales SOL/ETH/ATOM/XRP antes de deployar; portado también a nautilus-trading (smc_logic.py)</div>
+      <div class="rule-top"><div class="rule-title">TP2 = midpoint del primer FVG opuesto no mitigado en 15m</div><span class="badge">Re-corregido 2026-09-10 — era una conflación real</span></div>
+      <div class="rule-body">
+        <p><strong>Historial</strong>: implementado el 2026-09-04 como extensión de Fibonacci (1.618/2.618) sobre el swing de la zona de descuento — verificado en ese momento contra el NB, pero sin cruzarlo todavía contra las OTRAS estrategias de Craig (35A/CH1, auditadas recién el 2026-09-10).</p>
+        <p><strong>Conflación real encontrada</strong> (auditando 35A y RSI Cloud como entrada, ver <a href="/analysis/method-audits/35a-elliott-wave" target="_blank" rel="noopener">35A</a>): el NB es categórico — la herramienta Trend-Based Fib Extension (1.618/2.618/3.618) está SIEMPRE atada al conteo de Ondas de Elliott (3 clics sobre una Onda 1 completa con su Onda 2 desarrollada). Craig <strong>nunca</strong> la usa de forma independiente sobre el swing de un ChoCh de 1 minuto — la pierna de 1m que causa un ChoCh no cumple los requisitos matemáticos para anclar esos 3 clics.</p>
+        <blockquote class="nb">En Smog/SMC, el Take Profit se fija por zonas de liquidez (PDH/PDL), FVGs opuestos de 15m o ratios fijos de 1:4R, mientras que las extensiones 1.618/2.618/3.618 quedan reservadas exclusivamente para sus estrategias basadas en Ondas de Elliott.</blockquote>
+        <p><strong>Corregido</strong>: <code>_opposite_fvg_target()</code> — busca el primer FVG opuesto (bearish para long, bullish para short) no mitigado en 15m, por delante del precio en la dirección del trade — el "objetivo estructural favorito" real de Craig. TP1 (ratio fijo 1:4) no cambió, ya era correcto. Fallback al ratio fijo 1:8 si no hay ningún FVG opuesto vigente o da R/R peor a 1.5.</p>
+        <p>Verificado con A/B limpio (15 días Binance, corridas consecutivas para evitar drift de datos en vivo): +9.84R (método viejo) → +7.35R (método correcto) — baja moderada y esperable, sigue neto positivo. R de los ganadores individuales sano (2.56R-4.36R).</p>
+      </div>
+      <div class="rule-foot">smc_sniper_strategy.py (_opposite_fvg_target, _analyze_symbol) — commit 52b1da0, desplegado 2026-09-10</div>
     </div>
 
     <div class="rule gap">

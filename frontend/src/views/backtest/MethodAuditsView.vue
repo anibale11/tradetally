@@ -61,5 +61,19 @@ const methods = [
     statusLabel: 'No implementado — evaluado',
     source: 'Método aparte de Craig — solo investigación',
   },
+  {
+    id: '35a-elliott-wave',
+    name: '35A / Elliott Wave (Craig Percoco)',
+    status: 'evaluated',
+    statusLabel: 'No implementado — evaluado',
+    source: 'Método aparte de Craig — solo investigación',
+  },
+  {
+    id: 'rsi-cloud-entry',
+    name: 'RSI Cloud como Entrada (Craig Percoco)',
+    status: 'evaluated',
+    statusLabel: 'No implementado — evaluado',
+    source: 'Método aparte de Craig — solo investigación',
+  },
 ]
 </script>

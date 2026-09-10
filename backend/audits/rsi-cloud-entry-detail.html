@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>RSI Cloud como Entrada (Craig Percoco) — Auditoría de método</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #111827; --surface: #1f2937; --surface-2: #283548;
+    --ink: #f3f4f6; --ink-muted: #9ca3af; --ink-faint: #6b7280;
+    --border: #374151; --accent: #F0812A; --accent-strong: #f78f2f;
+    --accent-bg: rgba(240, 129, 42, 0.12); --ok: #10b981; --ok-bg: rgba(16, 185, 129, 0.12);
+    --ok-border: rgba(16, 185, 129, 0.35); --bad: #ef4444; --bad-bg: rgba(239, 68, 68, 0.12);
+    --bad-border: rgba(239, 68, 68, 0.35); --warn: #f59e0b; --warn-bg: rgba(245, 158, 11, 0.12);
+    --warn-border: rgba(245, 158, 11, 0.35); --info: #60a5fa; --info-bg: rgba(96, 165, 250, 0.12);
+    --info-border: rgba(96, 165, 250, 0.35);
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 20px rgba(0,0,0,0.35);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #111827; --surface: #1f2937; --surface-2: #283548;
+      --ink: #f3f4f6; --ink-muted: #9ca3af; --ink-faint: #6b7280;
+      --border: #374151; --accent: #F0812A; --accent-strong: #f78f2f;
+      --accent-bg: rgba(240, 129, 42, 0.12); --ok: #10b981; --ok-bg: rgba(16, 185, 129, 0.12);
+      --ok-border: rgba(16, 185, 129, 0.35); --bad: #ef4444; --bad-bg: rgba(239, 68, 68, 0.12);
+      --bad-border: rgba(239, 68, 68, 0.35); --warn: #f59e0b; --warn-bg: rgba(245, 158, 11, 0.12);
+      --warn-border: rgba(245, 158, 11, 0.35); --info: #60a5fa; --info-bg: rgba(96, 165, 250, 0.12);
+      --info-border: rgba(96, 165, 250, 0.35);
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 20px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #111827; --surface: #1f2937; --surface-2: #283548;
+    --ink: #f3f4f6; --ink-muted: #9ca3af; --ink-faint: #6b7280;
+    --border: #374151; --accent: #F0812A; --accent-strong: #f78f2f;
+    --accent-bg: rgba(240, 129, 42, 0.12); --ok: #10b981; --ok-bg: rgba(16, 185, 129, 0.12);
+    --ok-border: rgba(16, 185, 129, 0.35); --bad: #ef4444; --bad-bg: rgba(239, 68, 68, 0.12);
+    --bad-border: rgba(239, 68, 68, 0.35); --warn: #f59e0b; --warn-bg: rgba(245, 158, 11, 0.12);
+    --warn-border: rgba(245, 158, 11, 0.35); --info: #60a5fa; --info-bg: rgba(96, 165, 250, 0.12);
+    --info-border: rgba(96, 165, 250, 0.35);
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 20px rgba(0,0,0,0.35);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Inter", system-ui, sans-serif; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1400px; margin: 0 auto; padding: 56px 24px 96px; }
+  code, .mono { font-family: "JetBrains Mono", ui-monospace, monospace; }
+  header.doc-head { margin-bottom: 40px; }
+  .eyebrow { font-family: "JetBrains Mono", monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin: 0 0 14px; }
+  h1 { font-size: clamp(28px, 4vw, 38px); line-height: 1.15; margin: 0 0 12px; text-wrap: balance; letter-spacing: -0.01em; }
+  .doc-head p.lede { font-size: 16.5px; color: var(--ink-muted); margin: 0 0 8px; }
+  .doc-head .meta { font-family: "JetBrains Mono", monospace; font-size: 12.5px; color: var(--ink-faint); margin-top: 18px; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 28px 0 44px; box-shadow: var(--shadow); }
+  .stat { background: var(--surface); padding: 18px 14px; text-align: center; }
+  .stat .n { font-family: "JetBrains Mono", monospace; font-variant-numeric: tabular-nums; font-size: 26px; font-weight: 600; line-height: 1; }
+  .stat .l { font-size: 11.5px; color: var(--ink-muted); margin-top: 8px; letter-spacing: 0.01em; }
+  .stat.ok .n { color: var(--ok); }
+  .stat.warn .n { color: var(--warn); }
+  .stat.info .n { color: var(--info); }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px 18px; margin-bottom: 48px; padding: 14px 18px; background: var(--surface-2); border-radius: 8px; font-size: 12.5px; color: var(--ink-muted); }
+  .legend .item { display: flex; align-items: center; gap: 7px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  section.cat { margin-bottom: 52px; }
+  .cat-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 22px; cursor: pointer; user-select: none; }
+  .cat-head h2 { font-size: 20px; margin: 0; letter-spacing: -0.005em; display: flex; align-items: baseline; gap: 8px; }
+  .cat-chevron { display: inline-block; transition: transform 0.15s; transform: rotate(90deg); color: var(--ink-faint); font-size: 16px; }
+  section.cat.collapsed .cat-chevron { transform: rotate(0deg); }
+  section.cat.collapsed .cat-head { margin-bottom: 0; padding-bottom: 12px; }
+  section.cat.collapsed > *:not(.cat-head) { display: none; }
+  .cat-head .count { font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--ink-faint); white-space: nowrap; }
+  .cat-intro { color: var(--ink-muted); font-size: 14.5px; margin: -10px 0 22px; }
+  .rule { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--rule-color, var(--border)); border-radius: 8px; padding: 18px 20px; margin-bottom: 12px; box-shadow: var(--shadow); }
+  .rule.ok { --rule-color: var(--ok); }
+  .rule.fixed { --rule-color: var(--accent); }
+  .rule.gap { --rule-color: var(--bad); }
+  .rule.partial { --rule-color: var(--warn); }
+  .rule.info { --rule-color: var(--info); }
+  .rule-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 6px; cursor: pointer; user-select: none; }
+  .rule-title { font-size: 15px; font-weight: 600; line-height: 1.4; display: flex; align-items: flex-start; gap: 8px; }
+  .rule-chevron { flex: none; display: inline-block; color: var(--ink-faint); transition: transform 0.15s ease; transform: rotate(90deg); font-size: 11px; line-height: 1.6; }
+  .rule.collapsed .rule-chevron { transform: rotate(0deg); }
+  .rule.collapsed .rule-body, .rule.collapsed .rule-foot, .rule.collapsed .chart-wrap { display: none; }
+  .rule:not(.collapsed) .rule-top { margin-bottom: 6px; }
+  .toggle-all { display: inline-flex; align-items: center; gap: 6px; font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--ink-muted); background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; cursor: pointer; margin-bottom: 20px; }
+  .toggle-all:hover { color: var(--accent); border-color: var(--accent); }
+  .badge { font-family: "JetBrains Mono", monospace; font-size: 10.5px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; white-space: nowrap; flex: none; }
+  .rule.ok .badge { color: var(--ok); background: var(--ok-bg); border: 1px solid var(--ok-border); }
+  .rule.fixed .badge { color: var(--accent-strong); background: var(--accent-bg); border: 1px solid var(--accent); }
+  .rule.gap .badge { color: var(--bad); background: var(--bad-bg); border: 1px solid var(--bad-border); }
+  .rule.partial .badge { color: var(--warn); background: var(--warn-bg); border: 1px solid var(--warn-border); }
+  .rule.info .badge { color: var(--info); background: var(--info-bg); border: 1px solid var(--info-border); }
+  .rule-body { font-size: 14px; color: var(--ink-muted); }
+  .rule-body p { margin: 6px 0; }
+  .rule-body code { font-size: 12.5px; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; color: var(--ink); }
+  .rule-body ul { margin: 4px 0 8px 20px; padding: 0; }
+  .rule-body li { margin: 2px 0; }
+  blockquote.nb { margin: 10px 0 6px; padding: 8px 14px; border-left: 2px solid var(--ink-faint); font-size: 13px; font-style: italic; color: var(--ink-faint); }
+  .rule-foot { margin-top: 10px; font-family: "JetBrains Mono", monospace; font-size: 11.5px; color: var(--ink-faint); }
+  footer.doc-foot { margin-top: 60px; padding-top: 24px; border-top: 1px solid var(--border); font-size: 13px; color: var(--ink-faint); }
+  footer.doc-foot p { margin: 4px 0; }
+  @media (max-width: 640px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+  .cmp-table-wrap { margin: 16px 0; overflow-x: auto; }
+  .cmp-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 480px; }
+  .cmp-table th, .cmp-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+  .cmp-table thead th { color: var(--ink-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; border-bottom: 2px solid var(--border); }
+  .cmp-table tbody tr:last-child td { border-bottom: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="doc-head">
+    <p class="eyebrow">Auditoría interna · bot_trading</p>
+    <h1>RSI Cloud / Inevitrade ProPlus como ENTRADA — método Craig Percoco</h1>
+    <p class="lede">Tercer disparador de entrada independiente de Craig Percoco — scalping/reversión rápida por agotamiento, sin requerir ChoCh ni FVG. Distinto del RSI Cloud ya implementado como SALIDA (<code>_check_rsi_cloud_exit</code>, position_monitor.py) — acá se documenta su uso como gatillo de ENTRADA, nunca implementado. Ningún código de esta entrada existe todavía; documento de investigación/planificación.</p>
+    <p class="meta">Generado 2026-09-10 · fuente: NB trading-brain (id eefd6f23-…) · solo para uso local</p>
+  </header>
+
+  <button type="button" class="toggle-all" id="toggle-all-btn">▸ Expandir todo</button>
+
+  <div class="stats">
+    <div class="stat ok"><div class="n">4</div><div class="l">Cuantificado con precisión</div></div>
+    <div class="stat warn"><div class="n">2</div><div class="l">Discrecional / a calibrar</div></div>
+    <div class="stat info"><div class="n">1</div><div class="l">Ya implementado (parcial, como salida)</div></div>
+  </div>
+
+  <div class="legend">
+    <div class="item"><span class="dot" style="background:var(--ok)"></span>Cuantificado — Craig da el valor/fórmula exacta</div>
+    <div class="item"><span class="dot" style="background:var(--warn)"></span>Discrecional — sin fórmula ni umbral numérico</div>
+    <div class="item"><span class="dot" style="background:var(--info)"></span>Informativo / ya implementado parcialmente</div>
+  </div>
+
+  <section class="cat">
+    <div class="cat-head">
+      <h2>1 · Qué es y por qué es independiente de Smog/SMC y de DCA</h2>
+      <span class="count">1 punto</span>
+    </div>
+    <div class="rule info">
+      <div class="rule-top"><div class="rule-title">Tercer disparador de entrada — no reemplaza al ChoCh+FVG</div><span class="badge">Informativo</span></div>
+      <div class="rule-body">
+        <blockquote class="nb">Craig organiza su operativa en tres sistemas de entrada claramente diferenciados que no se mezclan entre sí: Smog/SMC (ChoCh+FVG en 1m, apertura NY), TCL/DCA Range Trading (EMAs alineadas + cascada Fibonacci), y RSI Cloud/ProPlus Divergence (scalping/reversión rápida por agotamiento). Se activa cuando el mercado está sobreextendido en rangos laterales o picos de volatilidad, permitiéndole entrar sin esperar confirmación de un ChoCh o un FVG de 1m.</blockquote>
+        <p><strong>Ya implementado, pero solo como SALIDA</strong>: el bot tiene <code>_rsi_cloud_exit_signal()</code>/<code>_check_rsi_cloud_exit()</code> (position_monitor.py) para cerrar trades ya abiertos cuando aparece un highlight opuesto en el TF de gestión — gateado por <code>tp1_hit=1</code>. Ese uso SÍ es fiel al método (Craig también usa RSI Cloud para salidas dinámicas en Smog). Lo que NO existe es usar el mismo indicador como gatillo de ENTRADA independiente — este documento cubre solo esa parte faltante.</p>
+      </div>
+      <div class="rule-foot">NB trading-brain — verificado 2026-09-10</div>
+    </div>
+  </section>
+
+  <section class="cat">
+    <div class="cat-head">
+      <h2>2 · Reglas cuantificadas con precisión</h2>
+      <span class="count">4 puntos</span>
+    </div>
+    <p class="cat-intro">Craig da el valor numérico o la fórmula exacta para estos puntos.</p>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Disparo: doble confirmación línea + nube RSI en zona extrema</div><span class="badge">Cuantificado</span></div>
+      <div class="rule-body">
+        <p>No se activa solo porque el RSI toque 70/30. Se requiere que la LÍNEA del RSI Y la NUBE (banda de desviación estándar tipo Bollinger sobre el RSI) crucen simultáneamente los umbrales de sobrecompra (&gt;70) o sobreventa (&lt;30) — cuando ambas coinciden, se imprime la "franja de sombreado oscuro" (dark highlight strip).</p>
+      </div>
+      <div class="rule-foot">NB trading-brain — verificado 2026-09-10</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Secuencia de confirmación: divergencia + retest de nivel + cierre de vela</div><span class="badge">Cuantificado</span></div>
+      <div class="rule-body">
+        <ol style="margin:4px 0 8px 20px; padding:0;">
+          <li>Dark highlight activo (regla anterior).</li>
+          <li>Divergencia regular simple entre precio y RSI durante el highlight (ej. long: precio hace mínimo más bajo, RSI hace valle más alto).</li>
+          <li>El highlight y la divergencia deben ocurrir en contacto directo con un nivel técnico: retest de EMA200, línea de tendencia macro, o zona de soporte/resistencia previa.</li>
+          <li><strong>Regla rígida</strong>: nunca se ejecuta a mitad de vela — se exige el cierre formal de la vela del TF de gatillo confirmando el sombreado y el rechazo.</li>
+        </ol>
+        <p><strong>No es la misma divergencia que en 35A</strong>: acá es una "Divergencia Regular Simple de Reversión Rápida" (dos picos/valles recientes en 1m/5m, sin conteo de ondas ni extensiones macro 2.618) — distinta de la divergencia de Onda 5 de 35A (marcos 15m/1H/4H, atada al conteo Elliott).</p>
+      </div>
+      <div class="rule-foot">NB trading-brain — verificado 2026-09-10</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Temporalidades: gatillo 1m/5m, gestión/TP en 15m</div><span class="badge">Cuantificado</span></div>
+      <div class="rule-body"><p>TF de gatillo (entrada): 1m o 5m — ahí se busca el cierre de vela con dark highlight + divergencia. TF de gestión/TP: 15m — una vez activa la orden, Craig cambia a 15m para monitorear el desarrollo.</p></div>
+      <div class="rule-foot">NB trading-brain — verificado 2026-09-10</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Stop Loss y Take Profit</div><span class="badge">Cuantificado</span></div>
+      <div class="rule-body">
+        <p><strong>SL</strong>: ceñido, por fuera del mínimo local (longs) o máximo local (shorts) de la vela que produjo el highlight y el rechazo.</p>
+        <p><strong>TP — cierre dinámico por indicador, no un TP fijo en pips</strong>: se mantiene la posición hasta que en 15m cierra la PRIMERA vela que imprima un highlight strip en la dirección OPUESTA — ahí se liquida el 100%. Ratios resultantes consistentes de 1:3, 1:4.5 a 1:6R.</p>
+      </div>
+      <div class="rule-foot">NB trading-brain — verificado 2026-09-10</div>
+    </div>
+  </section>
+
+  <section class="cat">
+    <div class="cat-head">
+      <h2>3 · Discrecional — requeriría calibración empírica propia</h2>
+      <span class="count">2 puntos</span>
+    </div>
+
+    <div class="rule partial">
+      <div class="rule-top"><div class="rule-title">"Suficiente fuerza" del nivel de retest (EMA200/S-R)</div><span class="badge">Discrecional</span></div>
+      <div class="rule-body"><p>Craig evalúa si la EMA200 o la línea de soporte/resistencia tiene "suficiente fuerza" para sostener el rebote — sin criterio numérico.</p></div>
+      <div class="rule-foot">NB trading-brain — sin cuantificar, requiere calibración propia</div>
+    </div>
+
+    <div class="rule partial">
+      <div class="rule-top"><div class="rule-title">"Limpieza" visual de la divergencia antes del cierre</div><span class="badge">Discrecional</span></div>
+      <div class="rule-body"><p>Evaluar si el "aspecto" o la fluidez de la divergencia visual es suficientemente clara antes de confiar en el cierre — sin fórmula.</p></div>
+      <div class="rule-foot">NB trading-brain — sin cuantificar, requiere calibración propia</div>
+    </div>
+  </section>
+
+  <section class="cat">
+    <div class="cat-head">
+      <h2>4 · Veredicto de factibilidad</h2>
+      <span class="count">1 conclusión</span>
+    </div>
+    <div class="rule info">
+      <div class="rule-top"><div class="rule-title">Alta factibilidad — reutiliza infraestructura ya existente en el bot</div><span class="badge">Evaluado — no iniciado</span></div>
+      <div class="rule-body">
+        <p>De las 3 metodologías nuevas evaluadas (DCA, 35A, RSI-Cloud-entry), esta es la <strong>más accionable</strong>: el bot ya tiene <code>_rsi_cloud_exit_signal()</code> (cálculo de RSI-14 + banda ±2 desvíos estándar) y <code>_rsi_divergence()</code> (detección de divergencia precio/RSI, aunque calibrada para otro contexto) — ambos reutilizables como base. Faltaría: (1) el chequeo de "doble confirmación" (línea Y nube cruzando el umbral simultáneamente, hoy solo se usa la línea), (2) el gatillo de entrada en 1m/5m con retest de EMA200/S-R, (3) el TP dinámico por highlight opuesto en 15m (ya existe como lógica de salida, se reutilizaría directo).</p>
+      </div>
+      <div class="rule-foot">NB trading-brain — evaluación de factibilidad, sin código todavía</div>
+    </div>
+  </section>
+
+  <footer class="doc-foot">
+    <p>Fuente única de verdad: NotebookLM "trading-brain". Todos los puntos verificados con cita textual del NB el 2026-09-10.</p>
+    <p>Documento generado localmente, no publicado. Separado del SMC Sniper, DCA Range Trading y 35A porque es un tercer disparador de entrada independiente.</p>
+  </footer>
+
+</div>
+  <script>
+    (function () {
+      var rules = Array.prototype.slice.call(document.querySelectorAll('.rule'));
+      rules.forEach(function (rule) {
+        var title = rule.querySelector('.rule-title');
+        var top = rule.querySelector('.rule-top');
+        if (!title || !top) return;
+        var chevron = document.createElement('span');
+        chevron.className = 'rule-chevron';
+        chevron.textContent = '▸';
+        title.insertBefore(chevron, title.firstChild);
+        rule.classList.add('collapsed');
+        top.addEventListener('click', function () { rule.classList.toggle('collapsed'); });
+      });
+      var cats = Array.prototype.slice.call(document.querySelectorAll('section.cat'));
+      cats.forEach(function (cat) {
+        var head = cat.querySelector('.cat-head');
+        var h2 = cat.querySelector('.cat-head h2');
+        if (!head || !h2) return;
+        var chevron = document.createElement('span');
+        chevron.className = 'cat-chevron';
+        chevron.textContent = '▸';
+        h2.insertBefore(chevron, h2.firstChild);
+        head.addEventListener('click', function () { cat.classList.toggle('collapsed'); });
+      });
+      var btn = document.getElementById('toggle-all-btn');
+      var allExpanded = false;
+      btn.addEventListener('click', function () {
+        allExpanded = !allExpanded;
+        rules.forEach(function (rule) { rule.classList.toggle('collapsed', !allExpanded); });
+        cats.forEach(function (cat) { cat.classList.toggle('collapsed', false); });
+        btn.textContent = allExpanded ? '▾ Colapsar todo' : '▸ Expandir todo';
+      });
+    })();
+  </script>
+</body>
+</html>

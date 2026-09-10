@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>35A / 35 Wave (Craig Percoco) — Auditoría de método</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #111827; --surface: #1f2937; --surface-2: #283548;
+    --ink: #f3f4f6; --ink-muted: #9ca3af; --ink-faint: #6b7280;
+    --border: #374151; --accent: #F0812A; --accent-strong: #f78f2f;
+    --accent-bg: rgba(240, 129, 42, 0.12); --ok: #10b981; --ok-bg: rgba(16, 185, 129, 0.12);
+    --ok-border: rgba(16, 185, 129, 0.35); --bad: #ef4444; --bad-bg: rgba(239, 68, 68, 0.12);
+    --bad-border: rgba(239, 68, 68, 0.35); --warn: #f59e0b; --warn-bg: rgba(245, 158, 11, 0.12);
+    --warn-border: rgba(245, 158, 11, 0.35); --info: #60a5fa; --info-bg: rgba(96, 165, 250, 0.12);
+    --info-border: rgba(96, 165, 250, 0.35);
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 20px rgba(0,0,0,0.35);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #111827; --surface: #1f2937; --surface-2: #283548;
+      --ink: #f3f4f6; --ink-muted: #9ca3af; --ink-faint: #6b7280;
+      --border: #374151; --accent: #F0812A; --accent-strong: #f78f2f;
+      --accent-bg: rgba(240, 129, 42, 0.12); --ok: #10b981; --ok-bg: rgba(16, 185, 129, 0.12);
+      --ok-border: rgba(16, 185, 129, 0.35); --bad: #ef4444; --bad-bg: rgba(239, 68, 68, 0.12);
+      --bad-border: rgba(239, 68, 68, 0.35); --warn: #f59e0b; --warn-bg: rgba(245, 158, 11, 0.12);
+      --warn-border: rgba(245, 158, 11, 0.35); --info: #60a5fa; --info-bg: rgba(96, 165, 250, 0.12);
+      --info-border: rgba(96, 165, 250, 0.35);
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 20px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #111827; --surface: #1f2937; --surface-2: #283548;
+    --ink: #f3f4f6; --ink-muted: #9ca3af; --ink-faint: #6b7280;
+    --border: #374151; --accent: #F0812A; --accent-strong: #f78f2f;
+    --accent-bg: rgba(240, 129, 42, 0.12); --ok: #10b981; --ok-bg: rgba(16, 185, 129, 0.12);
+    --ok-border: rgba(16, 185, 129, 0.35); --bad: #ef4444; --bad-bg: rgba(239, 68, 68, 0.12);
+    --bad-border: rgba(239, 68, 68, 0.35); --warn: #f59e0b; --warn-bg: rgba(245, 158, 11, 0.12);
+    --warn-border: rgba(245, 158, 11, 0.35); --info: #60a5fa; --info-bg: rgba(96, 165, 250, 0.12);
+    --info-border: rgba(96, 165, 250, 0.35);
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 20px rgba(0,0,0,0.35);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Inter", system-ui, sans-serif; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1400px; margin: 0 auto; padding: 56px 24px 96px; }
+  code, .mono { font-family: "JetBrains Mono", ui-monospace, monospace; }
+  header.doc-head { margin-bottom: 40px; }
+  .eyebrow { font-family: "JetBrains Mono", monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin: 0 0 14px; }
+  h1 { font-size: clamp(28px, 4vw, 38px); line-height: 1.15; margin: 0 0 12px; text-wrap: balance; letter-spacing: -0.01em; }
+  .doc-head p.lede { font-size: 16.5px; color: var(--ink-muted); margin: 0 0 8px; }
+  .doc-head .meta { font-family: "JetBrains Mono", monospace; font-size: 12.5px; color: var(--ink-faint); margin-top: 18px; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 28px 0 44px; box-shadow: var(--shadow); }
+  .stat { background: var(--surface); padding: 18px 14px; text-align: center; }
+  .stat .n { font-family: "JetBrains Mono", monospace; font-variant-numeric: tabular-nums; font-size: 26px; font-weight: 600; line-height: 1; }
+  .stat .l { font-size: 11.5px; color: var(--ink-muted); margin-top: 8px; letter-spacing: 0.01em; }
+  .stat.ok .n { color: var(--ok); }
+  .stat.warn .n { color: var(--warn); }
+  .stat.info .n { color: var(--info); }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px 18px; margin-bottom: 48px; padding: 14px 18px; background: var(--surface-2); border-radius: 8px; font-size: 12.5px; color: var(--ink-muted); }
+  .legend .item { display: flex; align-items: center; gap: 7px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  section.cat { margin-bottom: 52px; }
+  .cat-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 22px; cursor: pointer; user-select: none; }
+  .cat-head h2 { font-size: 20px; margin: 0; letter-spacing: -0.005em; display: flex; align-items: baseline; gap: 8px; }
+  .cat-chevron { display: inline-block; transition: transform 0.15s; transform: rotate(90deg); color: var(--ink-faint); font-size: 16px; }
+  section.cat.collapsed .cat-chevron { transform: rotate(0deg); }
+  section.cat.collapsed .cat-head { margin-bottom: 0; padding-bottom: 12px; }
+  section.cat.collapsed > *:not(.cat-head) { display: none; }
+  .cat-head .count { font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--ink-faint); white-space: nowrap; }
+  .cat-intro { color: var(--ink-muted); font-size: 14.5px; margin: -10px 0 22px; }
+  .rule { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--rule-color, var(--border)); border-radius: 8px; padding: 18px 20px; margin-bottom: 12px; box-shadow: var(--shadow); }
+  .rule.ok { --rule-color: var(--ok); }
+  .rule.fixed { --rule-color: var(--accent); }
+  .rule.gap { --rule-color: var(--bad); }
+  .rule.partial { --rule-color: var(--warn); }
+  .rule.info { --rule-color: var(--info); }
+  .rule-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 6px; cursor: pointer; user-select: none; }
+  .rule-title { font-size: 15px; font-weight: 600; line-height: 1.4; display: flex; align-items: flex-start; gap: 8px; }
+  .rule-chevron { flex: none; display: inline-block; color: var(--ink-faint); transition: transform 0.15s ease; transform: rotate(90deg); font-size: 11px; line-height: 1.6; }
+  .rule.collapsed .rule-chevron { transform: rotate(0deg); }
+  .rule.collapsed .rule-body, .rule.collapsed .rule-foot, .rule.collapsed .chart-wrap { display: none; }
+  .rule:not(.collapsed) .rule-top { margin-bottom: 6px; }
+  .toggle-all { display: inline-flex; align-items: center; gap: 6px; font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--ink-muted); background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; cursor: pointer; margin-bottom: 20px; }
+  .toggle-all:hover { color: var(--accent); border-color: var(--accent); }
+  .badge { font-family: "JetBrains Mono", monospace; font-size: 10.5px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; white-space: nowrap; flex: none; }
+  .rule.ok .badge { color: var(--ok); background: var(--ok-bg); border: 1px solid var(--ok-border); }
+  .rule.fixed .badge { color: var(--accent-strong); background: var(--accent-bg); border: 1px solid var(--accent); }
+  .rule.gap .badge { color: var(--bad); background: var(--bad-bg); border: 1px solid var(--bad-border); }
+  .rule.partial .badge { color: var(--warn); background: var(--warn-bg); border: 1px solid var(--warn-border); }
+  .rule.info .badge { color: var(--info); background: var(--info-bg); border: 1px solid var(--info-border); }
+  .rule-body { font-size: 14px; color: var(--ink-muted); }
+  .rule-body p { margin: 6px 0; }
+  .rule-body code { font-size: 12.5px; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; color: var(--ink); }
+  .rule-body ul { margin: 4px 0 8px 20px; padding: 0; }
+  .rule-body li { margin: 2px 0; }
+  blockquote.nb { margin: 10px 0 6px; padding: 8px 14px; border-left: 2px solid var(--ink-faint); font-size: 13px; font-style: italic; color: var(--ink-faint); }
+  .rule-foot { margin-top: 10px; font-family: "JetBrains Mono", monospace; font-size: 11.5px; color: var(--ink-faint); }
+  footer.doc-foot { margin-top: 60px; padding-top: 24px; border-top: 1px solid var(--border); font-size: 13px; color: var(--ink-faint); }
+  footer.doc-foot p { margin: 4px 0; }
+  @media (max-width: 640px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+  .cmp-table-wrap { margin: 16px 0; overflow-x: auto; }
+  .cmp-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 480px; }
+  .cmp-table th, .cmp-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+  .cmp-table thead th { color: var(--ink-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; border-bottom: 2px solid var(--border); }
+  .cmp-table tbody tr:last-child td { border-bottom: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="doc-head">
+    <p class="eyebrow">Auditoría interna · bot_trading</p>
+    <h1>35A / 35 Wave — método Craig Percoco (Elliott + Fibonacci)</h1>
+    <p class="lede">Sistema de reversión/swing de Craig Percoco basado 100% en Ondas de Elliott y extensiones/retrocesos de Fibonacci — completamente independiente del ChoCh+FVG (Smog/SMC Sniper, ya implementado) y del DCA Range Trading. No requiere FVG ni ChoCh tradicional. Ningún código de este método existe todavía; documento de investigación/planificación.</p>
+    <p class="meta">Generado 2026-09-10 · fuente: NB trading-brain (id eefd6f23-…) · solo para uso local</p>
+  </header>
+
+  <button type="button" class="toggle-all" id="toggle-all-btn">▸ Expandir todo</button>
+
+  <div class="stats">
+    <div class="stat ok"><div class="n">5</div><div class="l">Cuantificado con precisión</div></div>
+    <div class="stat warn"><div class="n">1</div><div class="l">Discrecional / a calibrar</div></div>
+    <div class="stat info"><div class="n">0</div><div class="l">Implementado</div></div>
+  </div>
+
+  <div class="legend">
+    <div class="item"><span class="dot" style="background:var(--ok)"></span>Cuantificado — Craig da el valor/fórmula exacta</div>
+    <div class="item"><span class="dot" style="background:var(--warn)"></span>Discrecional — sin fórmula ni umbral numérico</div>
+    <div class="item"><span class="dot" style="background:var(--info)"></span>Informativo — contexto, no una regla en sí</div>
+  </div>
+
+  <section class="cat">
+    <div class="cat-head">
+      <h2>1 · Qué es y por qué es independiente del Smog/SMC</h2>
+      <span class="count">1 punto</span>
+    </div>
+    <div class="rule info">
+      <div class="rule-top"><div class="rule-title">Sistema 100% Elliott + Fibonacci — sin FVG, sin ChoCh tradicional</div><span class="badge">Informativo</span></div>
+      <div class="rule-body">
+        <p>Verificado explícitamente contra el NB (2026-09-10): 35A NO comparte el detector de FVG/ChoCh con Smog/SMC. Se basa 100% en geometría de Ondas de Elliott, extensiones/retrocesos de Fibonacci y divergencias de RSI — nunca exige un Fair Value Gap ni la confirmación de un ChoCh de 1 minuto para activarse.</p>
+        <blockquote class="nb">La estrategia 35A no requiere la presencia de un FVG ni exige la confirmación de un ChoCh tradicional de 1m para activarse. Se basa 100% en la geometría matemática de las Ondas de Elliott, las extensiones/retrocesos de Fibonacci y las divergencias del RSI. (Si dentro de la Onda B casualmente coincide un FVG de 15m, Craig lo toma como confluencia extra — el sistema funciona como método autónomo de todos modos.)</blockquote>
+        <p><strong>Nota importante para este proyecto (2026-09-10)</strong>: las extensiones de Fibonacci 1.618/2.618/3.618 que el SMC Sniper usaba hasta hoy para el TP (implementadas 2026-09-04) eran en realidad de ESTE método, mal aplicadas al ChoCh+FVG — ver la corrección en la auditoría de <a href="/analysis/method-audits/smc-sniper-production" target="_blank" rel="noopener">SMC Sniper — Producción</a>, sección 7.</p>
+      </div>
+      <div class="rule-foot">NB trading-brain — verificado 2026-09-10</div>
+    </div>
+  </section>
+
+  <section class="cat">
+    <div class="cat-head">
+      <h2>2 · Reglas cuantificadas con precisión</h2>
+      <span class="count">5 puntos</span>
+    </div>
+    <p class="cat-intro">Craig da el valor numérico o la fórmula exacta para estos puntos.</p>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Confirmación mecánica de agotamiento de Onda 5</div><span class="badge">Cuantificado</span></div>
+      <div class="rule-body">
+        <p>3 reglas estructurales obligatorias de Elliott + 1 confirmación matemática + 1 de indicador:</p>
+        <ul>
+          <li>Onda 3 nunca la más corta entre 1, 3 y 5.</li>
+          <li>El mínimo de Onda 4 no puede solapar el máximo de Onda 1.</li>
+          <li>Regla de alternancia: si Onda 2 es simple, Onda 4 debe ser compleja (o viceversa).</li>
+          <li>Onda 5 se da por agotada mecánicamente cuando el precio alcanza y reacciona sobre la extensión 1.618, 2.618 o 3.618 (2.618 es el objetivo estándar en cripto/parabólicos).</li>
+          <li>Divergencia bajista de RSI obligatoria: precio hace máximo más alto en Onda 5 que en Onda 3, pero el RSI hace un pico más bajo (en zona &gt;70).</li>
+        </ul>
+      </div>
+      <div class="rule-foot">NB trading-brain — verificado 2026-09-10</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Trazado del canal y extensión Fibonacci (3 clics)</div><span class="badge">Cuantificado</span></div>
+      <div class="rule-body">
+        <p>Clic 1: mínimo de origen de Onda 1. Clic 2: máximo de Onda 1. Clic 3: mínimo de fin de Onda 2 — establece el "factor de 1" y proyecta 1.618/2.618/3.618. Canal paralelo de 3 puntos: línea que une mínimos de Onda 2 y Onda 4, clonada al máximo de Onda 1/3 — Craig verifica que la extensión 2.618/3.618 coincida con el techo del canal.</p>
+      </div>
+      <div class="rule-foot">NB trading-brain — verificado 2026-09-10</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Corrección ABC — regla de invalidación</div><span class="badge">Cuantificado</span></div>
+      <div class="rule-body">
+        <p>Onda A: caída inicial rompiendo Onda 5. Onda B: rebote correctivo (punto de entrada). <strong>Regla inamovible</strong>: la Onda B nunca debe superar el máximo absoluto de Onda 5 — si lo hace, la estructura queda anulada.</p>
+      </div>
+      <div class="rule-foot">NB trading-brain — verificado 2026-09-10</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Entrada, Stop Loss y Take Profit exactos</div><span class="badge">Cuantificado</span></div>
+      <div class="rule-body">
+        <div class="cmp-table-wrap">
+          <table class="cmp-table">
+            <thead><tr><th>Nivel</th><th>Regla exacta</th></tr></thead>
+            <tbody>
+              <tr><td>Entrada (short en Onda B)</td><td>61.8% (Golden Ratio) del retroceso de Fibonacci trazado desde el máximo de Onda 5 hasta el mínimo de Onda A</td></tr>
+              <tr><td>Stop Loss</td><td>Por encima del máximo absoluto de Onda 5</td></tr>
+              <tr><td>Take Profit (Onda C)</td><td>Nivel de extensión 1.618/2.618 de la corrección (clics B→A→B) que coincida más cerca con el 61.8% de retroceso del movimiento macro total (Onda 1→Onda 5), o con la zona del mínimo de Onda 4 / máximo de Onda 1</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="rule-foot">NB trading-brain — verificado 2026-09-10</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Temporalidades de operación</div><span class="badge">Cuantificado</span></div>
+      <div class="rule-body"><p>Análisis macro/conteo de ondas: 4H, 1H o 15m (incluso 1D para inversión largo plazo). Ejecución/refinamiento de la entrada en Onda B: 5m o 3m cuando se observa desaceleración del precio.</p></div>
+      <div class="rule-foot">NB trading-brain — verificado 2026-09-10</div>
+    </div>
+  </section>
+
+  <section class="cat">
+    <div class="cat-head">
+      <h2>3 · Discrecional — requeriría calibración empírica propia</h2>
+      <span class="count">1 punto</span>
+    </div>
+
+    <div class="rule partial">
+      <div class="rule-top"><div class="rule-title">Evaluación de "parábola demasiado pronunciada" antes de trazar la extensión</div><span class="badge">Discrecional</span></div>
+      <div class="rule-body"><p>Craig menciona evaluar si la parábola del precio es "demasiado pronunciada" o "ininterrumpida" antes de confiar en los 3 clics de Fibonacci — sin fórmula ni umbral numérico, puramente visual.</p></div>
+      <div class="rule-foot">NB trading-brain — sin cuantificar, requiere calibración propia</div>
+    </div>
+  </section>
+
+  <section class="cat">
+    <div class="cat-head">
+      <h2>4 · Veredicto de factibilidad</h2>
+      <span class="count">1 conclusión</span>
+    </div>
+    <div class="rule info">
+      <div class="rule-top"><div class="rule-title">Mayoría del método cuantificado — requiere detector de Ondas de Elliott, que hoy no existe</div><span class="badge">Evaluado — no iniciado</span></div>
+      <div class="rule-body">
+        <p>5 de 6 componentes están cuantificados con precisión (reglas de Elliott, extensión/canal, invalidación ABC, niveles de entrada/SL/TP, temporalidades). El obstáculo real no es la falta de especificidad de Craig — es que <strong>el bot no tiene ningún detector de Ondas de Elliott</strong> (conteo 1-2-3-4-5 + ABC), a diferencia del ZigZag/pivots ya implementado para el ChoCh+FVG. Implementarlo requeriría: (1) un detector de ondas de impulso válidas según las 3 reglas estructurales, (2) el trazado automático de la extensión de 3 clics, (3) el detector de divergencia RSI (ya existe parcialmente, <code>_rsi_divergence</code>, aunque calibrado para otro uso). Es un módulo de análisis nuevo, no una extensión del código existente.</p>
+      </div>
+      <div class="rule-foot">NB trading-brain — evaluación de factibilidad, sin código todavía</div>
+    </div>
+  </section>
+
+  <footer class="doc-foot">
+    <p>Fuente única de verdad: NotebookLM "trading-brain". Todos los puntos verificados con cita textual del NB el 2026-09-10.</p>
+    <p>Documento generado localmente, no publicado. Separado del SMC Sniper y del DCA Range Trading porque es un método completo e independiente.</p>
+  </footer>
+
+</div>
+  <script>
+    (function () {
+      var rules = Array.prototype.slice.call(document.querySelectorAll('.rule'));
+      rules.forEach(function (rule) {
+        var title = rule.querySelector('.rule-title');
+        var top = rule.querySelector('.rule-top');
+        if (!title || !top) return;
+        var chevron = document.createElement('span');
+        chevron.className = 'rule-chevron';
+        chevron.textContent = '▸';
+        title.insertBefore(chevron, title.firstChild);
+        rule.classList.add('collapsed');
+        top.addEventListener('click', function () { rule.classList.toggle('collapsed'); });
+      });
+      var cats = Array.prototype.slice.call(document.querySelectorAll('section.cat'));
+      cats.forEach(function (cat) {
+        var head = cat.querySelector('.cat-head');
+        var h2 = cat.querySelector('.cat-head h2');
+        if (!head || !h2) return;
+        var chevron = document.createElement('span');
+        chevron.className = 'cat-chevron';
+        chevron.textContent = '▸';
+        h2.insertBefore(chevron, h2.firstChild);
+        head.addEventListener('click', function () { cat.classList.toggle('collapsed'); });
+      });
+      var btn = document.getElementById('toggle-all-btn');
+      var allExpanded = false;
+      btn.addEventListener('click', function () {
+        allExpanded = !allExpanded;
+        rules.forEach(function (rule) { rule.classList.toggle('collapsed', !allExpanded); });
+        cats.forEach(function (cat) { cat.classList.toggle('collapsed', false); });
+        btn.textContent = allExpanded ? '▾ Colapsar todo' : '▸ Expandir todo';
+      });
+    })();
+  </script>
+</body>
+</html>
