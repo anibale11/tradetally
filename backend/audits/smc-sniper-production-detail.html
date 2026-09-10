@@ -366,7 +366,7 @@
     <p class="eyebrow">Auditoría interna · bot_trading</p>
     <h1>Bot SMC Sniper vs. método real de Craig Percoco</h1>
     <p class="lede">Comparación punto por punto entre lo que implementa el código (<code>smc_bias_analyzer.py</code>, <code>smc_sniper_strategy.py</code>, <code>position_monitor.py</code>) y lo que documenta el NotebookLM <strong>trading-brain</strong> sobre la metodología real de Craig Percoco. Cada punto está clasificado por qué tan verificado está, sin asumir nada que no esté citado.</p>
-    <p class="meta">Generado 2026-08-19 · actualizado 2026-08-21 · fuente: NB trading-brain (id eefd6f23-…) · solo para uso local</p>
+    <p class="meta">Generado 2026-08-19 · actualizado 2026-09-09 · fuente: NB trading-brain (id eefd6f23-…) · solo para uso local</p>
   </header>
 
   <button type="button" class="toggle-all" id="toggle-all-btn">▸ Expandir todo</button>
@@ -1028,6 +1028,54 @@
         <p><strong>Corregido</strong>: eliminado el criterio 4 (estructura opuesta) de <code>_reevaluate_pending_limit</code> en <code>position_monitor.py</code>. Quedan los 3 criterios reales verificados (no-chasing, invalidación estructural, sesgo BTC contrario) + el criterio de "dificultad para romper el nivel" (regla de la tercera prueba de Craig, ya verificado en sesión anterior).</p>
       </div>
       <div class="rule-foot">position_monitor._reevaluate_pending_limit — commit 8020f65</div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ 6h. FIXES DE FIDELIDAD — SESIÓN 2026-09-09 ═══════════════════ -->
+  <section class="cat">
+    <div class="cat-head">
+      <h2>6h · Fixes de fidelidad al método — sesión 2026-09-09</h2>
+      <span class="count">4 hallazgos</span>
+    </div>
+    <p class="cat-intro">Auditoría exhaustiva punto por punto de todo el método contra el NB <code>trading-brain</code>, disparada por una investigación empírica previa del patrón de no-fill de órdenes límite (<code>data/struggle_calibration.jsonl</code>, ver también la vista <a href="/analysis/struggle-calibration">Struggle Calibration</a> en TradeTally). 2 de los 4 hallazgos surgieron directamente de esa investigación; los otros 2, de recorrer metódicamente cada componente del método contra el NB.</p>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">Candidato FVG único — un iFVG podía tapar un FVG normal válido</div><span class="badge">Corregido y desplegado — 2026-09-09</span></div>
+      <div class="rule-body">
+        <p><code>_analyze_symbol</code> solo probaba <code>nearby[0]</code> (el candidato más reciente del pool combinado FVG+iFVG) — si ese candidato fallaba cualquiera de los 4 gates obligatorios, se descartaba el ciclo <strong>entero</strong> sin probar los demás candidatos disponibles. Al sumar los iFVG al mismo pool (2026-09-04), un iFVG más reciente podía "tapar" a un FVG normal que sí hubiera pasado todos los gates.</p>
+        <p><strong>Corregido</strong>: loop que prueba todos los candidatos en <code>nearby</code> en orden de recencia hasta encontrar uno que pase los 4 gates obligatorios (zona 15m activa, fuerza relativa vs BTC, ruptura de zona clave, zona Fibonacci), en vez de rendirse en el primero. Aplicado en <code>smc_sniper_strategy.py</code> y los 3 backtests. Verificado con backtest real: 1→31 trades (90d→15d, solo este fix) antes de aplicar el fix siguiente.</p>
+      </div>
+      <div class="rule-foot">smc_sniper_strategy._analyze_symbol — commit 5f69b0b</div>
+    </div>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">Piso/techo de SL medido desde current_price, no desde entry</div><span class="badge">Corregido y desplegado — 2026-09-09</span></div>
+      <div class="rule-body">
+        <p><code>_calc_sl(fvg, direction, current_price)</code> medía el piso (<code>MIN_SL_PCT</code>=0.8%) y techo (<code>MAX_SL_PCT</code>=6%) de distancia del SL contra <code>current_price</code>, no contra <code>entry</code> (el midpoint del FVG, real precio de entrada). Como <code>entry</code> puede estar hasta ~1.2% lejos de <code>current_price</code> (tolerancia <code>PRICE_TOL_MULT</code>), el SL con piso aplicado podía terminar casi pegado al entry — riesgo casi nulo en el cálculo, lo que <strong>infla el tamaño de posición real</strong> (<code>calculate_position_size</code> = riesgo_usd ÷ %distancia) de forma desproporcionada. Bug preexistente, no introducido esta sesión — expuesto porque el fix anterior aumentó la frecuencia de trades lo suficiente para volverlo visible estadísticamente.</p>
+        <p><strong>Corregido</strong>: renombrado el 3er parámetro a <code>entry</code>, piso/techo ahora <code>entry × (1 ± PCT)</code>. Verificado con backtest real: 31→29 trades, R máximo bajó de +15R+ (implausible) a +7.15R (sano) tras el fix.</p>
+      </div>
+      <div class="rule-foot">smc_sniper_strategy._calc_sl — commit 5f69b0b</div>
+    </div>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">No-chasing medido contra tp1 (1:4), no contra el nivel real de breakeven</div><span class="badge">Corregido y desplegado — 2026-09-09</span></div>
+      <div class="rule-body">
+        <p>Investigación empírica del patrón de no-fill (<code>struggle_calibration.jsonl</code>, semana del 2026-09-09): de 8 señales, 6 no llegaron a abrir posición — 2 de ellas expiraron a las 2h con <code>touches=0</code> todo el ciclo, el precio confirmó la estructura y siguió de largo a favor sin retroceder nunca a la zona de entrada. El criterio 1 (<code>no_chase</code>) de <code>_reevaluate_pending_limit</code> existía para cubrir exactamente este caso, pero comparaba contra <code>tp1</code> — el objetivo final 1:4, muy lejos del entry. En la práctica el precio nunca se acercó remotamente a <code>tp1</code> en ninguno de los 2 casos, así que el criterio nunca disparaba.</p>
+        <blockquote class="nb">Craig cancela la orden límite pendiente ("el tren dejó la estación") de forma <strong>estructural</strong>, no por tiempo fijo ni %: en el momento en que el precio alcanza el nivel donde movería el SL a breakeven, o toca la zona de TP, sin haberse llenado la entrada.</blockquote>
+        <p><strong>Corregido</strong>: el umbral ahora es <code>entry ± 1 ATR(1h)</code> — el mismo cálculo que <code>_apply_trailing_stop</code> ya usa para mover el SL a breakeven en trades abiertos (Fase 1), reutilizando lógica ya existente y verificada en vez de inventar un umbral nuevo. Comparación empírica (ATR actual, aproximado) contra los 2 casos de fuga: el precio quedó a 95-98% del nuevo umbral, vs. kilómetros lejos de <code>tp1</code>. Sin backtest de referencia posible — esta reevaluación de órdenes pendientes es lógica exclusiva de producción (<code>position_monitor.py</code>), sin equivalente en ningún backtest.</p>
+      </div>
+      <div class="rule-foot">position_monitor._reevaluate_pending_limit — commit 7bd1a00</div>
+    </div>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">Pierna del Fibonacci sin verificar que coincida en dirección con el candidato</div><span class="badge">Corregido y desplegado — 2026-09-09</span></div>
+      <div class="rule-body">
+        <p>Encontrado en auditoría exhaustiva del método completo (no en monitoreo de producción). El <code>swing_high</code>/<code>swing_low</code> usado para <code>_fib_discount_zone</code> se calculaba tomando ciegamente <code>pivots[-2:]</code> (último par del ZigZag local) — una sola vez por símbolo por ciclo, reutilizado igual para candidatos long y short, sin verificar que esa pierna tuviera la dirección correcta para el candidato evaluado.</p>
+        <blockquote class="nb">La pierna que Craig usa para trazar el Fibonacci debe coincidir en dirección con el trade: un short exige una pierna bajista propia (alto→bajo) recién confirmada por el ChoCh bajista; un long exige una pierna alcista propia (bajo→alto). Craig explícitamente no usa la pierna contraria.</blockquote>
+        <p>Prueba concreta trazada en backtest (SOL-USDT, 2026-08-28 14:42 UTC): los últimos pivots eran <code>high(107.05)→low(104.55)→high(105.96)→low(103.63)</code>. El código viejo tomaba ciegamente <code>{high:105.96, low:103.63}</code> para un candidato <strong>long</strong> — pero esa pierna es cronológicamente <strong>bajista</strong> (105.96→103.63), exactamente el error que el NB dice que Craig nunca comete.</p>
+        <p><strong>Corregido</strong>: <code>_directional_swing(pivots, direction)</code> resuelve la pierna completa más reciente en la dirección correcta (low→high para long, high→low para short) antes de calcular la zona. Con pivots estrictamente alternados, la pierna correcta puede estar en <code>pivots[-2:]</code> o en <code>pivots[-3:-1]</code> según cuál haya sido el pivot más reciente. Fallback a rango de 30 velas si no hay pierna direccional completa disponible (~3% de las evaluaciones, verificado empíricamente). Backtest 15 días (mismo dataset): +12.38R→+4.27R — no es evidencia de que el fix esté mal, es evidencia de que el código viejo medía la zona sobre impulsos a veces equivocados, algunos de los cuales producían entradas rentables por casualidad en esta muestra puntual (confirmado con la traza concreta de arriba).</p>
+      </div>
+      <div class="rule-foot">smc_sniper_strategy._directional_swing / _fib_discount_zone — commit da94354</div>
     </div>
   </section>
 
