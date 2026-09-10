@@ -748,12 +748,13 @@
     <p class="cat-intro">Importante: en TODOS estos puntos Craig especifica la regla cualitativa o un rango aproximado — lo que no fija es el número/unidad exacto a usar en código. No son "inventados desde cero"; son la elección numérica concreta dentro de un criterio que el NB sí confirma. Dos de ellos (PRICE_TOL_MULT y la ventana de fuerza relativa) son la excepción — ahí Craig no da ninguna referencia, ni cualitativa ni numérica.</p>
 
     <div class="rule info">
-      <div class="rule-top"><div class="rule-title">Tamaño mínimo de gap del FVG</div><span class="badge">Craig da el número (0.1-0.15), no la unidad</span></div>
+      <div class="rule-top"><div class="rule-title">Tamaño mínimo de gap del FVG</div><span class="badge">Unidad confirmada externamente — 2026-09-10</span></div>
       <div class="rule-body">
-        <p><code>MIN_GAP_PCT = 0.1%</code>. Confirmado en NB (2026-08-26): Craig usa el indicador Lux Algo Fair Value Gap en TradingView, ajustando manualmente el "Threshold" a <strong>0.1 o 0.15</strong> (varía según sesión/video) — coincide numéricamente con nuestro valor. Pero el propio NB aclara que Craig **nunca especifica la unidad matemática exacta** de ese parámetro (no queda claro si es % del precio, relación con el cuerpo de la vela, o un multiplicador interno de volatilidad del script) — así que la coincidencia numérica (0.1) es alentadora pero no una confirmación 1:1 de unidades.</p>
+        <p><code>MIN_GAP_PCT = 0.1%</code>. Confirmado en NB (2026-08-26): Craig usa el indicador Lux Algo Fair Value Gap en TradingView, ajustando manualmente el "Threshold" a <strong>0.1 o 0.15</strong> (varía según sesión/video) — coincide numéricamente con nuestro valor.</p>
+        <p><strong>Unidad verificada de forma independiente (2026-09-10)</strong>, sin depender del NB ni de una interpretación de Craig: la documentación pública de LuxAlgo (código fuente + <a href="https://docs.luxalgo.com/platform/algos/price-action-concepts/imbalances" target="_blank" rel="noopener">docs.luxalgo.com</a>) define la fórmula exacta del modo manual del indicador — <code>(low − high(t-2)) / high(t-2) &gt; threshold</code> para FVG alcista (espejo para bajista). El "Threshold" es <strong>un porcentaje de precio</strong> (gap dividido por el precio de la vela de referencia) — no un múltiplo de ATR ni una relación con el cuerpo de la vela. El indicador también tiene un modo "Auto" que sí deriva el umbral de un estimador de volatilidad/ATR, pero ese modo no expone un campo numérico ajustable — como Craig dice explícitamente que ajusta manualmente el valor a 0.1/0.15, solo puede estar en modo manual (% de precio). Esto confirma que la coincidencia numérica con <code>MIN_GAP_PCT</code> es real también en unidades, no solo en magnitud.</p>
         <p>Backtest paramétrico (2026-08-26, datos reales sobre ~1000 velas 15m): la proporción de FVGs que sobreviven el gate de "zona clave" se mantiene estable (~20-25%) en todo el rango 0.05%-0.3% — sugiere que este valor no es el cuello de botella real, sin urgencia de recalibrar.</p>
       </div>
-      <div class="rule-foot">smc_sniper_strategy.MIN_GAP_PCT</div>
+      <div class="rule-foot">smc_sniper_strategy.MIN_GAP_PCT — unidad confirmada contra documentación pública de LuxAlgo</div>
     </div>
 
     <div class="rule fixed">
@@ -1146,9 +1147,36 @@
     </div>
 
     <div class="rule info">
-      <div class="rule-top"><div class="rule-title">DCA Range Trading — entradas múltiples en cascada</div><span class="badge">No aplica al modelo actual</span></div>
-      <div class="rule-body"><p>En vez de una sola entrada, Craig divide la orden en 3 niveles (Entry + Limit1 + Limit2) para promediar mejor el precio si el retroceso es profundo. El bot actual coloca una única orden límite en el midpoint del FVG — adoptar esto implicaría rediseñar el módulo de ejecución (<code>trade_executor.py</code>), no un ajuste puntual.</p></div>
-      <div class="rule-foot">NB trading-brain — cambio de arquitectura de ejecución, no un fix puntual</div>
+      <div class="rule-top"><div class="rule-title">DCA Range Trading (TCL / FIB &amp; EMA Continuation) — 2do método completo de Craig, no una variante</div><span class="badge">Evaluado — factible a futuro (2026-09-10)</span></div>
+      <div class="rule-body">
+        <p>Verificado contra NB (2026-09-10): esto NO es una variante del ChoCh+FVG ni un ajuste de ejecución — es un <strong>segundo método completo e independiente</strong>, que Craig activa según el estado del mercado, nunca mezclado con el otro en la misma sesión/símbolo:</p>
+        <table style="width:100%; border-collapse:collapse; margin:8px 0; font-size:13px;">
+          <tr style="border-bottom:1px solid var(--border,#3335)"><th style="text-align:left; padding:4px 8px 4px 0">Criterio</th><th style="text-align:left; padding:4px 8px">DCA Range Trading</th><th style="text-align:left; padding:4px 0">SMC Sniper (actual)</th></tr>
+          <tr><td style="padding:4px 8px 4px 0">Condición de mercado</td><td style="padding:4px 8px">Tendencia en desarrollo, EMAs 20/50/200 alineadas</td><td style="padding:4px 0">Reversión/giro contra FVG 15m o PDH/PDL</td></tr>
+          <tr><td style="padding:4px 8px 4px 0">Tipo de movimiento</td><td style="padding:4px 8px">Retrocesos graduales, laterales ("choppy")</td><td style="padding:4px 0">Vela de desplazamiento, ChoCh</td></tr>
+          <tr><td style="padding:4px 8px 4px 0">Timeframe</td><td style="padding:4px 8px">1m/3m/5m directo</td><td style="padding:4px 0">Top-down: 15m filtro + 1m gatillo</td></tr>
+          <tr><td style="padding:4px 8px 4px 0">Perfil</td><td style="padding:4px 8px">Win rate 80-90%+, R/R bajo</td><td style="padding:4px 0">Win rate 35-50%, R/R 1:4 a 1:10+</td></tr>
+        </table>
+
+        <p><strong>Evaluación de factibilidad (para implementar a futuro) — qué está cuantificado con precisión vs. qué es discrecional:</strong></p>
+        <p>✅ <strong>Cuantificado con precisión, directamente programable:</strong></p>
+        <ul style="margin:4px 0 8px 20px; padding:0;">
+          <li>EMAs 20/50/200 en 1m/3m/5m, condición binaria de apilamiento (20&gt;50&gt;200 largos, invertido cortos)</li>
+          <li>Niveles Fibonacci exactos: Entry 0.618, Limit1 0.382, Limit2 0.170/0.172, SL -0.05, TP inicial 1.272</li>
+          <li>Fórmula de precio promedio ponderado estándar (acumulación de lotes) tras llenar Limit1/Limit2</li>
+          <li>Riesgo total: 10% de la cuenta distribuido entre las 3 órdenes (pérdida máxima exacta si toca SL con las 3 llenas)</li>
+          <li>Filtro horario objetivo: caja de apertura NY 8:00-11:00 AM EST — prohibido operar dentro de esa ventana</li>
+          <li>Lista de símbolos: SOL, ETH, ADA, LTC, LINK, MANA, APE (altcoins de alta liquidez) — excluye explícitamente low-cap/ilíquidas</li>
+        </ul>
+        <p>⚠️ <strong>Discrecional / sin cuantificar — requeriría calibración empírica propia (mismo método ya usado para <code>CHOCH_RETRACE_PCT</code>):</strong></p>
+        <ul style="margin:4px 0 8px 20px; padding:0;">
+          <li>Tolerancia de separación entre EMAs ("muestra fuerza/sobreextensión" pero sin fórmula ni mínimo — puramente visual)</li>
+          <li>Detección objetiva de "choppy price action" fuera de la caja de NY (zig-zag visual, sin criterio numérico)</li>
+          <li>Peso exacto de cada orden de la cascada (Limit1/Limit2 "progresivamente mayores", sin ratio específico)</li>
+        </ul>
+        <p><strong>Veredicto</strong>: ~70% del método es directamente programable con los valores exactos que da Craig. Los 3 puntos discrecionales no son un bloqueo — son exactamente el mismo tipo de vacío que ya se resolvió antes (<code>CHOCH_RETRACE_PCT</code>, sección 6b): elegir un valor candidato razonable y calibrarlo con backtest real contra datos históricos. Implementarlo requeriría un módulo de ejecución nuevo (3 órdenes simultáneas + recálculo de precio promedio/TP), no un ajuste sobre <code>trade_executor.py</code> actual — pero es factible.</p>
+      </div>
+      <div class="rule-foot">NB trading-brain — 2do método completo, evaluado para implementación futura, no iniciado</div>
     </div>
 
     <div class="rule info">
