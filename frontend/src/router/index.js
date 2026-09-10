@@ -393,6 +393,12 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/analysis/struggle-calibration',
+      name: 'struggle-calibration',
+      component: () => import('@/views/backtest/StruggleCalibrationView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/analysis/changelog',
       name: 'changelog',
       component: () => import('@/views/backtest/ChangelogView.vue'),

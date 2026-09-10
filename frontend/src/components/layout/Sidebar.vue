@@ -523,6 +523,7 @@ const navItems = computed(() => {
         { name: 'Backtest Bots', to: '/analysis/backtest-bots', route: 'backtest-bots' },
         { name: 'Method Audits', to: '/analysis/method-audits', route: 'method-audits' },
         { name: 'Changelog', to: '/analysis/changelog', route: 'changelog' },
+        { name: 'Struggle Calibration', to: '/analysis/struggle-calibration', route: 'struggle-calibration' },
         { name: 'Prop Firm', to: '/analysis/prop-firm', route: 'prop-firm' }
       ]
     },
