@@ -314,9 +314,12 @@
     </div>
 
     <div class="rule ok">
-      <div class="rule-top"><div class="rule-title">Filtro horario objetivo: caja de apertura de NY (8:00-11:00 AM EST)</div><span class="badge">Cuantificado</span></div>
-      <div class="rule-body"><p>Regla binaria y objetiva (no discrecional, a diferencia de la detección de "choppy" fuera de esta ventana): prohibido operar dentro de la caja gris de apertura de NY. La volatilidad institucional de esa ventana genera latigazos que invalidan la lógica de la cascada.</p></div>
-      <div class="rule-foot">NB trading-brain — verificado 2026-09-10</div>
+      <div class="rule-top"><div class="rule-title">Filtro horario objetivo: caja gris de NY (8:00-11:00 AM EST) — PROHIBIDO operar adentro</div><span class="badge">Cuantificado</span></div>
+      <div class="rule-body">
+        <p>Regla binaria y objetiva (no discrecional, a diferencia de la detección de "choppy" fuera de esta ventana): prohibido operar dentro de la caja gris de apertura de NY. La apertura bursátil inyecta impulsos e incertidumbre fundamental ("whip around / crazy volatility") que invalidaría el promediado de lotes de la cascada — Craig espera a que la sesión "se enfríe" después de las 11:00/11:30 AM EST, marca el máximo/mínimo de la caja, y recién despliega el Fibonacci en cascada cuando una vela cierra formalmente por fuera de ese rango.</p>
+        <p><strong>Importante — no confundir con la ventana del SMC Sniper (ChoCh+FVG)</strong>: son opuestas. En DCA la caja es 8:00-11:00 AM y la regla es NO operar adentro. En ChoCh+FVG la caja es 8:00-9:30 AM (pre-mercado/rango de apertura) y Craig busca activamente operar la apertura misma a las 9:30 AM — es donde "inunda el volumen" institucional que genera el ChoCh+FVG. El bot SMC Sniper ya usa 9:30 AM como inicio de sesión activa (<code>NY_OPEN_HOUR=9, NY_OPEN_MIN=30</code>) — correctamente alineado a SU estrategia, no a esta.</p>
+      </div>
+      <div class="rule-foot">NB trading-brain — verificado 2026-09-10, contrastado explícitamente contra ChoCh+FVG</div>
     </div>
 
     <div class="rule ok">
