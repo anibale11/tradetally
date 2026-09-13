@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>SMC Sniper — Nautilus — Detalle del backtest</title>
+<title>SMC Sniper — Nautilus — Auditoría de método</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -25,38 +25,8 @@
   a:hover { text-decoration: underline; }
   .back { font-size: 13px; color: var(--ink-faint); }
   h1 { font-size: 28px; font-weight: 600; margin: 16px 0 4px; }
-  .meta { font-family: var(--mono); font-size: 12.5px; color: var(--ink-faint); margin: 0 0 32px; }
-  .stat-grid {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 12px; margin-bottom: 28px;
-  }
-  .stat-tile {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-    padding: 16px; text-align: center;
-  }
-  .stat-value { font-size: 22px; font-weight: 700; font-family: var(--mono); }
-  .stat-label { font-size: 11.5px; color: var(--ink-muted); margin-top: 4px; }
-  .pos { color: var(--ok); } .neg { color: var(--bad); } .flat { color: var(--ink); }
-  h2 { font-size: 17px; font-weight: 600; margin: 36px 0 14px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
-  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-  th {
-    text-align: left; color: var(--ink-faint); font-weight: 500; font-size: 11px;
-    text-transform: uppercase; letter-spacing: .04em; padding: 8px 10px; border-bottom: 1px solid var(--border);
-    position: sticky; top: 0; background: var(--bg);
-  }
-  td { padding: 9px 10px; border-bottom: 1px solid var(--surface-2); font-family: var(--mono); }
-  td.sym { font-family: "Inter", sans-serif; font-weight: 500; }
-  .dir-long { color: var(--ok); } .dir-short { color: var(--bad); }
-  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; }
-  table.trades { min-width: 780px; }
-  .empty { color: var(--ink-faint); padding: 24px; text-align: center; }
-  .note {
-    color: var(--ink-muted); font-size: 13px; line-height: 1.6; margin: 8px 0 0;
-    padding: 12px 14px; background: var(--surface-2); border-left: 2px solid var(--accent); border-radius: 6px;
-  }
-
-  /* ── Fixes reales (sección estática, no dinámica) ──────────── */
-  section.cat { margin: 40px 0 52px; }
+  /* ── Fixes reales (sección estática) ──────────── */
+  section.cat { margin: 16px 0 52px; }
   .cat-head {
     display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
     border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 22px;
@@ -85,7 +55,6 @@
 <body>
 <div class="container">
   <h1>SMC Sniper — Nautilus (beta)</h1>
-  <p class="meta" id="run-meta">Cargando...</p>
 
   <section class="cat">
     <div class="cat-head">
@@ -95,30 +64,12 @@
     <p class="cat-intro">Bot en etapa de <strong>beta/evaluación</strong> del framework NautilusTrader como base técnica — el objetivo es apoyarse en los mecanismos nativos de Nautilus lo más posible, código propio solo donde sea estrictamente necesario. Los 5 hallazgos de esta sesión surgieron de revisar trades reales en producción (cuenta demo OKX) a pedido del usuario.</p>
 
     <div class="rule">
-      <div class="rule-top"><div class="rule-title">Duplicación de entradas/alertas al reiniciar el contenedor</div><span class="badge">Corregido — 2026-09-11</span></div>
+      <div class="rule-top"><div class="rule-title">Fills parciales de la entrada dejaban la posición sin SL/TP real</div><span class="badge">Corregido — 2026-09-12 (refactor a eventos nativos)</span></div>
       <div class="rule-body">
-        <p><code>_pending_or_open</code>/<code>_pending_orders</code>/<code>_pending_setups</code> viven en memoria pura de Python — se pierden en cada restart de <code>nautilus-live</code>. Si el mismo setup (ChoCh/FVG) seguía vigente al reiniciar, la estrategia "olvidaba" que ya había una orden límite pendiente, colocaba OTRA en OKX y reenviaba la notificación — varias órdenes reales duplicadas por símbolo tras varios restarts seguidos.</p>
-        <p><strong>Corregido</strong>: <code>_reconcile_state_on_start()</code>, llamado desde <code>on_start</code>, consulta <code>self.cache.orders_open()</code>/<code>positions_open()</code> — que el <code>LiveExecutionEngine</code> de Nautilus YA reconcilió contra OKX antes de que <code>on_start</code> corra, sin necesitar Redis ni una DB propia — y marca el símbolo como pendiente/abierto en vez de arrancar todo en <code>False</code>.</p>
+        <p>Una orden a MERCADO grande en OKX puede llenarse en varias ejecuciones parciales — cada una dispara su propio evento <code>OrderFilled</code> para el mismo <code>client_order_id</code>. Confirmado en vivo: un trade real de SOL se llenó en ~11 fills distintos. El código armaba SL/TP1/TP2 usando solo el <code>last_qty</code> del PRIMER fill (una fracción ínfima de la posición real), y en el segundo evento de la misma entrada confundía el resto de los fills con el cierre de la posición — dejándola sin ningún SL/TP efectivo ni seguimiento interno.</p>
+        <p><strong>Corregido con un refactor</strong> (no solo un parche), a pedido explícito del usuario dado que el bot está en evaluación del framework: nueva <code>on_position_opened(event)</code> arma SL+TP1+TP2 usando el evento AGREGADO nativo de Nautilus — dispara una sola vez, con <code>event.quantity</code> ya sumando todos los fills parciales. <code>on_order_filled</code> quedó reducido a solo identificar el fill de TP1 (lo único que el evento de posición no distingue por sí solo); eliminado un bloque redundante que duplicaba la limpieza que <code>on_position_closed</code> ya hacía.</p>
       </div>
-      <div class="rule-foot">craig_smc_strategy._reconcile_state_on_start — commit 03333e7</div>
-    </div>
-
-    <div class="rule">
-      <div class="rule-top"><div class="rule-title">SL rechazado por OKX ("Reduce Only is not available")</div><span class="badge">Corregido — 2026-09-11</span></div>
-      <div class="rule-body">
-        <p>Un trade real (ATOM-USDT) corrió sin ningún Stop Loss activo en el exchange desde que se abrió: <code>reduce_only=True</code> en la orden <code>stop_market</code> era rechazado por OKX con <code>"OKX error 1: Reduce Only is not available"</code> — OKX somete los STOP_MARKET vía su endpoint de algo orders (condicional), que no acepta ese flag en cuentas en modo NET. Las órdenes LIMIT (TP1/TP2) con el mismo flag sí se aceptaban sin problema.</p>
-        <p><strong>Corregido</strong>: se quitó <code>reduce_only=True</code> de las dos órdenes <code>stop_market()</code> (apertura y reemplazo del trailing) — en modo NET el SL ya cierra correctamente la única posición neta del símbolo sin necesitar el flag.</p>
-      </div>
-      <div class="rule-foot">craig_smc_strategy._open_position_management / _replace_sl — commit 03333e7</div>
-    </div>
-
-    <div class="rule">
-      <div class="rule-top"><div class="rule-title">Loop de coloca/cancela cada ~2min (falta gate de No Chasing preventivo)</div><span class="badge">Corregido — 2026-09-11</span></div>
-      <div class="rule-body">
-        <p>ETH-USDT-SWAP colocó y canceló la misma orden límite ~14 veces en <span style="white-space:nowrap">~2 horas</span>. El precio ya había corrido por encima del nivel de "No Chasing" (breakeven, 1 ATR-15m) ANTES de que la orden se colocara — pero ese chequeo solo existía en <code>_reevaluate_pending_order</code>, que corre recién en el ciclo de vela SIGUIENTE a colocar la orden. Se cancelaba casi al instante y el ciclo siguiente volvía a "encontrar" el mismo setup vigente (nada lo había invalidado) y la resometía, indefinidamente.</p>
-        <p><strong>Corregido</strong>: mismo cálculo de breakeven aplicado como gate ANTES de <code>_submit_entry</code> en <code>_on_1m_bar_closed</code> — si el precio ya superó el nivel, la señal se descarta directo sin colocar ni cancelar nada. bot_trading no tiene este problema porque <code>_confirm_choch()</code> es un poll bloqueante que corre inmediatamente antes de colocar la orden.</p>
-      </div>
-      <div class="rule-foot">craig_smc_strategy._on_1m_bar_closed — commit a5e2572</div>
+      <div class="rule-foot">craig_smc_strategy.on_position_opened / on_order_filled — commit 362f7ea</div>
     </div>
 
     <div class="rule">
@@ -131,103 +82,32 @@
     </div>
 
     <div class="rule">
-      <div class="rule-top"><div class="rule-title">Fills parciales de la entrada dejaban la posición sin SL/TP real</div><span class="badge">Corregido — 2026-09-12 (refactor a eventos nativos)</span></div>
+      <div class="rule-top"><div class="rule-title">Loop de coloca/cancela cada ~2min (falta gate de No Chasing preventivo)</div><span class="badge">Corregido — 2026-09-11</span></div>
       <div class="rule-body">
-        <p>Una orden a MERCADO grande en OKX puede llenarse en varias ejecuciones parciales — cada una dispara su propio evento <code>OrderFilled</code> para el mismo <code>client_order_id</code>. Confirmado en vivo: un trade real de SOL se llenó en ~11 fills distintos. El código armaba SL/TP1/TP2 usando solo el <code>last_qty</code> del PRIMER fill (una fracción ínfima de la posición real), y en el segundo evento de la misma entrada confundía el resto de los fills con el cierre de la posición — dejándola sin ningún SL/TP efectivo ni seguimiento interno.</p>
-        <p><strong>Corregido con un refactor</strong> (no solo un parche), a pedido explícito del usuario dado que el bot está en evaluación del framework: nueva <code>on_position_opened(event)</code> arma SL+TP1+TP2 usando el evento AGREGADO nativo de Nautilus — dispara una sola vez, con <code>event.quantity</code> ya sumando todos los fills parciales. <code>on_order_filled</code> quedó reducido a solo identificar el fill de TP1 (lo único que el evento de posición no distingue por sí solo); eliminado un bloque redundante que duplicaba la limpieza que <code>on_position_closed</code> ya hacía.</p>
+        <p>ETH-USDT-SWAP colocó y canceló la misma orden límite ~14 veces en <span style="white-space:nowrap">~2 horas</span>. El precio ya había corrido por encima del nivel de "No Chasing" (breakeven, 1 ATR-15m) ANTES de que la orden se colocara — pero ese chequeo solo existía en <code>_reevaluate_pending_order</code>, que corre recién en el ciclo de vela SIGUIENTE a colocar la orden. Se cancelaba casi al instante y el ciclo siguiente volvía a "encontrar" el mismo setup vigente (nada lo había invalidado) y la resometía, indefinidamente.</p>
+        <p><strong>Corregido</strong>: mismo cálculo de breakeven aplicado como gate ANTES de <code>_submit_entry</code> en <code>_on_1m_bar_closed</code> — si el precio ya superó el nivel, la señal se descarta directo sin colocar ni cancelar nada. bot_trading no tiene este problema porque <code>_confirm_choch()</code> es un poll bloqueante que corre inmediatamente antes de colocar la orden.</p>
       </div>
-      <div class="rule-foot">craig_smc_strategy.on_position_opened / on_order_filled — commit 362f7ea</div>
+      <div class="rule-foot">craig_smc_strategy._on_1m_bar_closed — commit a5e2572</div>
+    </div>
+
+    <div class="rule">
+      <div class="rule-top"><div class="rule-title">SL rechazado por OKX ("Reduce Only is not available")</div><span class="badge">Corregido — 2026-09-11</span></div>
+      <div class="rule-body">
+        <p>Un trade real (ATOM-USDT) corrió sin ningún Stop Loss activo en el exchange desde que se abrió: <code>reduce_only=True</code> en la orden <code>stop_market</code> era rechazado por OKX con <code>"OKX error 1: Reduce Only is not available"</code> — OKX somete los STOP_MARKET vía su endpoint de algo orders (condicional), que no acepta ese flag en cuentas en modo NET. Las órdenes LIMIT (TP1/TP2) con el mismo flag sí se aceptaban sin problema.</p>
+        <p><strong>Corregido</strong>: se quitó <code>reduce_only=True</code> de las dos órdenes <code>stop_market()</code> (apertura y reemplazo del trailing) — en modo NET el SL ya cierra correctamente la única posición neta del símbolo sin necesitar el flag.</p>
+      </div>
+      <div class="rule-foot">craig_smc_strategy._open_position_management / _replace_sl — commit 03333e7</div>
+    </div>
+
+    <div class="rule">
+      <div class="rule-top"><div class="rule-title">Duplicación de entradas/alertas al reiniciar el contenedor</div><span class="badge">Corregido — 2026-09-11</span></div>
+      <div class="rule-body">
+        <p><code>_pending_or_open</code>/<code>_pending_orders</code>/<code>_pending_setups</code> viven en memoria pura de Python — se pierden en cada restart de <code>nautilus-live</code>. Si el mismo setup (ChoCh/FVG) seguía vigente al reiniciar, la estrategia "olvidaba" que ya había una orden límite pendiente, colocaba OTRA en OKX y reenviaba la notificación — varias órdenes reales duplicadas por símbolo tras varios restarts seguidos.</p>
+        <p><strong>Corregido</strong>: <code>_reconcile_state_on_start()</code>, llamado desde <code>on_start</code>, consulta <code>self.cache.orders_open()</code>/<code>positions_open()</code> — que el <code>LiveExecutionEngine</code> de Nautilus YA reconcilió contra OKX antes de que <code>on_start</code> corra, sin necesitar Redis ni una DB propia — y marca el símbolo como pendiente/abierto en vez de arrancar todo en <code>False</code>.</p>
+      </div>
+      <div class="rule-foot">craig_smc_strategy._reconcile_state_on_start — commit 03333e7</div>
     </div>
   </section>
-
-  <div class="stat-grid" id="stat-grid"></div>
-  <p class="note" id="note" hidden></p>
-
-  <h2>Por símbolo</h2>
-  <div class="table-wrap">
-    <table id="by-symbol-table">
-      <thead><tr><th>Símbolo</th><th>Trades</th><th>Win rate</th><th>R total</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <h2>Trades (más reciente primero)</h2>
-  <div class="table-wrap">
-    <table class="trades" id="trades-table">
-      <thead>
-        <tr>
-          <th>Símbolo</th><th>Dir</th><th>Entrada</th><th>Salida</th>
-          <th>Cierre (UTC)</th><th>Duración</th><th>PnL</th><th>R</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
 </div>
-
-<script>
-  const numFmt = (n, d = 1) => (n === null || n === undefined) ? '—' : Number(n).toFixed(d);
-  const rClass = (n) => n > 0 ? 'pos' : n < 0 ? 'neg' : 'flat';
-  const rSign = (n) => n > 0 ? '+' : '';
-
-  function statTile(label, value, cls = '') {
-    return `<div class="stat-tile"><div class="stat-value ${cls}">${value}</div><div class="stat-label">${label}</div></div>`;
-  }
-
-  async function load() {
-    const res = await fetch('/api/nautilus-backtest/last');
-    const d = await res.json();
-
-    if (!d || !d.run_at) {
-      document.getElementById('run-meta').textContent = 'Todavía no se corrió ningún backtest — usá el botón "Ejecutar backtest" en el dashboard.';
-      document.querySelector('.stat-grid').innerHTML = '';
-      return;
-    }
-
-    document.getElementById('run-meta').textContent =
-      `Corrido ${new Date(d.run_at).toLocaleString('es-AR')} · ${d.days} días · ` +
-      `${(d.symbols || []).join(', ')} · riesgo $${d.risk_usdt}/trade`;
-
-    document.getElementById('stat-grid').innerHTML = [
-      statTile('Trades', d.trades_closed ?? 0),
-      statTile('Win rate', numFmt(d.win_rate) + '%'),
-      statTile('R total', rSign(d.r_total) + numFmt(d.r_total, 2) + 'R', rClass(d.r_total)),
-      statTile('Expectancy', rSign(d.expectancy) + numFmt(d.expectancy, 3) + 'R'),
-      statTile('Max DD', numFmt(d.max_dd, 2) + 'R'),
-      statTile('Fills', d.fills ?? 0),
-    ].join('');
-
-    const noteEl = document.getElementById('note');
-    if (!d.trades_closed) {
-      noteEl.hidden = false;
-      noteEl.textContent = 'El backtest corrió pero no cerró ningún trade en esta ventana — puede ser normal (Craig es selectivo: todos los gates obligatorios deben cumplirse) o una señal de que hace falta más historia (--days más alto) para juntar setups.';
-    }
-
-    const bySymbolBody = document.querySelector('#by-symbol-table tbody');
-    bySymbolBody.innerHTML = (d.by_symbol || []).map(s => `
-      <tr>
-        <td class="sym">${s.symbol}</td>
-        <td>${s.trades}</td>
-        <td>${numFmt(s.win_rate)}%</td>
-        <td class="${rClass(s.r_total)}">${rSign(s.r_total)}${numFmt(s.r_total, 2)}R</td>
-      </tr>`).join('') || '<tr><td colspan="4" class="empty">Sin datos</td></tr>';
-
-    const trades = [...(d.trades || [])].reverse();
-    const tradesBody = document.querySelector('#trades-table tbody');
-    tradesBody.innerHTML = trades.map(t => `
-      <tr>
-        <td class="sym">${t.symbol}</td>
-        <td class="dir-${t.direction}">${t.direction === 'long' ? 'LONG' : 'SHORT'}</td>
-        <td>$${numFmt(t.entry_price, 4)}</td>
-        <td>$${numFmt(t.exit_price, 4)}</td>
-        <td>${new Date(t.close_time).toLocaleString('es-AR')}</td>
-        <td>${numFmt(t.duration_min, 0)}min</td>
-        <td class="${rClass(t.pnl)}">${rSign(t.pnl)}$${numFmt(t.pnl, 2)}</td>
-        <td class="${rClass(t.r)}">${rSign(t.r)}${numFmt(t.r, 2)}R</td>
-      </tr>`).join('') || '<tr><td colspan="8" class="empty">Sin trades</td></tr>';
-  }
-
-  load();
-</script>
 </body>
 </html>
