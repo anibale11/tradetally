@@ -7,7 +7,7 @@
         </svg>
       </router-link>
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-        SMC Sniper — Nautilus (paralelo)
+        SMC Sniper — Nautilus (beta)
       </h1>
     </div>
 

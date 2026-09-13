@@ -54,7 +54,7 @@ const bots = [
   },
   {
     id: 'nautilus-trading',
-    name: 'nautilus-trading (OKX, paralelo)',
+    name: 'nautilus-trading (OKX, beta)',
     statusLabel: 'Demo en vivo',
     methods: [
       {

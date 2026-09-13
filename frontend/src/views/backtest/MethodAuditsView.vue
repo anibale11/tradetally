@@ -49,7 +49,7 @@ const methods = [
   },
   {
     id: 'smc-sniper-nautilus',
-    name: 'SMC Sniper — Nautilus (paralelo)',
+    name: 'SMC Sniper — Nautilus (beta)',
     status: 'live',
     statusLabel: 'En vivo — OKX demo',
     source: 'nautilus-trading — CraigSMCStrategy',
