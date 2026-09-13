@@ -54,12 +54,91 @@
     color: var(--ink-muted); font-size: 13px; line-height: 1.6; margin: 8px 0 0;
     padding: 12px 14px; background: var(--surface-2); border-left: 2px solid var(--accent); border-radius: 6px;
   }
+
+  /* ── Fixes reales (sección estática, no dinámica) ──────────── */
+  section.cat { margin: 40px 0 52px; }
+  .cat-head {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+    border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 22px;
+  }
+  .cat-head h2 { font-size: 20px; margin: 0; letter-spacing: -0.005em; border: none; padding: 0; }
+  .cat-head .count { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); white-space: nowrap; }
+  .cat-intro { color: var(--ink-muted); font-size: 14.5px; margin: -10px 0 22px; }
+  .rule {
+    background: var(--surface); border: 1px solid var(--border);
+    border-left: 3px solid var(--accent); border-radius: 8px;
+    padding: 18px 20px; margin-bottom: 12px;
+  }
+  .rule-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+  .rule-title { font-size: 15px; font-weight: 600; line-height: 1.4; }
+  .badge {
+    font-family: var(--mono); font-size: 10.5px; font-weight: 600; letter-spacing: 0.03em;
+    text-transform: uppercase; padding: 3px 9px; border-radius: 999px; white-space: nowrap; flex: none;
+    color: var(--accent); background: var(--accent-bg); border: 1px solid var(--accent);
+  }
+  .rule-body { font-size: 14px; color: var(--ink-muted); }
+  .rule-body p { margin: 6px 0; }
+  .rule-body code { font-size: 12.5px; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; color: var(--ink); }
+  .rule-foot { margin-top: 10px; font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint); }
 </style>
 </head>
 <body>
 <div class="container">
   <h1>SMC Sniper — Nautilus (beta)</h1>
   <p class="meta" id="run-meta">Cargando...</p>
+
+  <section class="cat">
+    <div class="cat-head">
+      <h2>Fixes reales encontrados y corregidos — sesión 2026-09-12</h2>
+      <span class="count">5 hallazgos</span>
+    </div>
+    <p class="cat-intro">Bot en etapa de <strong>beta/evaluación</strong> del framework NautilusTrader como base técnica — el objetivo es apoyarse en los mecanismos nativos de Nautilus lo más posible, código propio solo donde sea estrictamente necesario. Los 5 hallazgos de esta sesión surgieron de revisar trades reales en producción (cuenta demo OKX) a pedido del usuario.</p>
+
+    <div class="rule">
+      <div class="rule-top"><div class="rule-title">Duplicación de entradas/alertas al reiniciar el contenedor</div><span class="badge">Corregido — 2026-09-11</span></div>
+      <div class="rule-body">
+        <p><code>_pending_or_open</code>/<code>_pending_orders</code>/<code>_pending_setups</code> viven en memoria pura de Python — se pierden en cada restart de <code>nautilus-live</code>. Si el mismo setup (ChoCh/FVG) seguía vigente al reiniciar, la estrategia "olvidaba" que ya había una orden límite pendiente, colocaba OTRA en OKX y reenviaba la notificación — varias órdenes reales duplicadas por símbolo tras varios restarts seguidos.</p>
+        <p><strong>Corregido</strong>: <code>_reconcile_state_on_start()</code>, llamado desde <code>on_start</code>, consulta <code>self.cache.orders_open()</code>/<code>positions_open()</code> — que el <code>LiveExecutionEngine</code> de Nautilus YA reconcilió contra OKX antes de que <code>on_start</code> corra, sin necesitar Redis ni una DB propia — y marca el símbolo como pendiente/abierto en vez de arrancar todo en <code>False</code>.</p>
+      </div>
+      <div class="rule-foot">craig_smc_strategy._reconcile_state_on_start — commit 03333e7</div>
+    </div>
+
+    <div class="rule">
+      <div class="rule-top"><div class="rule-title">SL rechazado por OKX ("Reduce Only is not available")</div><span class="badge">Corregido — 2026-09-11</span></div>
+      <div class="rule-body">
+        <p>Un trade real (ATOM-USDT) corrió sin ningún Stop Loss activo en el exchange desde que se abrió: <code>reduce_only=True</code> en la orden <code>stop_market</code> era rechazado por OKX con <code>"OKX error 1: Reduce Only is not available"</code> — OKX somete los STOP_MARKET vía su endpoint de algo orders (condicional), que no acepta ese flag en cuentas en modo NET. Las órdenes LIMIT (TP1/TP2) con el mismo flag sí se aceptaban sin problema.</p>
+        <p><strong>Corregido</strong>: se quitó <code>reduce_only=True</code> de las dos órdenes <code>stop_market()</code> (apertura y reemplazo del trailing) — en modo NET el SL ya cierra correctamente la única posición neta del símbolo sin necesitar el flag.</p>
+      </div>
+      <div class="rule-foot">craig_smc_strategy._open_position_management / _replace_sl — commit 03333e7</div>
+    </div>
+
+    <div class="rule">
+      <div class="rule-top"><div class="rule-title">Loop de coloca/cancela cada ~2min (falta gate de No Chasing preventivo)</div><span class="badge">Corregido — 2026-09-11</span></div>
+      <div class="rule-body">
+        <p>ETH-USDT-SWAP colocó y canceló la misma orden límite ~14 veces en <span style="white-space:nowrap">~2 horas</span>. El precio ya había corrido por encima del nivel de "No Chasing" (breakeven, 1 ATR-15m) ANTES de que la orden se colocara — pero ese chequeo solo existía en <code>_reevaluate_pending_order</code>, que corre recién en el ciclo de vela SIGUIENTE a colocar la orden. Se cancelaba casi al instante y el ciclo siguiente volvía a "encontrar" el mismo setup vigente (nada lo había invalidado) y la resometía, indefinidamente.</p>
+        <p><strong>Corregido</strong>: mismo cálculo de breakeven aplicado como gate ANTES de <code>_submit_entry</code> en <code>_on_1m_bar_closed</code> — si el precio ya superó el nivel, la señal se descarta directo sin colocar ni cancelar nada. bot_trading no tiene este problema porque <code>_confirm_choch()</code> es un poll bloqueante que corre inmediatamente antes de colocar la orden.</p>
+      </div>
+      <div class="rule-foot">craig_smc_strategy._on_1m_bar_closed — commit a5e2572</div>
+    </div>
+
+    <div class="rule">
+      <div class="rule-top"><div class="rule-title">Tamaño de posición sin dividir por el multiplicador de contrato (ctVal)</div><span class="badge">Corregido — 2026-09-12</span></div>
+      <div class="rule-body">
+        <p><code>_calculate_position_size</code> calculaba la cantidad en unidades del activo subyacente y la sometía tal cual como cantidad de contratos a OKX. Confirmado contra el endpoint público de OKX (<code>/api/v5/public/instruments</code>): XRP-USDT-SWAP tiene <code>ctVal=100</code> (1 contrato = 100 XRP) — la orden real pedía ~100x el nocional previsto, rechazada por <code>"Insufficient USDT balance"</code> pese a sobrar margen libre. Hallazgo colateral: ETH-USDT-SWAP tiene <code>ctVal=0.1</code> — ahí el bug iba al revés, arriesgando ~10x MENOS de <code>risk_usdt</code> sin ningún error visible. ATOM/SOL-USDT-SWAP tienen <code>ctVal=1</code> (por eso esos trades nunca mostraron el bug).</p>
+        <p><strong>Corregido</strong>: <code>raw_size = raw_size / float(instrument.multiplier)</code> — atributo estándar de Nautilus para el valor nocional por contrato, equivalente al <code>ctVal</code> de OKX — antes de redondear al <code>size_increment</code>.</p>
+      </div>
+      <div class="rule-foot">craig_smc_strategy._calculate_position_size — commit 149a494</div>
+    </div>
+
+    <div class="rule">
+      <div class="rule-top"><div class="rule-title">Fills parciales de la entrada dejaban la posición sin SL/TP real</div><span class="badge">Corregido — 2026-09-12 (refactor a eventos nativos)</span></div>
+      <div class="rule-body">
+        <p>Una orden a MERCADO grande en OKX puede llenarse en varias ejecuciones parciales — cada una dispara su propio evento <code>OrderFilled</code> para el mismo <code>client_order_id</code>. Confirmado en vivo: un trade real de SOL se llenó en ~11 fills distintos. El código armaba SL/TP1/TP2 usando solo el <code>last_qty</code> del PRIMER fill (una fracción ínfima de la posición real), y en el segundo evento de la misma entrada confundía el resto de los fills con el cierre de la posición — dejándola sin ningún SL/TP efectivo ni seguimiento interno.</p>
+        <p><strong>Corregido con un refactor</strong> (no solo un parche), a pedido explícito del usuario dado que el bot está en evaluación del framework: nueva <code>on_position_opened(event)</code> arma SL+TP1+TP2 usando el evento AGREGADO nativo de Nautilus — dispara una sola vez, con <code>event.quantity</code> ya sumando todos los fills parciales. <code>on_order_filled</code> quedó reducido a solo identificar el fill de TP1 (lo único que el evento de posición no distingue por sí solo); eliminado un bloque redundante que duplicaba la limpieza que <code>on_position_closed</code> ya hacía.</p>
+      </div>
+      <div class="rule-foot">craig_smc_strategy.on_position_opened / on_order_filled — commit 362f7ea</div>
+    </div>
+  </section>
 
   <div class="stat-grid" id="stat-grid"></div>
   <p class="note" id="note" hidden></p>
