@@ -98,7 +98,7 @@ async function main() {
       quantity: t.quantity,
       pnl: t.pnl,
       broker: BROKER_NAME,
-      strategy: 'SMC Sniper (Craig Percoco)',
+      strategy: 'SMC Sniper Craig',
       instrumentType: 'crypto',
       notes: `Importado automáticamente desde bot_trading (producción real, BingX). ` +
              `order_id:${t.order_id} | close_reason:${t.close_reason} | signal_id:${t.signal_id}`,
