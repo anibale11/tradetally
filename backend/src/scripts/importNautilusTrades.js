@@ -26,6 +26,14 @@ const DATA_DIR = process.env.NAUTILUS_TRADING_DATA_DIR || '/nautilus-data';
 const TRADES_FILE = path.join(DATA_DIR, 'nautilus_trades.jsonl');
 const BROKER_NAME = 'nautilus-trading (SMC Sniper — OKX demo)';
 
+// Cutoff: commit 362f7ea (2026-09-12 20:54:15 -03 = 23:54:15 UTC), el
+// último cambio grande a la lógica de la estrategia (refactor a eventos
+// nativos de posición de Nautilus en vez de contar fills de orden manual).
+// Igual criterio que bot_trading (feedback_reset_30trade_sample_on_fix.md):
+// trades de antes/después de un fix de lógica no son "idénticos" para
+// contar la muestra — solo se importan trades abiertos desde este fix.
+const CUTOFF_MS = Date.parse('2026-09-12T23:54:15.000Z');
+
 async function readTradeLines() {
   if (!fs.existsSync(TRADES_FILE)) return [];
   const rows = [];
@@ -68,6 +76,7 @@ async function main() {
   let skipped = 0;
 
   for (const t of rows) {
+    if (!t.open_time_ms || t.open_time_ms < CUTOFF_MS) continue;
     const key = dedupKey(t);
     if (await alreadyImported(userId, key)) {
       skipped += 1;
@@ -88,7 +97,7 @@ async function main() {
       quantity: t.quantity,
       pnl,
       broker: BROKER_NAME,
-      strategy: 'SMC Sniper Craig',
+      strategy: 'SMC Sniper Craig (Nautilus)',
       instrumentType: 'crypto',
       notes: `Importado automáticamente desde nautilus-trading (cuenta demo real, OKX). ` +
              `dedup:${key} | fee:${t.fee} | funding_fee:${t.funding_fee} | leverage:${t.leverage}`,
