@@ -21,6 +21,7 @@ const path = require('path');
 const readline = require('readline');
 const db = require('../config/database');
 const Trade = require('../models/Trade');
+const AnalyticsCache = require('../services/analyticsCache');
 
 const DATA_DIR = process.env.NAUTILUS_TRADING_DATA_DIR || '/nautilus-data';
 const TRADES_FILE = path.join(DATA_DIR, 'nautilus_trades.jsonl');
@@ -110,6 +111,14 @@ async function main() {
     } catch (err) {
       console.error(`❌ Error importando trade ${key} (${symbol}):`, err.message);
     }
+  }
+
+  if (imported > 0) {
+    // Trade.create() aquí se llama fuera del controller HTTP normal, que es
+    // donde vive la invalidación de AnalyticsCache — sin esto, el dashboard
+    // sigue sirviendo el payload cacheado (TTL 24h) de antes del import.
+    await AnalyticsCache.invalidate(userId);
+    console.log('[CACHE] Analytics cache invalidado tras el import.');
   }
 
   console.log(`\nResumen: ${imported} importados, ${skipped} ya existían, ${rows.length} candidatos totales.`);
