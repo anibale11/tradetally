@@ -9,6 +9,7 @@ import { TRADE_CHART_RESOLUTION_PREFERENCE_KEY } from '@/utils/tradeChartPrefere
 export const SYNCED_KEYS = Object.freeze([
   'darkMode',
   'tradeListColumns',
+  'tradeListColumnWidths',
   'tradeListFullWidth',
   'tradeFilters',
   'tradeFiltersPeriod',
@@ -29,6 +30,8 @@ export const SYNCED_KEYS = Object.freeze([
   'priceAlertsFilters',
   'monthlyPerformanceYear',
   'lastSelectedBroker',
+  'import_strategy_handling',
+  'import_notes_and_descriptions',
   TRADE_CHART_RESOLUTION_PREFERENCE_KEY,
   'passkey_prompt_dismissed',
   'hiddenStrategies',

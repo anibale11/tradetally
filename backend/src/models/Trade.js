@@ -268,8 +268,12 @@ class Trade {
     let shouldQueueClassification = false;
 
     if (!strategy || strategy.trim() === '') {
+      if (options.skipStrategyClassification) {
+        finalStrategy = '';
+        classificationMethod = 'none';
+        classificationMetadata = { intentionallyLeftBlank: true };
       // Check if we should skip API calls (e.g., during import)
-      if (options.skipApiCalls) {
+      } else if (options.skipApiCalls) {
         // Use basic time-based classification and queue full classification for later
         const tempTrade = {
           symbol: symbol.toUpperCase(),
@@ -1161,6 +1165,18 @@ class Trade {
     const values = [userId];
     let paramCount = 2;
     let whereClause = 'WHERE t.user_id = $1 AND t.entry_price IS NOT NULL AND t.exit_price IS NULL';
+
+    if (filters.includeArchived !== true) {
+      whereClause += ` AND NOT EXISTS (
+        SELECT 1
+        FROM user_accounts reporting_account
+        WHERE reporting_account.user_id = t.user_id
+          AND reporting_account.account_identifier IS NOT NULL
+          AND reporting_account.account_identifier != ''
+          AND reporting_account.account_identifier = t.account_identifier
+          AND reporting_account.include_in_reports = false
+      )`;
+    }
 
     if (filters.accounts && filters.accounts.length > 0) {
       console.log('[OPEN_POSITIONS] Applying account filter:', filters.accounts);
@@ -2755,6 +2771,18 @@ class Trade {
     const values = [userId];
     let paramCount = 2;
 
+    if (filters.includeArchived !== true) {
+      whereClause += ` AND NOT EXISTS (
+        SELECT 1
+        FROM user_accounts reporting_account
+        WHERE reporting_account.user_id = t.user_id
+          AND reporting_account.account_identifier IS NOT NULL
+          AND reporting_account.account_identifier != ''
+          AND reporting_account.account_identifier = t.account_identifier
+          AND reporting_account.include_in_reports = false
+      )`;
+    }
+
     // Date filtering (shared with the canonical builder)
     const dateRange = buildTradeDateRangeClause(filters, paramCount);
     if (dateRange.clause) {
@@ -3033,6 +3061,7 @@ class Trade {
 
     const { getBreakevenToleranceConfig, breakevenPredicate, groupedBreakevenPredicate } = require('../utils/breakeven');
     const { POSITION_GROUP_KEY, isPositionGroupingEnabled } = require('../utils/positionGrouping');
+const { fxUsd: fxUsdTrade } = require('../utils/tradeFx');
     const breakevenConfig = await getBreakevenToleranceConfig(userId);
     // Whole-trade win rate (issue #339): when enabled, collapse multi-leg
     // positions before the monthly aggregation so counts and win rate match
@@ -3072,11 +3101,22 @@ class Trade {
       params.push(...filters.strategies);
     }
 
+    const reportingAccountCondition = filters.includeArchived === true ? '' : `
+          AND NOT EXISTS (
+            SELECT 1
+            FROM user_accounts reporting_account
+            WHERE reporting_account.user_id = trades.user_id
+              AND reporting_account.account_identifier IS NOT NULL
+              AND reporting_account.account_identifier != ''
+              AND reporting_account.account_identifier = trades.account_identifier
+              AND reporting_account.include_in_reports = false
+          )`;
+
     const whereBody = `
         WHERE user_id = $1
           AND EXTRACT(YEAR FROM trade_date) = $2
           AND exit_price IS NOT NULL
-          AND pnl IS NOT NULL${extraFilter}`;
+          AND pnl IS NOT NULL${reportingAccountCondition}${extraFilter}`;
 
     // Grouped mode aggregates legs to positions first; r-value stats then read
     // the position-level sum, gated on any leg having a stop (has_stop).
@@ -3084,8 +3124,8 @@ class Trade {
         SELECT
           MIN(trade_date) as trade_date,
           MIN(COALESCE(NULLIF(underlying_symbol, ''), symbol)) as symbol,
-          SUM(pnl) as pnl,
-          SUM(COALESCE(pnl, 0) + COALESCE(commission, 0) + COALESCE(fees, 0)) as gross_pnl,
+          SUM(${fxUsdTrade('pnl', '')}) as pnl,
+          SUM(COALESCE(${fxUsdTrade('pnl', '')}, 0) + COALESCE(${fxUsdTrade('commission', '')}, 0) + COALESCE(${fxUsdTrade('fees', '')}, 0)) as gross_pnl,
           SUM(r_value) FILTER (WHERE r_value IS NOT NULL AND stop_loss IS NOT NULL) as r_value,
           BOOL_OR(stop_loss IS NOT NULL) as has_stop
         FROM trades
@@ -3103,6 +3143,10 @@ class Trade {
       ? 'r_value IS NOT NULL AND has_stop'
       : 'r_value IS NOT NULL AND stop_loss IS NOT NULL';
 
+    // Grouped mode reads USD-normalized pnl from position_trades (wrapped in
+    // the CTE); leg mode reads raw trades rows and must wrap here.
+    const monthlyPnlRef = groupByPosition ? 'pnl' : fxUsdTrade('pnl', '');
+
     const monthlyQuery = `
       WITH ${sourceCte}monthly_trades AS (
         SELECT
@@ -3112,12 +3156,12 @@ class Trade {
           COUNT(*) FILTER (WHERE ${be.isNot} AND pnl > 0)::integer as winning_trades,
           COUNT(*) FILTER (WHERE ${be.isNot} AND pnl < 0)::integer as losing_trades,
           COUNT(*) FILTER (WHERE ${be.is})::integer as breakeven_trades,
-          COALESCE(SUM(pnl), 0)::numeric as total_pnl,
-          COALESCE(AVG(pnl), 0)::numeric as avg_pnl,
-          COALESCE(AVG(pnl) FILTER (WHERE ${be.isNot} AND pnl > 0), 0)::numeric as avg_win,
-          COALESCE(AVG(pnl) FILTER (WHERE ${be.isNot} AND pnl < 0), 0)::numeric as avg_loss,
-          COALESCE(MAX(pnl), 0)::numeric as best_trade,
-          COALESCE(MIN(pnl), 0)::numeric as worst_trade,
+          COALESCE(SUM(${monthlyPnlRef}), 0)::numeric as total_pnl,
+          COALESCE(AVG(${monthlyPnlRef}), 0)::numeric as avg_pnl,
+          COALESCE(AVG(${monthlyPnlRef}) FILTER (WHERE ${be.isNot} AND pnl > 0), 0)::numeric as avg_win,
+          COALESCE(AVG(${monthlyPnlRef}) FILTER (WHERE ${be.isNot} AND pnl < 0), 0)::numeric as avg_loss,
+          COALESCE(MAX(${monthlyPnlRef}), 0)::numeric as best_trade,
+          COALESCE(MIN(${monthlyPnlRef}), 0)::numeric as worst_trade,
           COALESCE(AVG(r_value) FILTER (WHERE ${rValueFilter}), 0)::numeric as avg_r_value,
           COALESCE(SUM(r_value) FILTER (WHERE ${rValueFilter}), 0)::numeric as total_r_value,
           COUNT(DISTINCT symbol)::integer as symbols_traded,
@@ -3319,16 +3363,31 @@ class Trade {
     const query = `
       SELECT DISTINCT account_identifier FROM (
         SELECT account_identifier
-        FROM trades
-        WHERE user_id = $1 AND account_identifier IS NOT NULL AND account_identifier != ''
+        FROM trades t
+        WHERE t.user_id = $1 AND t.account_identifier IS NOT NULL AND t.account_identifier != ''
+          AND NOT EXISTS (
+            SELECT 1
+            FROM user_accounts archived_account
+            WHERE archived_account.user_id = t.user_id
+              AND archived_account.account_identifier = t.account_identifier
+              AND archived_account.is_archived = true
+          )
         UNION
         SELECT account_identifier
         FROM user_accounts
         WHERE user_id = $1 AND account_identifier IS NOT NULL AND account_identifier != ''
+          AND is_archived = false
         UNION
-        SELECT account_identifier
-        FROM investment_lots
-        WHERE user_id = $1 AND account_identifier IS NOT NULL AND account_identifier != ''
+        SELECT l.account_identifier
+        FROM investment_lots l
+        WHERE l.user_id = $1 AND l.account_identifier IS NOT NULL AND l.account_identifier != ''
+          AND NOT EXISTS (
+            SELECT 1
+            FROM user_accounts archived_account
+            WHERE archived_account.user_id = l.user_id
+              AND archived_account.account_identifier = l.account_identifier
+              AND archived_account.is_archived = true
+          )
       ) combined
       ORDER BY account_identifier
     `;
