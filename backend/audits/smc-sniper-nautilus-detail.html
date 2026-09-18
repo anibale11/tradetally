@@ -108,6 +108,42 @@
       <div class="rule-foot">craig_smc_strategy._reconcile_state_on_start — commit 03333e7</div>
     </div>
   </section>
+
+  <section class="cat">
+    <div class="cat-head">
+      <h2>Fixes reales encontrados y corregidos — sesión 2026-09-16/17</h2>
+      <span class="count">3 hallazgos</span>
+    </div>
+    <p class="cat-intro">Disparados por un incidente real en producción: el motor de matching de la cuenta demo/simulada de OKX quedó degradado durante horas (API acepta órdenes con éxito pero no las ejecuta/cancela), dejando 4 posiciones reales sin SL activo. La investigación de por qué llevó a encontrar dos bugs de fondo, no solo el síntoma.</p>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">No-chasing usaba distancia fija de ATR — Craig usa un BOS real en 1m</div><span class="badge">Corregido y desplegado — 2026-09-17</span></div>
+      <div class="rule-body">
+        <p>Mismo hallazgo y mismo fix que bot_trading (ver auditoría SMC Sniper Producción, sección 6i): auditoría empírica (15 días, 29 trades) mostró que el umbral de ATR (<code>entry ± 1 ATR(15m)</code> acá — bot_trading usa 1h) disparaba sistemáticamente antes que un Break of Structure real (33 min antes en promedio), sin BOS real confirmado en el 83% de los casos dentro de 3h.</p>
+        <blockquote class="nb">Craig no usa ATR para No Chasing en ninguna temporalidad — su regla real es un BOS confirmado en 1m (vela que cierra el cuerpo más allá del swing previo).</blockquote>
+        <p><strong>Corregido</strong>: los DOS puntos donde este bot chequeaba la distancia ATR (gate preventivo antes de someter la entrada, y <code>_reevaluate_pending_order</code> criterio 1) ahora usan <code>logic._detect_mechanical_swings</code> sobre velas de 1m con <code>logic.CHOCH_RETRACE_PCT</code> — mismo detector y umbral ya calibrados para el ChoCh, sin inventar uno nuevo.</p>
+      </div>
+      <div class="rule-foot">craig_smc_strategy._on_1m_bar_closed / _reevaluate_pending_order — commit 11add47</div>
+    </div>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">SL sin reduce_only podía flippear la posición al lado contrario</div><span class="badge">Corregido y desplegado — 2026-09-17</span></div>
+      <div class="rule-body">
+        <p>Bug real verificado en producción, ATOM-USDT-SWAP, 2026-09-14: el fix anterior (03333e7, arriba) quitó <code>reduce_only</code> del SL para esquivar el rechazo de OKX en su endpoint de algo-orders — pero eso también apagó la protección NATIVA de Nautilus (su <code>RiskEngine</code> deniega localmente cualquier orden <code>reduce_only</code> que excedería la posición real en caché, <code>would_reduce_only</code>, sin depender del exchange). Sin esa protección, un SL sobredimensionado (el 100% original, si no se reemplazó a tiempo tras un TP1/TP2 parcial) se ejecutó completo contra una posición ya casi cerrada y la <strong>flippeó al lado contrario</strong> — nació una posición LONG fantasma de 389 unidades, invisible para la estrategia (<code>on_position_opened</code> la ignoraba por no venir de <code>_submit_entry</code>), sin SL/TP ni <code>_pending_or_open</code> marcado.</p>
+        <p><strong>Corregido</strong>: <code>emulation_trigger=TriggerType.LAST_PRICE</code> en los dos <code>stop_market</code> (<code>_open_position_management</code>, <code>_replace_sl</code>) — el trigger se evalúa 100% local en Nautilus (se suscribe solo a los trade ticks del instrumento), el SL nunca llega a OKX como algo-order condicional (evita el rechazo de <code>reduceOnly</code>), y al dispararse libera una orden de MERCADO regular con <code>reduce_only=True</code> — esa sí la acepta OKX (mismo comportamiento que TP1/TP2, siempre LIMIT reduce_only sin problema), recuperando la validación nativa del RiskEngine contra el overshoot.</p>
+      </div>
+      <div class="rule-foot">craig_smc_strategy._open_position_management / _replace_sl — commit 16e2af4</div>
+    </div>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">Posición sin setup propio quedaba sin protección ("seguimiento manual")</div><span class="badge">Corregido y desplegado — 2026-09-17</span></div>
+      <div class="rule-body">
+        <p>Consecuencia directa del bug de arriba: mientras el motor de matching de OKX estuvo degradado (2026-09-16/17), 4 posiciones reales (SOL, ATOM, ETH, XRP) quedaron completamente sin SL — <code>on_position_opened</code>/<code>_reconcile_state_on_start</code> las detectaban pero solo avisaban por Telegram "seguimiento manual recomendado", sin armar ninguna protección real.</p>
+        <p><strong>Corregido de fondo</strong> (a pedido explícito del usuario: "no solo colocar sino resolver el problema... usando el framework Nautilus"): nuevo <code>_try_adopt_orphan_position</code>, enganchado en <code>_on_1m_bar_closed</code> para cada símbolo marcado en <code>_orphan_positions</code>. En cuanto hay velas de 15m suficientes, calcula un SL con el MISMO detector estructural que ya usa el trailing (<code>_structure_trail_level</code> — Craig no usa % fijo, con respaldo de ATR si todavía no hay una pierna confirmada) y lo arma con el mismo mecanismo de emulación local + reduce_only de arriba. Verificado empíricamente en producción: las 4 posiciones atrapadas se adoptaron solas con SL correcto en menos de 20 segundos tras el restart, sin intervención manual. Limitación aceptada: sin TP1/TP2 originales (no se pueden reconstruir), estas posiciones no tienen el gatillo de salida por RSI Cloud (exige <code>tp1_hit=True</code>) — el cierre queda a cargo del SL/trailing por estructura.</p>
+      </div>
+      <div class="rule-foot">craig_smc_strategy._try_adopt_orphan_position — commit 2a31b21</div>
+    </div>
+  </section>
 </div>
 </body>
 </html>

@@ -366,7 +366,7 @@
     <p class="eyebrow">Auditoría interna · bot_trading</p>
     <h1>Bot SMC Sniper vs. método real de Craig Percoco</h1>
     <p class="lede">Comparación punto por punto entre lo que implementa el código (<code>smc_bias_analyzer.py</code>, <code>smc_sniper_strategy.py</code>, <code>position_monitor.py</code>) y lo que documenta el NotebookLM <strong>trading-brain</strong> sobre la metodología real de Craig Percoco. Cada punto está clasificado por qué tan verificado está, sin asumir nada que no esté citado.</p>
-    <p class="meta">Generado 2026-08-19 · actualizado 2026-09-09 · fuente: NB trading-brain (id eefd6f23-…) · solo para uso local</p>
+    <p class="meta">Generado 2026-08-19 · actualizado 2026-09-17 · fuente: NB trading-brain (id eefd6f23-…) · solo para uso local</p>
   </header>
 
   <button type="button" class="toggle-all" id="toggle-all-btn">▸ Expandir todo</button>
@@ -1072,6 +1072,25 @@
         <p><strong>Corregido</strong>: <code>_directional_swing(pivots, direction)</code> resuelve la pierna completa más reciente en la dirección correcta (low→high para long, high→low para short) antes de calcular la zona. Con pivots estrictamente alternados, la pierna correcta puede estar en <code>pivots[-2:]</code> o en <code>pivots[-3:-1]</code> según cuál haya sido el pivot más reciente. Fallback a rango de 30 velas si no hay pierna direccional completa disponible (~3% de las evaluaciones, verificado empíricamente). Backtest 15 días (mismo dataset): +12.38R→+4.27R — no es evidencia de que el fix esté mal, es evidencia de que el código viejo medía la zona sobre impulsos a veces equivocados, algunos de los cuales producían entradas rentables por casualidad en esta muestra puntual (confirmado con la traza concreta de arriba).</p>
       </div>
       <div class="rule-foot">smc_sniper_strategy._directional_swing / _fib_discount_zone — commit da94354</div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ 6i. FIX DE FIDELIDAD — SESIÓN 2026-09-17 ═══════════════════ -->
+  <section class="cat">
+    <div class="cat-head">
+      <h2>6i · Fix de fidelidad al método — sesión 2026-09-17</h2>
+      <span class="count">1 hallazgo</span>
+    </div>
+    <p class="cat-intro">Auditoría empírica disparada por revisar el patrón de trades ejecutados vs. cancelados en ambos bots — encontró que el criterio "No Chasing" seguía usando un sustituto de ATR (ver 6h) en vez de la regla real de Craig.</p>
+
+    <div class="rule fixed">
+      <div class="rule-top"><div class="rule-title">No-chasing usaba distancia fija de ATR — Craig usa un BOS real en 1m</div><span class="badge">Corregido y desplegado — 2026-09-17</span></div>
+      <div class="rule-body">
+        <p>Auditoría empírica (15 días, 29 trades) comparando cuándo dispara el umbral de ATR (<code>entry ± 1 ATR(1h)</code>, fix del punto 6h de arriba) contra cuándo aparece un Break of Structure real en 1m: el ATR disparaba sistemáticamente antes (33 min antes en promedio cuando ambos coincidían) y en el 83% de los casos nunca hubo BOS real confirmado dentro de una ventana de 3h. Verificación directa sobre 6 cancelaciones recientes de producción: 2 de 6 habrían sido ganadoras (tocaron TP1 horas después de cancelarse) — falsos positivos reales causados por el umbral de ATR, no por un criterio real de Craig.</p>
+        <blockquote class="nb">Craig no usa ATR para No Chasing en ninguna temporalidad — su regla real es un Break of Structure confirmado en el gráfico de 1 minuto (una vela que cierra el cuerpo más allá del swing previo), no una distancia fija de volatilidad.</blockquote>
+        <p><strong>Corregido</strong>: el criterio 1 de <code>_reevaluate_pending_limit</code> ahora usa <code>_detect_mechanical_swings</code> sobre velas de 1m (mismo detector y mismos parámetros ya calibrados para la confirmación del ChoCh — <code>CHOCH_RETRACE_PCT</code>, <code>CHOCH_SWING_CANDLES</code> — no se inventó un umbral nuevo). Cancela solo si aparece un swing CONFIRMADO (cierre real, no una mecha) más allá del entry en la dirección del trade. Nota: la Fase 1 de breakeven en una posición YA ABIERTA (<code>_apply_trailing_stop</code>) sigue usando el umbral de ATR viejo — deliberadamente no unificado todavía (ver auditoría empírica de "protegió vs. falso positivo", n=2, sin evidencia de daño con la muestra chica disponible).</p>
+      </div>
+      <div class="rule-foot">position_monitor._reevaluate_pending_limit — commit 5e20af5</div>
     </div>
   </section>
 
