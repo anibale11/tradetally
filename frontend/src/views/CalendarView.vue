@@ -146,9 +146,9 @@
               </div>
             </div>
 
-            <!-- Calendar Grid - Weekdays Only -->
-            <div class="grid grid-cols-6 gap-1 mb-2">
-              <div v-for="day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']" :key="day"
+            <!-- Calendar Grid -->
+            <div class="grid grid-cols-8 gap-1 mb-2">
+              <div v-for="day in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']" :key="day"
                 class="text-center text-xs font-medium text-gray-500 dark:text-gray-400 py-2">
                 {{ day }}
               </div>
@@ -156,7 +156,7 @@
                 {{ showRValue ? 'Week R' : `Week ${pnl_type === 'net' ? 'Net' : 'Gross'} P/L` }}
               </div>
             </div>
-            <div v-for="(week, weekIndex) in expandedMonthWeekdays" :key="weekIndex" class="grid grid-cols-6 gap-1 mb-1">
+            <div v-for="(week, weekIndex) in expandedMonthWeekdays" :key="weekIndex" class="grid grid-cols-8 gap-1 mb-1">
               <div v-for="(day, dayIndex) in week.days" :key="dayIndex"
                 class="border border-gray-200 dark:border-gray-700 rounded-lg p-2 sm:p-3 min-h-[70px] sm:min-h-[80px] cursor-pointer hover:brightness-95 transition-all"
                 :class="getDayClass(day)"
@@ -422,43 +422,6 @@ const yearlyCalendar = computed(() => {
   })
 })
 
-const expandedMonthDays = computed(() => {
-  if (!expandedMonth.value) return []
-  const monthStart = startOfMonth(expandedMonth.value)
-  const monthEnd = endOfMonth(expandedMonth.value)
-  return generateMonthDays(monthStart, monthEnd)
-})
-
-const expandedMonthWeeks = computed(() => {
-  if (!expandedMonth.value) return []
-  const days = expandedMonthDays.value
-  const weeks = []
-  
-  for (let i = 0; i < days.length; i += 7) {
-    const weekDays = days.slice(i, i + 7)
-    const weekPnl = weekDays.reduce((sum, day) => {
-      if (day.pnl !== undefined) {
-        return sum + day.pnl
-      }
-      return sum
-    }, 0)
-    const week_gross_pnl = weekDays.reduce((sum, day) => {
-      if (day.gross_pnl !== undefined) {
-        return sum + day.gross_pnl
-      }
-      return sum
-    }, 0)
-    
-    weeks.push({
-      days: weekDays,
-      weekPnl,
-      week_gross_pnl
-    })
-  }
-  
-  return weeks
-})
-
 const expandedMonthWeekdays = computed(() => {
   if (!expandedMonth.value) return []
   const monthStart = startOfMonth(expandedMonth.value)
@@ -471,33 +434,19 @@ const expandedMonthWeekdays = computed(() => {
   for (const date of allDays) {
     const dayOfWeek = getDay(date) // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
 
-    // Skip weekends
-    if (dayOfWeek === 0 || dayOfWeek === 6) {
-      // If we hit Sunday and have accumulated weekdays, finish the week
-      if (dayOfWeek === 0 && currentWeek.days.length > 0) {
-        // Pad to 5 days if needed (for partial weeks)
-        while (currentWeek.days.length < 5) {
-          currentWeek.days.push({ date: null })
-        }
-        weeks.push(currentWeek)
-        currentWeek = { days: [], weekPnl: 0, week_gross_pnl: 0, weekRValue: 0 }
-      }
-      continue
-    }
-
-    // If it's Monday and we already have days, start a new week
-    if (dayOfWeek === 1 && currentWeek.days.length > 0) {
-      // Pad to 5 days if needed (for partial weeks)
-      while (currentWeek.days.length < 5) {
+    // If it's Sunday and we already have days, start a new week
+    if (dayOfWeek === 0 && currentWeek.days.length > 0) {
+      // Pad to 7 days if needed (for partial weeks)
+      while (currentWeek.days.length < 7) {
         currentWeek.days.push({ date: null })
       }
       weeks.push(currentWeek)
       currentWeek = { days: [], weekPnl: 0, week_gross_pnl: 0, weekRValue: 0 }
     }
 
-    // Add padding for the first week if it doesn't start on Monday
-    if (weeks.length === 0 && currentWeek.days.length === 0 && dayOfWeek > 1) {
-      for (let i = 1; i < dayOfWeek; i++) {
+    // Add padding for the first week if it doesn't start on Sunday
+    if (weeks.length === 0 && currentWeek.days.length === 0 && dayOfWeek > 0) {
+      for (let i = 0; i < dayOfWeek; i++) {
         currentWeek.days.push({ date: null })
       }
     }
@@ -522,7 +471,7 @@ const expandedMonthWeekdays = computed(() => {
 
   // Add any remaining days as the last week
   if (currentWeek.days.length > 0) {
-    while (currentWeek.days.length < 5) {
+    while (currentWeek.days.length < 7) {
       currentWeek.days.push({ date: null })
     }
     weeks.push(currentWeek)
