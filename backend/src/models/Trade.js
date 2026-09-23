@@ -230,8 +230,24 @@ class Trade {
 
     const annotatedExecutions = engineResult.annotatedExecutions;
     const aggregate = engineResult.aggregate;
-    const pnl = aggregate.pnl;
-    const pnlPercent = aggregate.pnl_percent;
+    // Fix 2026-09-23: pnlEngine.computeTradePnl() recalcula el PnL como
+    // (exit-entry)*quantity*multiplier, y multiplierFor() solo tiene casos
+    // especiales para 'future'/'option' — para 'crypto' cae a multiplier=1,
+    // que ignora el apalancamiento real de un perpetuo. Esto descartaba
+    // silenciosamente el PnL neto real (ya calculado correctamente por la
+    // exchange, con apalancamiento/fees/funding) que pasan los imports de
+    // bot_trading/nautilus-trading — verificado en producción: 17/24 trades
+    // de nautilus con error >15% (algunos 8-130x el valor real). Para
+    // 'crypto' con un pnl explícito provisto, se confía en ese valor en vez
+    // de recalcularlo — no se toca el comportamiento para 'stock'/'option'/
+    // 'future' (broker sync vía oauthBrokerBase.js sigue confiando en el
+    // motor, que sí es correcto para esos multiplicadores conocidos).
+    const trustProvidedPnl = instrumentType === 'crypto'
+      && providedPnL !== undefined && providedPnL !== null && providedPnL !== '';
+    const pnl = trustProvidedPnl ? parseFloat(providedPnL) : aggregate.pnl;
+    const pnlPercent = (trustProvidedPnl && providedPnLPercent !== undefined && providedPnLPercent !== null && providedPnLPercent !== '')
+      ? parseFloat(providedPnLPercent)
+      : aggregate.pnl_percent;
     const computedEntryPrice = aggregate.entry_price != null ? aggregate.entry_price : entryPrice;
     const computedExitPrice = aggregate.exit_price != null ? aggregate.exit_price : cleanExitPrice;
     const computedQuantity = aggregate.quantity > 0 ? aggregate.quantity : quantity;
