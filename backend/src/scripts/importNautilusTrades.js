@@ -27,13 +27,14 @@ const DATA_DIR = process.env.NAUTILUS_TRADING_DATA_DIR || '/nautilus-data';
 const TRADES_FILE = path.join(DATA_DIR, 'nautilus_trades.jsonl');
 const BROKER_NAME = 'nautilus-trading (SMC Sniper — OKX demo)';
 
-// Cutoff: commit 362f7ea (2026-09-12 20:54:15 -03 = 23:54:15 UTC), el
-// último cambio grande a la lógica de la estrategia (refactor a eventos
-// nativos de posición de Nautilus en vez de contar fills de orden manual).
-// Igual criterio que bot_trading (feedback_reset_30trade_sample_on_fix.md):
+// Cutoff: inicio del día 2026-09-21 (00:00 America/Sao_Paulo = 03:00 UTC),
+// fecha de la última tanda de fixes a la lógica de las estrategias (SL con
+// modify_order nativo, No Chasing anclado por timestamp, gate preventivo
+// removido). Criterio del proyecto (feedback_reset_30trade_sample_on_fix.md):
 // trades de antes/después de un fix de lógica no son "idénticos" para
-// contar la muestra — solo se importan trades abiertos desde este fix.
-const CUTOFF_MS = Date.parse('2026-09-12T23:54:15.000Z');
+// contar la muestra — solo se importan trades abiertos desde este corte.
+// Compartido con importBotTradingTrades.js (mismo valor, mantener en sync).
+const CUTOFF_MS = Date.parse('2026-09-21T03:00:00.000Z');
 
 async function readTradeLines() {
   if (!fs.existsSync(TRADES_FILE)) return [];

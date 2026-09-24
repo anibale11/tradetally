@@ -29,6 +29,11 @@ const DATA_DIR = process.env.BOT_TRADING_DATA_DIR || '/bot-trading-data';
 const TRADES_FILE = path.join(DATA_DIR, 'trades_export.jsonl');
 const BROKER_NAME = 'bot_trading (SMC Sniper — BingX)';
 
+// Inicio del día 2026-09-21 (00:00 America/Sao_Paulo = 03:00 UTC): última
+// tanda de fixes a la lógica de las estrategias. Solo se importan trades
+// abiertos desde este corte (mismo valor que importNautilusTrades.js).
+const CUTOFF_MS = Date.parse('2026-09-21T03:00:00.000Z');
+
 // close_reason que significan "la orden límite nunca se llenó" — no hubo
 // trade real, no tiene sentido importarlos como si fueran una operación.
 const NO_FILL_REASONS = new Set([
@@ -75,7 +80,11 @@ function toIsoNoTz(sqliteTimestamp) {
 async function main() {
   const userId = await getUserId();
   const rows = await readTradeLines();
-  const closed = rows.filter(t => t.status === 'closed' && !NO_FILL_REASONS.has(t.close_reason));
+  const closed = rows.filter(t =>
+    t.status === 'closed'
+    && !NO_FILL_REASONS.has(t.close_reason)
+    && Date.parse(toIsoNoTz(t.open_time)) >= CUTOFF_MS
+  );
 
   let imported = 0;
   let skipped = 0;

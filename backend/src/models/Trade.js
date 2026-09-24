@@ -254,6 +254,22 @@ class Trade {
     const computedCommission = aggregate.commission;
     const computedFees = aggregate.fees;
 
+    // Mismo fix de arriba, aplicado también al JSON `executions` — el
+    // calendario y el detalle de día NO leen `trades.pnl`, reconstruyen el
+    // número desde `execution.realized_pnl`/`gross_realized_pnl` (ver
+    // utils/executionPnlByDate.js), que el motor stampeó con el mismo
+    // cálculo multiplier=1 incorrecto. Sin este segundo ajuste, la lista de
+    // trades mostraría el PnL correcto pero el calendario seguiría mostrando
+    // el valor viejo — descubierto en producción tras el primer fix (el
+    // usuario vio números distintos en cada vista).
+    if (trustProvidedPnl && Array.isArray(annotatedExecutions) && annotatedExecutions.length > 0) {
+      const closingExecution = annotatedExecutions[annotatedExecutions.length - 1];
+      if (closingExecution && closingExecution.realized_pnl !== undefined) {
+        closingExecution.realized_pnl = pnl;
+        closingExecution.gross_realized_pnl = pnl + (computedCommission || 0) + (computedFees || 0);
+      }
+    }
+
     // Calculate R-Multiple later after applying default stop loss
     // Will be calculated after finalStopLoss is determined
     let rValue = null;
