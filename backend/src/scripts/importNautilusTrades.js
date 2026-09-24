@@ -27,14 +27,16 @@ const DATA_DIR = process.env.NAUTILUS_TRADING_DATA_DIR || '/nautilus-data';
 const TRADES_FILE = path.join(DATA_DIR, 'nautilus_trades.jsonl');
 const BROKER_NAME = 'nautilus-trading (SMC Sniper — OKX demo)';
 
-// Cutoff: inicio del día 2026-09-21 (00:00 America/Sao_Paulo = 03:00 UTC),
-// fecha de la última tanda de fixes a la lógica de las estrategias (SL con
-// modify_order nativo, No Chasing anclado por timestamp, gate preventivo
-// removido). Criterio del proyecto (feedback_reset_30trade_sample_on_fix.md):
-// trades de antes/después de un fix de lógica no son "idénticos" para
-// contar la muestra — solo se importan trades abiertos desde este corte.
-// Compartido con importBotTradingTrades.js (mismo valor, mantener en sync).
-const CUTOFF_MS = Date.parse('2026-09-21T03:00:00.000Z');
+// Cutoff: 2026-09-24 02:04 UTC (23:04 del 23/09 en America/Sao_Paulo),
+// deploy del fix de apilamiento de entradas (commit 3a44ba1 de
+// nautilus-trading: no abrir nuevas entradas si ya hay posición abierta).
+// Antes de ese fix el bot sumaba órdenes sobre posiciones abiertas (XRP llegó
+// a 62.69 contratos, -$673) y dejaba órdenes TP vivas que reabrían shorts
+// fantasma (ATOM 709) — esos trades no son comparables. Criterio del
+// proyecto (feedback_reset_30trade_sample_on_fix.md): se reinicia la muestra
+// en cada fix de lógica. bot_trading tiene su propio corte (21/09) en
+// importBotTradingTrades.js.
+const CUTOFF_MS = Date.parse('2026-09-24T02:04:00.000Z');
 
 async function readTradeLines() {
   if (!fs.existsSync(TRADES_FILE)) return [];
