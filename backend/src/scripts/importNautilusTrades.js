@@ -56,14 +56,22 @@ async function getUserId() {
   return result.rows[0].id;
 }
 
+// Incluye close_time_ms: un cierre parcial (TP1 + runner) llega de OKX como
+// 2 filas con el mismo pos_id y open_time_ms — con solo pos_id:open_time_ms
+// la segunda parte se descartaba como "ya existía" (XRP 24/09 y 26/09).
 function dedupKey(t) {
-  return `${t.pos_id}:${t.open_time_ms}`;
+  return `${t.pos_id}:${t.open_time_ms}:${t.close_time_ms}`;
 }
 
-async function alreadyImported(userId, key) {
+async function alreadyImported(userId, t) {
+  // Formato legacy (antes del fix): "dedup:<pos_id>:<open_time_ms> |" — esos
+  // trades se reconocen por la clave vieja + su exit_time, para no duplicarlos.
   const result = await db.query(
-    `SELECT id FROM trades WHERE user_id = $1 AND broker = $2 AND notes LIKE $3 LIMIT 1`,
-    [userId, BROKER_NAME, `%dedup:${key}%`]
+    `SELECT id FROM trades WHERE user_id = $1 AND broker = $2 AND (
+       notes LIKE $3 OR (notes LIKE $4 AND exit_time = $5::timestamptz)
+     ) LIMIT 1`,
+    [userId, BROKER_NAME, `%dedup:${dedupKey(t)} %`,
+     `%dedup:${t.pos_id}:${t.open_time_ms} |%`, msToIso(t.close_time_ms)]
   );
   return result.rows.length > 0;
 }
@@ -83,7 +91,7 @@ async function main() {
   for (const t of rows) {
     if (!t.open_time_ms || t.open_time_ms < CUTOFF_MS) continue;
     const key = dedupKey(t);
-    if (await alreadyImported(userId, key)) {
+    if (await alreadyImported(userId, t)) {
       skipped += 1;
       continue;
     }
