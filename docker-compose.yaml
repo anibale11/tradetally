@@ -5,6 +5,7 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: tradetally-db
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${DB_USER:-trader}
       POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}
@@ -202,7 +203,7 @@ services:
       # Volumen compartido con el proyecto bot_trading (watcher del backtest
       # corriendo en un contenedor separado, ver docker-compose.yml de ese
       # repo) — mismo patrón que el de arriba, para el segundo método.
-      - ${BOT_TRADING_DATA_DIR:-../../bot_trading/.claude/worktrees/score-fibonacci-fix/data}:/bot-trading-data
+      - ${BOT_TRADING_DATA_DIR:-../../bot_trading/data}:/bot-trading-data
       # Páginas de auditoría de método (HTML autocontenido) — viven dentro
       # del propio repo (backend/audits/), TradeTally ya no depende de que
       # el repo de nautilus-trading exista al lado.
