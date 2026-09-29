@@ -39,6 +39,18 @@ const BROKER_NAME = 'nautilus-trading (SMC Sniper — OKX demo)';
 // importBotTradingTrades.js.
 const CUTOFF_MS = Date.parse('2026-09-24T02:26:00.000Z');
 
+// Incidente 26-29/09 (fix nautilus f7d37b0): tras cada restart las posiciones
+// quedaban como EXTERNAL y el RiskEngine denegaba sus salidas — los SL no se
+// ejecutaban y las posiciones se re-adoptaban con SL recalculado, fuera del
+// método. Se excluye todo trade abierto antes del cierre forzado de la cuenta
+// (29/09 21:20 UTC) que haya cerrado desde el primer SL denegado.
+const INCIDENT_FIRST_DENIAL_MS = Date.parse('2026-09-26T20:42:40.000Z');
+const INCIDENT_FLATTEN_MS = Date.parse('2026-09-29T21:20:00.000Z');
+
+function affectedByIncident(t) {
+  return t.open_time_ms < INCIDENT_FLATTEN_MS && t.close_time_ms >= INCIDENT_FIRST_DENIAL_MS;
+}
+
 async function readTradeLines() {
   if (!fs.existsSync(TRADES_FILE)) return [];
   const rows = [];
@@ -87,9 +99,11 @@ async function main() {
 
   let imported = 0;
   let skipped = 0;
+  let excluded = 0;
 
   for (const t of rows) {
     if (!t.open_time_ms || t.open_time_ms < CUTOFF_MS) continue;
+    if (affectedByIncident(t)) { excluded += 1; continue; }
     const key = dedupKey(t);
     if (await alreadyImported(userId, t)) {
       skipped += 1;
@@ -133,7 +147,7 @@ async function main() {
     console.log('[CACHE] Analytics cache invalidado tras el import.');
   }
 
-  console.log(`\nResumen: ${imported} importados, ${skipped} ya existían, ${rows.length} candidatos totales.`);
+  console.log(`\nResumen: ${imported} importados, ${skipped} ya existían, ${rows.length} candidatos totales (${excluded} excluidos por incidente 26-29/09).`);
   process.exit(0);
 }
 
