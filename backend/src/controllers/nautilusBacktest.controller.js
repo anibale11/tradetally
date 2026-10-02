@@ -7,8 +7,21 @@ const path = require('path');
 // (backtest_watcher.py, corriendo en un contenedor separado), no por una
 // API interna entre los dos servicios.
 const DATA_DIR = process.env.NAUTILUS_DATA_DIR || '/nautilus-data';
-const TRIGGER_FILE = path.join(DATA_DIR, 'backtest_trigger.json');
-const RESULT_FILE = path.join(DATA_DIR, 'backtest_result.json');
+// Una pareja trigger/resultado por estrategia (mismos nombres que
+// nautilus-trading/backtest_watcher.py y run_backtest.RESULT_FILES). La del
+// SMC Sniper conserva los nombres originales.
+const STRATEGIES = {
+  smc: { trigger: 'backtest_trigger.json', result: 'backtest_result.json' },
+  rsi_cloud: { trigger: 'backtest_trigger_rsi_cloud.json', result: 'backtest_result_rsi_cloud.json' },
+};
+
+function filesFor(req) {
+  const key = Object.prototype.hasOwnProperty.call(STRATEGIES, req.query.strategy) ? req.query.strategy : 'smc';
+  return {
+    trigger: path.join(DATA_DIR, STRATEGIES[key].trigger),
+    result: path.join(DATA_DIR, STRATEGIES[key].result),
+  };
+}
 
 function readJson(filePath, fallback) {
   try {
@@ -30,6 +43,7 @@ function writeJson(filePath, data) {
 }
 
 exports.run = (req, res) => {
+  const { trigger: TRIGGER_FILE } = filesFor(req);
   const current = readJson(TRIGGER_FILE, { status: 'idle' });
   if (current.status === 'pending' || current.status === 'running') {
     return res.status(409).json({ error: 'Ya hay un backtest en curso' });
@@ -46,11 +60,11 @@ exports.run = (req, res) => {
 };
 
 exports.status = (req, res) => {
-  res.json(readJson(TRIGGER_FILE, { status: 'idle' }));
+  res.json(readJson(filesFor(req).trigger, { status: 'idle' }));
 };
 
 exports.last = (req, res) => {
-  res.json(readJson(RESULT_FILE, {}));
+  res.json(readJson(filesFor(req).result, {}));
 };
 
 // Páginas de auditoría de método (HTML autocontenido, comparación contra

@@ -24,8 +24,13 @@ const Trade = require('../models/Trade');
 const AnalyticsCache = require('../services/analyticsCache');
 
 const DATA_DIR = process.env.NAUTILUS_TRADING_DATA_DIR || '/nautilus-data';
-const TRADES_FILE = path.join(DATA_DIR, 'nautilus_trades.jsonl');
-const BROKER_NAME = 'nautilus-trading (SMC Sniper — OKX demo)';
+// Overrides por variable de entorno para importar otra cuenta/estrategia de
+// nautilus-trading con el mismo script (ej. RSI Cloud en la subcuenta OKX,
+// ver scripts/sync_all_bots.sh). Sin variables = SMC Sniper, como siempre.
+const TRADES_FILE = path.join(DATA_DIR, process.env.IMPORT_TRADES_FILE || 'nautilus_trades.jsonl');
+const BROKER_NAME = process.env.IMPORT_BROKER_NAME || 'nautilus-trading (SMC Sniper — OKX demo)';
+const STRATEGY_NAME = process.env.IMPORT_STRATEGY_NAME || 'SMC Sniper Craig (Nautilus)';
+const IS_DEFAULT_SMC = !process.env.IMPORT_BROKER_NAME;
 
 // Cutoff: 2026-09-24 02:26 UTC (23:26 del 23/09 en America/Sao_Paulo),
 // deploy del último fix de nautilus-trading: 3a44ba1 (no abrir nuevas
@@ -37,7 +42,7 @@ const BROKER_NAME = 'nautilus-trading (SMC Sniper — OKX demo)';
 // proyecto (feedback_reset_30trade_sample_on_fix.md): se reinicia la muestra
 // en cada fix de lógica. bot_trading tiene su propio corte (21/09) en
 // importBotTradingTrades.js.
-const CUTOFF_MS = Date.parse('2026-09-24T02:26:00.000Z');
+const CUTOFF_MS = Date.parse(process.env.IMPORT_CUTOFF || '2026-09-24T02:26:00.000Z');
 
 // Incidente 26-29/09 (fix nautilus f7d37b0): tras cada restart las posiciones
 // quedaban como EXTERNAL y el RiskEngine denegaba sus salidas — los SL no se
@@ -48,6 +53,7 @@ const INCIDENT_FIRST_DENIAL_MS = Date.parse('2026-09-26T20:42:40.000Z');
 const INCIDENT_FLATTEN_MS = Date.parse('2026-09-29T21:20:00.000Z');
 
 function affectedByIncident(t) {
+  if (!IS_DEFAULT_SMC) return false;  // el incidente solo afectó a la cuenta del SMC Sniper
   return t.open_time_ms < INCIDENT_FLATTEN_MS && t.close_time_ms >= INCIDENT_FIRST_DENIAL_MS;
 }
 
@@ -124,7 +130,7 @@ async function main() {
       quantity: t.quantity,
       pnl,
       broker: BROKER_NAME,
-      strategy: 'SMC Sniper Craig (Nautilus)',
+      strategy: STRATEGY_NAME,
       instrumentType: 'crypto',
       notes: `Importado automáticamente desde nautilus-trading (cuenta demo real, OKX). ` +
              `dedup:${key} | fee:${t.fee} | funding_fee:${t.funding_fee} | leverage:${t.leverage}`,

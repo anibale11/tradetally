@@ -64,6 +64,13 @@ const bots = [
         backtestPath: '/analysis/nautilus-backtest',
         auditId: 'smc-sniper-nautilus',
       },
+      {
+        id: 'rsi-cloud-nautilus',
+        name: 'RSI Cloud (RsiCloudStrategy)',
+        description: 'Dark highlight + divergencia + EMA200/FVG 15m en 1m/5m; salida por highlight opuesto en 15m.',
+        backtestPath: '/analysis/nautilus-backtest?strategy=rsi_cloud',
+        auditId: 'rsi-cloud-entry',
+      },
     ],
   },
 ]

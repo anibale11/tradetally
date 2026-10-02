@@ -7,14 +7,14 @@
         </svg>
       </router-link>
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-        SMC Sniper — Nautilus (beta)
+        {{ meta.title }}
       </h1>
     </div>
 
     <div class="card mb-6">
       <div class="card-body">
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-          Backtest real de <code>CraigSMCStrategy</code> (NautilusTrader + OKX) — corre en el
+          Backtest real de <code>{{ meta.className }}</code> (NautilusTrader + OKX) — corre en el
           proyecto <code>nautilus-trading</code>, descarga velas reales de OKX y ejecuta el motor
           de backtest completo. Puede tardar varios minutos.
         </p>
@@ -88,6 +88,21 @@
         </div>
       </div>
 
+      <div v-if="discardReasons.length" class="card">
+        <div class="card-body">
+          <h2 class="text-lg font-semibold mb-1">Señales descartadas por filtro</h2>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+            Velas con dark highlight que no llegaron a entrada, según el primer filtro que no cumplieron.
+          </p>
+          <div class="flex flex-wrap gap-2">
+            <span v-for="[reason, count] in discardReasons" :key="reason"
+                  class="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 font-mono">
+              {{ reason.replaceAll('_', ' ') }}: {{ count }}
+            </span>
+          </div>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-body overflow-x-auto">
           <h2 class="text-lg font-semibold mb-3">Trades (más reciente primero)</h2>
@@ -134,8 +149,20 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRoute } from 'vue-router'
 import api from '@/services/api'
 import { formatUtc } from '@/utils/backtestTime'
+
+// Una misma vista para todas las estrategias del bot nautilus-trading: la
+// estrategia viene de ?strategy= (ver manifest en BacktestBotsView.vue).
+const STRATEGY_META = {
+  smc: { title: 'SMC Sniper — Nautilus (beta)', className: 'CraigSMCStrategy' },
+  rsi_cloud: { title: 'RSI Cloud — Nautilus (beta)', className: 'RsiCloudStrategy' },
+}
+const route = useRoute()
+const strategy = computed(() => (STRATEGY_META[route.query.strategy] ? route.query.strategy : 'smc'))
+const meta = computed(() => STRATEGY_META[strategy.value])
+const discardReasons = computed(() => Object.entries(result.value?.discard_reasons || {}))
 
 const days = ref(90)
 const running = ref(false)
@@ -157,7 +184,7 @@ function rClass(n) {
 
 async function loadLast() {
   try {
-    const { data } = await api.get('/nautilus-backtest/last')
+    const { data } = await api.get('/nautilus-backtest/last', { params: { strategy: strategy.value } })
     if (data && data.run_at) result.value = data
   } catch (e) {
     // sin resultado todavía, no es un error real
@@ -166,7 +193,7 @@ async function loadLast() {
 
 async function pollStatus() {
   try {
-    const { data } = await api.get('/nautilus-backtest/status')
+    const { data } = await api.get('/nautilus-backtest/status', { params: { strategy: strategy.value } })
     if (data.status === 'pending') {
       statusText.value = 'En cola…'
     } else if (data.status === 'running') {
@@ -196,7 +223,7 @@ async function runBacktest() {
   running.value = true
   statusText.value = 'Solicitando…'
   try {
-    await api.post(`/nautilus-backtest/run?days=${days.value}`)
+    await api.post(`/nautilus-backtest/run?days=${days.value}&strategy=${strategy.value}`)
     statusText.value = 'En cola…'
     if (pollTimer) clearInterval(pollTimer)
     pollTimer = setInterval(pollStatus, 5000)

@@ -112,18 +112,18 @@
 <div class="wrap">
 
   <header class="doc-head">
-    <p class="eyebrow">Auditoría interna · bot_trading</p>
+    <p class="eyebrow">Auditoría interna · nautilus-trading (RsiCloudStrategy, beta)</p>
     <h1>RSI Cloud / Inevitrade ProPlus como ENTRADA — método Craig Percoco</h1>
-    <p class="lede">Tercer disparador de entrada independiente de Craig Percoco — scalping/reversión rápida por agotamiento, sin requerir ChoCh ni FVG. Distinto del RSI Cloud ya implementado como SALIDA (<code>_check_rsi_cloud_exit</code>, position_monitor.py) — acá se documenta su uso como gatillo de ENTRADA, nunca implementado. Ningún código de esta entrada existe todavía; documento de investigación/planificación.</p>
-    <p class="meta">Generado 2026-09-10 · fuente: NB trading-brain (id eefd6f23-…) · solo para uso local</p>
+    <p class="lede">Tercer disparador de entrada independiente de Craig Percoco — scalping/reversión rápida por agotamiento, sin requerir ChoCh ni FVG. Distinto del RSI Cloud ya implementado como SALIDA (<code>_check_rsi_cloud_exit</code>, position_monitor.py) — acá se documenta su uso como gatillo de ENTRADA. <strong>Implementado el 2026-10-02</strong> como estrategia propia en nautilus-trading (<code>strategies/rsi_cloud_strategy.py</code>), con cada regla configurable y el default del NB.</p>
+    <p class="meta">Generado 2026-09-10 · revisado e implementado 2026-10-02 · fuente: NB trading-brain (id eefd6f23-…) · solo para uso local</p>
   </header>
 
   <button type="button" class="toggle-all" id="toggle-all-btn">▸ Expandir todo</button>
 
   <div class="stats">
-    <div class="stat ok"><div class="n">4</div><div class="l">Cuantificado con precisión</div></div>
-    <div class="stat warn"><div class="n">2</div><div class="l">Discrecional / a calibrar</div></div>
-    <div class="stat info"><div class="n">1</div><div class="l">Ya implementado (parcial, como salida)</div></div>
+    <div class="stat ok"><div class="n">9</div><div class="l">Cuantificado (implementado)</div></div>
+    <div class="stat warn"><div class="n">3</div><div class="l">Discrecional / supuesto propio</div></div>
+    <div class="stat info"><div class="n">2</div><div class="l">Informativo / veredicto</div></div>
   </div>
 
   <div class="legend">
@@ -194,7 +194,52 @@
 
   <section class="cat">
     <div class="cat-head">
-      <h2>3 · Discrecional — requeriría calibración empírica propia</h2>
+      <h2>3 · Reglas agregadas en la revisión del NB (2026-10-02)</h2>
+      <span class="count">6 puntos</span>
+    </div>
+    <p class="cat-intro">Consultas cortas al NB antes de implementar. Completan o corrigen la versión del 10/09.</p>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Parámetros del indicador: propietario, umbrales 30/70</div><span class="badge">Cuantificado</span></div>
+      <div class="rule-body"><p>Craig no publica los períodos del RSI ni de la nube (Inevitrade ProPlus es cerrado). Sí define: escala 1–100, sobreventa 30 y sobrecompra 70 (a veces 75 arriba), nube = banda de desvío estándar sobre la línea del RSI, light highlight = solo la nube fuera del umbral, <strong>dark highlight = RSI y nube fuera juntos al cierre de la vela</strong>. Implementación: RSI 14 + banda 14 ±2σ, los mismos valores ya verificados visualmente para la salida (fix 2026-09-18).</p></div>
+      <div class="rule-foot">NB trading-brain — verificado 2026-10-02</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Divergencia pivote a pivote y retest por toque físico</div><span class="badge">Cuantificado</span></div>
+      <div class="rule-body"><p><strong>Divergencia:</strong> sin cantidad fija de velas; se compara el swing actual (donde se forma el highlight) contra el swing previo. Long: precio con mínimo más bajo y RSI con mínimo más alto. Implementación: pivotes con retroceso mínimo configurable (0.3% por defecto, micro-pivotes de 1m/5m).</p>
+      <p><strong>Retest de la EMA200:</strong> no hay distancia numérica; cuenta cuando la mecha o el cuerpo de la vela toca o atraviesa la línea. Implementación: la EMA200 del TF de entrada queda dentro del rango de la vela de señal, que cierra del lado del rebote.</p></div>
+      <div class="rule-foot">NB trading-brain — verificado 2026-10-02</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Sesiones: NY 9:30–11:30 ET, Londres 3:00 ET, Asia 20:00 ET</div><span class="badge">Cuantificado</span></div>
+      <div class="rule-body"><p>Opera en las aperturas con volumen institucional. Ventana principal NY 9:30–11:00/11:30 ET; también aperturas de Londres (3:00 ET) y Asia (20:00 ET). Excluye la tarde de NY (13:00–20:00 ET). Pares: SOL (favorito), ETH, BTC y otros líquidos (ATOM, XRP, LINK, AVAX…).</p></div>
+      <div class="rule-foot">NB trading-brain — verificado 2026-10-02</div>
+    </div>
+
+    <div class="rule partial">
+      <div class="rule-top"><div class="rule-title">Duración de las ventanas de Londres y Asia</div><span class="badge">Supuesto propio</span></div>
+      <div class="rule-body"><p>El NB da la hora de apertura de Londres y Asia pero no su duración. Se usan 2 horas (3:00–5:00 y 20:00–22:00 ET), igual que la ventana principal de NY. Configurable (<code>sessions_et</code>).</p></div>
+      <div class="rule-foot">Supuesto de implementación — no viene del NB</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Break even y trailing ANTES del highlight opuesto</div><span class="badge">Cuantificado</span></div>
+      <div class="rule-body"><p>Con el primer impulso a favor o BOS mueve el SL a la entrada ("risk-free trade") y después hace trailing detrás de los pivotes estructurales (mínimos más altos en long, máximos más bajos en short). El highlight opuesto en 15m es solo la toma de ganancia del 100%. Implementación: BE al cierre más allá del último pivote previo a la entrada (sin pivote, a +1R); trailing por pivotes confirmados desde la entrada; el SL solo se mueve a favor.</p></div>
+      <div class="rule-foot">NB trading-brain — verificado 2026-10-02</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Filtros: fuerza relativa vs BTC, sesgo de BTC y nivel de TF mayor</div><span class="badge">Cuantificado</span></div>
+      <div class="rule-body"><p>No toma el RSI Cloud aislado: longs en pares más fuertes que BTC y shorts en más débiles (Strength vs. Bitcoin); que la señal no luche contra la tendencia de BTC (1h/4h/diario); y que ocurra en un nivel de TF mayor: FVG de 15m sin mitigar, EMA200 o S/R. Implementación: fuerza relativa 15m vs BTC, sesgo estructural de BTC 4h (neutral permitido) y nivel = EMA200 o FVG de 15m sin mitigar. Las S/R trazadas a mano quedan fuera.</p></div>
+      <div class="rule-foot">NB trading-brain — verificado 2026-10-02</div>
+    </div>
+  </section>
+
+  <section class="cat">
+    <div class="cat-head">
+      <h2>4 · Discrecional — requeriría calibración empírica propia</h2>
       <span class="count">2 puntos</span>
     </div>
 
@@ -213,20 +258,26 @@
 
   <section class="cat">
     <div class="cat-head">
-      <h2>4 · Veredicto de factibilidad</h2>
-      <span class="count">1 conclusión</span>
+      <h2>5 · Implementación (nautilus-trading, beta)</h2>
+      <span class="count">1 punto</span>
     </div>
     <div class="rule info">
-      <div class="rule-top"><div class="rule-title">Alta factibilidad — reutiliza infraestructura ya existente en el bot</div><span class="badge">Evaluado — no iniciado</span></div>
+      <div class="rule-top"><div class="rule-title">RsiCloudStrategy — cada regla del NB es un parámetro configurable</div><span class="badge">Implementado (beta)</span></div>
       <div class="rule-body">
-        <p>De las 3 metodologías nuevas evaluadas (DCA, 35A, RSI-Cloud-entry), esta es la <strong>más accionable</strong>: el bot ya tiene <code>_rsi_cloud_exit_signal()</code> (cálculo de RSI-14 + banda ±2 desvíos estándar) y <code>_rsi_divergence()</code> (detección de divergencia precio/RSI, aunque calibrada para otro contexto) — ambos reutilizables como base. Faltaría: (1) el chequeo de "doble confirmación" (línea Y nube cruzando el umbral simultáneamente, hoy solo se usa la línea), (2) el gatillo de entrada en 1m/5m con retest de EMA200/S-R, (3) el TP dinámico por highlight opuesto en 15m (ya existe como lógica de salida, se reutilizaría directo).</p>
+        <ul style="margin:4px 0 8px 20px; padding:0;">
+          <li><strong>Entrada</strong> al cierre de la vela de 1m o 5m (<code>trigger_minutes</code>; la de 5m se arma a partir de las de 1m): dark highlight + divergencia + nivel + fuerza relativa + sesgo de BTC + sesión.</li>
+          <li><strong>SL</strong> por fuera del mínimo/máximo de la vela de señal (+0.05%), con piso de 0.2% y descarte si supera 3%.</li>
+          <li><strong>Gestión</strong>: BE al BOS, trailing por pivotes, salida del 100% por highlight opuesto en 15m.</li>
+          <li><strong>Protecciones</strong> heredadas del SMC Sniper (fixes 26–30/09): límite diario −3R con reset por día UTC, SL redimensionado si la entrada se llena en partes, rearmado si se deniega el SL, cancelación de órdenes sobrantes al cerrar.</li>
+          <li><strong>Backtest</strong>: <code>run_backtest.py --strategy rsi_cloud</code>, resultado con el conteo de señales descartadas por filtro.</li>
+        </ul>
       </div>
-      <div class="rule-foot">NB trading-brain — evaluación de factibilidad, sin código todavía</div>
+      <div class="rule-foot">Implementado 2026-10-02 — resultados de backtest en Backtest Bots → RSI Cloud</div>
     </div>
   </section>
 
   <footer class="doc-foot">
-    <p>Fuente única de verdad: NotebookLM "trading-brain". Todos los puntos verificados con cita textual del NB el 2026-09-10.</p>
+    <p>Fuente única de verdad: NotebookLM "trading-brain". Puntos verificados con el NB el 2026-09-10 y el 2026-10-02; los supuestos propios están marcados como tales.</p>
     <p>Documento generado localmente, no publicado. Separado del SMC Sniper, DCA Range Trading y 35A porque es un tercer disparador de entrada independiente.</p>
   </footer>
 
