@@ -157,7 +157,6 @@ import { formatUtc } from '@/utils/backtestTime'
 // estrategia viene de ?strategy= (ver manifest en BacktestBotsView.vue).
 const STRATEGY_META = {
   smc: { title: 'SMC Sniper — Nautilus (beta)', className: 'CraigSMCStrategy' },
-  rsi_cloud: { title: 'RSI Cloud — Nautilus (beta)', className: 'RsiCloudStrategy' },
 }
 const route = useRoute()
 const strategy = computed(() => (STRATEGY_META[route.query.strategy] ? route.query.strategy : 'smc'))

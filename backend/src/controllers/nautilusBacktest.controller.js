@@ -9,10 +9,11 @@ const path = require('path');
 const DATA_DIR = process.env.NAUTILUS_DATA_DIR || '/nautilus-data';
 // Una pareja trigger/resultado por estrategia (mismos nombres que
 // nautilus-trading/backtest_watcher.py y run_backtest.RESULT_FILES). La del
-// SMC Sniper conserva los nombres originales.
+// SMC Sniper conserva los nombres originales. Una estrategia desconocida
+// cae al SMC. (RSI Cloud ya no es estrategia aparte: es la confluencia
+// `rsi_cloud_entry` dentro del SMC Sniper.)
 const STRATEGIES = {
   smc: { trigger: 'backtest_trigger.json', result: 'backtest_result.json' },
-  rsi_cloud: { trigger: 'backtest_trigger_rsi_cloud.json', result: 'backtest_result_rsi_cloud.json' },
 };
 
 function filesFor(req) {

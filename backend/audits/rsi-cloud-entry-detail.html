@@ -112,9 +112,9 @@
 <div class="wrap">
 
   <header class="doc-head">
-    <p class="eyebrow">Auditoría interna · nautilus-trading (RsiCloudStrategy, beta)</p>
+    <p class="eyebrow">Auditoría interna · nautilus-trading (CraigSMCStrategy, confluencia de entrada)</p>
     <h1>RSI Cloud / Inevitrade ProPlus como ENTRADA — método Craig Percoco</h1>
-    <p class="lede">Tercer disparador de entrada independiente de Craig Percoco — scalping/reversión rápida por agotamiento, sin requerir ChoCh ni FVG. Distinto del RSI Cloud ya implementado como SALIDA (<code>_check_rsi_cloud_exit</code>, position_monitor.py) — acá se documenta su uso como gatillo de ENTRADA. <strong>Implementado el 2026-10-02</strong> como estrategia propia en nautilus-trading (<code>strategies/rsi_cloud_strategy.py</code>), con cada regla configurable y el default del NB.</p>
+    <p class="lede">El RSI Cloud (Inevitrade ProPlus) <strong>no es una estrategia aparte</strong>: es la primera capa de confluencia de la entrada del SMC Sniper — detecta el agotamiento que precede al ChoCh y al FVG. Usarlo como gatillo aislado es el error número uno que lista Craig. Distinto del RSI Cloud ya implementado como SALIDA del runner (<code>_check_rsi_cloud_exit</code>, position_monitor.py). En nautilus-trading vive como <code>rsi_cloud_entry</code> dentro de <code>CraigSMCConfig</code>.</p>
     <p class="meta">Generado 2026-09-10 · revisado e implementado 2026-10-02 · fuente: NB trading-brain (id eefd6f23-…) · solo para uso local</p>
   </header>
 
@@ -123,7 +123,7 @@
   <div class="stats">
     <div class="stat ok"><div class="n">9</div><div class="l">Cuantificado (implementado)</div></div>
     <div class="stat warn"><div class="n">3</div><div class="l">Discrecional / supuesto propio</div></div>
-    <div class="stat info"><div class="n">2</div><div class="l">Informativo / veredicto</div></div>
+    <div class="stat info"><div class="n">3</div><div class="l">Informativo / veredicto</div></div>
   </div>
 
   <div class="legend">
@@ -134,16 +134,23 @@
 
   <section class="cat">
     <div class="cat-head">
-      <h2>1 · Qué es y por qué es independiente de Smog/SMC y de DCA</h2>
+      <h2>1 · Qué es: capa de confluencia del SMC Sniper, no estrategia independiente</h2>
       <span class="count">1 punto</span>
     </div>
     <div class="rule info">
-      <div class="rule-top"><div class="rule-title">Tercer disparador de entrada — no reemplaza al ChoCh+FVG</div><span class="badge">Informativo</span></div>
+      <div class="rule-top"><div class="rule-title">Secuencia completa de entrada del SMC Sniper con RSI Cloud</div><span class="badge">Informativo</span></div>
       <div class="rule-body">
-        <blockquote class="nb">Craig organiza su operativa en tres sistemas de entrada claramente diferenciados que no se mezclan entre sí: Smog/SMC (ChoCh+FVG en 1m, apertura NY), TCL/DCA Range Trading (EMAs alineadas + cascada Fibonacci), y RSI Cloud/ProPlus Divergence (scalping/reversión rápida por agotamiento). Se activa cuando el mercado está sobreextendido en rangos laterales o picos de volatilidad, permitiéndole entrar sin esperar confirmación de un ChoCh o un FVG de 1m.</blockquote>
-        <p><strong>Ya implementado, pero solo como SALIDA</strong>: el bot tiene <code>_rsi_cloud_exit_signal()</code>/<code>_check_rsi_cloud_exit()</code> (position_monitor.py) para cerrar trades ya abiertos cuando aparece un highlight opuesto en el TF de gestión — gateado por <code>tp1_hit=1</code>. Ese uso SÍ es fiel al método (Craig también usa RSI Cloud para salidas dinámicas en Smog). Lo que NO existe es usar el mismo indicador como gatillo de ENTRADA independiente — este documento cubre solo esa parte faltante.</p>
+        <ol style="margin:4px 0 8px 20px; padding:0;">
+          <li><strong>Agotamiento</strong> en 1m/5m: dark highlight (línea del RSI y nube fuera de 30/70 a la vez) o divergencia regular entre precio y RSI.</li>
+          <li><strong>ChoCh</strong> en 1m/5m que confirma el giro.</li>
+          <li><strong>Entrada</strong>: orden límite Post-Only en el 50% (punto medio) del FVG que deja el desplazamiento del ChoCh.</li>
+          <li><strong>SL</strong> detrás del pivote estructural, con margen para que el precio respire.</li>
+          <li><strong>Parcial del 50%</strong> entre 2R y 4R, o en el FVG opuesto de 15m / PDH-PDL.</li>
+          <li><strong>Runner</strong> con trailing hasta el cierre de una vela de 15m con dark highlight opuesto.</li>
+        </ol>
+        <p>Usar el RSI Cloud solo, sin ChoCh ni FVG, es el error número uno que señala Craig. Por eso la versión de este documento como "tercer disparador independiente" queda descartada.</p>
       </div>
-      <div class="rule-foot">NB trading-brain — verificado 2026-09-10</div>
+      <div class="rule-foot">NB trading-brain — verificado 2026-10-08</div>
     </div>
   </section>
 
@@ -258,27 +265,45 @@
 
   <section class="cat">
     <div class="cat-head">
-      <h2>5 · Implementación (nautilus-trading, beta)</h2>
-      <span class="count">1 punto</span>
+      <h2>5 · Conclusión: resultado como estrategia aislada e integración al SMC Sniper</h2>
+      <span class="count">2 puntos</span>
     </div>
     <div class="rule info">
-      <div class="rule-top"><div class="rule-title">RsiCloudStrategy — cada regla del NB es un parámetro configurable</div><span class="badge">Implementado (beta)</span></div>
+      <div class="rule-top"><div class="rule-title">Como estrategia aislada no cierra: bruto positivo, neto negativo</div><span class="badge">Veredicto</span></div>
+      <div class="rule-body">
+        <p>Backtest de 90 días, mejor variante de la implementación aislada (RsiCloudStrategy, ya eliminada):</p>
+        <div class="cmp-table-wrap"><table class="cmp-table">
+          <thead><tr><th>Métrica</th><th>Implementación aislada</th><th>Referencia de Craig</th></tr></thead>
+          <tbody>
+            <tr><td>Trades</td><td>34</td><td>—</td></tr>
+            <tr><td>Win rate</td><td>29.4%</td><td>30–40%</td></tr>
+            <tr><td>Ganancia promedio</td><td>+3.37R</td><td>1:3 a 1:5R</td></tr>
+            <tr><td>Pérdida promedio</td><td>−1.56R</td><td>contenida en 1R</td></tr>
+            <tr><td>Resultado bruto</td><td>+13.3R</td><td>—</td></tr>
+            <tr><td>Resultado neto (con comisiones)</td><td>−3.8R</td><td>—</td></tr>
+          </tbody>
+        </table></div>
+        <p>La pérdida promedio de −1.56R viene de las comisiones taker sobre un SL de 0.2%: con un stop tan ceñido, el costo de entrar y salir a mercado es una fracción grande del riesgo. La señal tiene ventaja bruta, pero sin el ChoCh+FVG como gatillo y sin entrada límite no alcanza a cubrir costos. La estrategia aislada nunca operó en vivo (0 trades en TradeTally).</p>
+      </div>
+      <div class="rule-foot">Backtest 90 días — nautilus-trading run_backtest.py</div>
+    </div>
+    <div class="rule info">
+      <div class="rule-top"><div class="rule-title">Integrado como <code>rsi_cloud_entry</code> en CraigSMCConfig — en evaluación</div><span class="badge">En backtest</span></div>
       <div class="rule-body">
         <ul style="margin:4px 0 8px 20px; padding:0;">
-          <li><strong>Entrada</strong> al cierre de la vela de 1m o 5m (<code>trigger_minutes</code>; la de 5m se arma a partir de las de 1m): dark highlight + divergencia + nivel + fuerza relativa + sesgo de BTC + sesión.</li>
-          <li><strong>SL</strong> por fuera del mínimo/máximo de la vela de señal (+0.05%), con piso de 0.2% y descarte si supera 3%.</li>
-          <li><strong>Gestión</strong>: BE al BOS, trailing por pivotes, salida del 100% por highlight opuesto en 15m.</li>
-          <li><strong>Protecciones</strong> heredadas del SMC Sniper (fixes 26–30/09): límite diario −3R con reset por día UTC, SL redimensionado si la entrada se llena en partes, rearmado si se deniega el SL, cancelación de órdenes sobrantes al cerrar.</li>
-          <li><strong>Backtest</strong>: <code>run_backtest.py --strategy rsi_cloud</code>, resultado con el conteo de señales descartadas por filtro.</li>
+          <li><strong><code>rsi_cloud_entry</code></strong> (<code>off</code> | <code>replace</code> | <code>gate</code>): apagado, el agotamiento del RSI Cloud reemplaza al disparador previo, o se exige además de él antes del ChoCh.</li>
+          <li><strong><code>always_limit</code></strong>: entrada siempre con orden límite Post-Only en el 50% del FVG (sin taker en la entrada).</li>
+          <li>Se reutilizan el SL estructural, el parcial del 50% y el runner con salida por highlight opuesto en 15m del SMC Sniper.</li>
+          <li>Se está backtesteando cada modo contra el SMC Sniper base antes de activarlo en vivo.</li>
         </ul>
       </div>
-      <div class="rule-foot">Implementado 2026-10-02 — resultados de backtest en Backtest Bots → RSI Cloud</div>
+      <div class="rule-foot">nautilus-trading commit d0ca785 — CraigSMCConfig.rsi_cloud_entry / always_limit</div>
     </div>
   </section>
 
   <footer class="doc-foot">
     <p>Fuente única de verdad: NotebookLM "trading-brain". Puntos verificados con el NB el 2026-09-10 y el 2026-10-02; los supuestos propios están marcados como tales.</p>
-    <p>Documento generado localmente, no publicado. Separado del SMC Sniper, DCA Range Trading y 35A porque es un tercer disparador de entrada independiente.</p>
+    <p>Documento generado localmente, no publicado. El RSI Cloud forma parte del SMC Sniper (confluencia de entrada y salida del runner); DCA Range Trading y 35A siguen siendo métodos aparte.</p>
   </footer>
 
 </div>

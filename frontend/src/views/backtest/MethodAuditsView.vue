@@ -72,8 +72,8 @@ const methods = [
     id: 'rsi-cloud-entry',
     name: 'RSI Cloud como Entrada (Craig Percoco)',
     status: 'evaluated',
-    statusLabel: 'No implementado — evaluado',
-    source: 'Método aparte de Craig — solo investigación',
+    statusLabel: 'Integrado al SMC Sniper — en evaluación',
+    source: 'nautilus-trading — confluencia de entrada del SMC Sniper (rsi_cloud_entry)',
   },
 ]
 </script>
