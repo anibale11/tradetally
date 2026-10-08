@@ -233,9 +233,9 @@
 <div class="wrap">
 
   <header class="doc-head">
-    <p class="eyebrow">Auditoría interna · bot_trading</p>
+    <p class="eyebrow">Auditoría interna · nautilus-trading</p>
     <h1>DCA Range Trading (TCL / FIB &amp; EMA Continuation) — método Craig Percoco</h1>
-    <p class="lede">Segundo método completo de Craig Percoco, independiente del SMC Sniper (ChoCh + FVG) que sí está implementado y en producción. Evaluación de qué tan factible sería programarlo a futuro — qué está cuantificado con precisión por Craig y qué queda discrecional. Ningún código de este método existe todavía; este documento es puramente de investigación/planificación.</p>
+    <p class="lede">Estrategia completa de Craig Percoco, independiente del SMC Sniper (ChoCh + FVG). Se implementa como estrategia propia en nautilus-trading, sobre la subcuenta demo de OKX. Este documento reúne qué está cuantificado con precisión por Craig, qué queda discrecional y las decisiones tomadas para la implementación.</p>
     <p class="meta">Generado 2026-09-10 · fuente: NB trading-brain (id eefd6f23-…) · solo para uso local</p>
   </header>
 
@@ -373,8 +373,80 @@
     </div>
   </section>
 
+  <!-- ═══════════════════ 5. REPASO 2026-10-08 Y DECISIONES ═══════════════════ -->
+  <section class="cat">
+    <div class="cat-head">
+      <h2>5 · Repaso 2026-10-08 — reglas completadas y decisiones de implementación</h2>
+      <span class="count">7 puntos</span>
+    </div>
+    <p class="cat-intro">Segunda consulta al NB, enfocada en lo que la primera auditoría dejaba abierto (cómo se traza el Fibonacci y qué dispara la cascada), más las decisiones tomadas para correr el método en Nautilus.</p>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Temporalidad: trazado y ejecución en 3m / 5m</div><span class="badge">Cuantificado</span></div>
+      <div class="rule-body"><p>El Fibonacci se traza y la cascada se ejecuta en <strong>3m o 5m</strong>, donde también se lee la alineación de las EMAs 20/50/200. Las temporalidades mayores (15m, 1h, 4h) se consultan solo para el sesgo diario y para descartar una tendencia agotada (quinta onda de Elliott).</p></div>
+      <div class="rule-foot">NB trading-brain — verificado 2026-10-08</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Swing del Fibonacci: del origen del impulso al extremo reciente, con reajuste dinámico</div><span class="badge">Cuantificado</span></div>
+      <div class="rule-body">
+        <p><strong>Largos:</strong> desde el mínimo del impulso (el punto más bajo formado <em>antes</em> de que las EMAs 20/50/200 se alineen al alza) hasta el máximo reciente. <strong>Cortos:</strong> desde el máximo del impulso (antes de que las EMAs se alineen a la baja) hasta el mínimo reciente.</p>
+        <p>Si el precio sigue expandiéndose y marca un nuevo extremo antes de retroceder, el extremo del Fibonacci se desplaza para abarcar todo el impulso. La cascada se despliega recién cuando empieza el retroceso.</p>
+      </div>
+      <div class="rule-foot">NB trading-brain — verificado 2026-10-08</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Gatillo: secuencia de tres confirmaciones y cascada simultánea</div><span class="badge">Cuantificado</span></div>
+      <div class="rule-body">
+        <p>1) Cierre formal de una vela de 3m/5m por fuera del rango de la sesión (por encima del máximo para largos, por debajo del mínimo para cortos). 2) EMAs 20/50/200 apiladas en orden y del mismo color. 3) Al primer retroceso, trazado del Fibonacci del impulso.</p>
+        <p>Con el Fibonacci trazado, la calculadora asigna las unidades de cada orden y las <strong>tres órdenes límite se envían a la vez</strong>: entrada en 0.618, Limit 1 en 0.382, Limit 2 en 0.17, SL único en −0.05. Si el precio retrocede más allá de la entrada, las órdenes siguientes se llenan solas y promedian el precio.</p>
+      </div>
+      <div class="rule-foot">NB trading-brain — verificado 2026-10-08</div>
+    </div>
+
+    <div class="rule partial">
+      <div class="rule-top"><div class="rule-title">Contradicción entre fuentes: rango de la sesión de NY</div><span class="badge">A resolver por backtest</span></div>
+      <div class="rule-body"><p>Consulta 2026-10-08: el rango de referencia es la apertura de NY entre <strong>8:00 y 9:30 AM EST</strong>, y la cascada se habilita con el cierre de una vela por fuera de ese rango. Consulta 2026-09-10 (sección 2): caja de <strong>8:00 a 11:00 AM EST</strong> en la que está prohibido operar, esperando a que la sesión se enfríe después de las 11:00/11:30. Las dos coinciden en no operar dentro de la caja y en esperar el cierre por fuera; difieren en dónde termina. Se implementan ambas como parámetro y se elige con backtest.</p></div>
+      <div class="rule-foot">NB trading-brain — 2026-09-10 vs 2026-10-08</div>
+    </div>
+
+    <div class="rule partial">
+      <div class="rule-top"><div class="rule-title">Contradicción entre fuentes: nivel del take profit inicial</div><span class="badge">A resolver por backtest</span></div>
+      <div class="rule-body"><p>Consulta 2026-10-08: TP inicial en <strong>1.1272</strong>. Consulta 2026-09-10 (sección 2): TP inicial en <strong>1.272</strong> (o 1.00). Uno de los dos valores es probablemente un error de transcripción. Se implementa como parámetro y se comparan 1.00, 1.1272 y 1.272 con backtest.</p></div>
+      <div class="rule-foot">NB trading-brain — 2026-09-10 vs 2026-10-08</div>
+    </div>
+
+    <div class="rule info">
+      <div class="rule-top"><div class="rule-title">Decisión: riesgo de $10 por operación (1R), en vez del 10% de la cuenta</div><span class="badge">Decisión</span></div>
+      <div class="rule-body"><p>Una operación es la cascada completa. Las tres órdenes se dimensionan para que, si se llenan todas y el precio toca el SL, la pérdida total sea exactamente <strong>$10 = 1R</strong> — la misma unidad que el SMC Sniper (Nautilus y BingX), para comparar en TradeTally. La proporción entre órdenes sigue la de Craig; solo cambia la escala. Si se llena solo la entrada y toca el SL, la pérdida es menor a 1R. Cada cascada se registra como un trade.</p></div>
+      <div class="rule-foot">Decisión del usuario — 2026-10-08</div>
+    </div>
+
+    <div class="rule info">
+      <div class="rule-top"><div class="rule-title">Decisión: pares SOL, ETH, ADA, LTC y LINK en la subcuenta demo de OKX</div><span class="badge">Decisión</span></div>
+      <div class="rule-body">
+        <p>Lista de Craig, sin MANA ni APE por baja liquidez (Craig prohíbe operar este método en pares ilíquidos). Los cinco verificados como perpetuos activos en OKX:</p>
+        <div class="cmp-table-wrap">
+          <table class="cmp-table">
+            <thead><tr><th>Par</th><th>Valor del contrato</th><th>Mínimo</th><th>Tick</th></tr></thead>
+            <tbody>
+              <tr><td>SOL-USDT-SWAP</td><td>1 SOL</td><td>0.01</td><td>0.01</td></tr>
+              <tr><td>ETH-USDT-SWAP</td><td>0.1 ETH</td><td>0.01</td><td>0.01</td></tr>
+              <tr><td>ADA-USDT-SWAP</td><td>100 ADA</td><td>0.1</td><td>0.0001</td></tr>
+              <tr><td>LTC-USDT-SWAP</td><td>1 LTC</td><td>0.1</td><td>0.01</td></tr>
+              <tr><td>LINK-USDT-SWAP</td><td>1 LINK</td><td>0.1</td><td>0.001</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Corre en la subcuenta demo de OKX, separada de la cuenta principal donde opera el SMC Sniper: no comparten posiciones aunque coincidan SOL y ETH.</p>
+      </div>
+      <div class="rule-foot">Decisión del usuario — 2026-10-08 · especificaciones de la API pública de OKX</div>
+    </div>
+  </section>
+
   <footer class="doc-foot">
-    <p>Fuente única de verdad: NotebookLM "trading-brain" (contenido curado del material de Craig Percoco). Todos los puntos de este documento fueron verificados con cita textual del NB el 2026-09-10 — no se asumió ningún valor sin verificarlo.</p>
+    <p>Fuente única de verdad: NotebookLM "trading-brain" (contenido curado del material de Craig Percoco). Todos los puntos de este documento fueron verificados con cita textual del NB (2026-09-10 y 2026-10-08) — no se asumió ningún valor sin verificarlo; donde las dos consultas difieren, se marca como contradicción a resolver.</p>
     <p>Documento generado localmente, no publicado. Separado de la auditoría del SMC Sniper (<code>smc-sniper-production-detail.html</code>) porque es un método completo e independiente, no un concepto suelto o una variante de ejecución de ese bot.</p>
   </footer>
 
