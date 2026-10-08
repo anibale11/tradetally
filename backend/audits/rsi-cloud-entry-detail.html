@@ -138,7 +138,7 @@
       <span class="count">1 punto</span>
     </div>
     <div class="rule info">
-      <div class="rule-top"><div class="rule-title">Secuencia completa de entrada del SMC Sniper con RSI Cloud</div><span class="badge">Informativo</span></div>
+      <div class="rule-top"><div class="rule-title">Secuencia completa de entrada del SMC Sniper con RSI Cloud, según Craig</div><span class="badge">Informativo</span></div>
       <div class="rule-body">
         <ol style="margin:4px 0 8px 20px; padding:0;">
           <li><strong>Agotamiento</strong> en 1m/5m: dark highlight (línea del RSI y nube fuera de 30/70 a la vez) o divergencia regular entre precio y RSI.</li>
@@ -291,8 +291,11 @@
       <div class="rule-top"><div class="rule-title">Integrado como <code>rsi_cloud_entry</code> en CraigSMCConfig — en evaluación</div><span class="badge">En backtest</span></div>
       <div class="rule-body">
         <ul style="margin:4px 0 8px 20px; padding:0;">
-          <li><strong><code>rsi_cloud_entry</code></strong> (<code>off</code> | <code>replace</code> | <code>gate</code>): apagado, el agotamiento del RSI Cloud reemplaza al disparador previo, o se exige además de él antes del ChoCh.</li>
-          <li><strong><code>always_limit</code></strong>: entrada siempre con orden límite Post-Only en el 50% del FVG (sin taker en la entrada).</li>
+          <li><strong><code>rsi_cloud_entry="off"</code></strong> (default, igual que en vivo): la confluencia de agotamiento del score es la divergencia RSI14 en 15m (+1 punto; además es requisito del Unicornio).</li>
+          <li><strong><code>"replace"</code></strong>: ese mismo punto del score se calcula con el RSI Cloud en el TF de ejecución (1m o 5m, <code>rsi_cloud_tf_minutes</code>): dark highlight o divergencia regular en las últimas <code>rsi_cloud_lookback</code> velas, en contra de la entrada (sobreventa para long, sobrecompra para short). Suma +1, no bloquea.</li>
+          <li><strong><code>"gate"</code></strong>: igual que <code>replace</code> pero obligatorio — sin ese agotamiento previo no hay señal.</li>
+          <li>En ningún modo cambian el ChoCh en 1m ni la entrada en el 50% del FVG del Sniper.</li>
+          <li><strong><code>always_limit=True</code></strong>: toda entrada va con orden límite en el punto medio del FVG; desactiva la regla actual que manda a mercado cuando el score es ≥ 4 o hay Unicornio. La orden límite no es Post-Only (Post-Only es lo que usa Craig; la implementación no lo replica).</li>
           <li>Se reutilizan el SL estructural, el parcial del 50% y el runner con salida por highlight opuesto en 15m del SMC Sniper.</li>
           <li>Se está backtesteando cada modo contra el SMC Sniper base antes de activarlo en vivo.</li>
         </ul>
