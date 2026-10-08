@@ -377,9 +377,9 @@
   <section class="cat">
     <div class="cat-head">
       <h2>5 · Repaso 2026-10-08 — reglas completadas y decisiones de implementación</h2>
-      <span class="count">7 puntos</span>
+      <span class="count">14 puntos</span>
     </div>
-    <p class="cat-intro">Segunda consulta al NB, enfocada en lo que la primera auditoría dejaba abierto (cómo se traza el Fibonacci y qué dispara la cascada), más las decisiones tomadas para correr el método en Nautilus.</p>
+    <p class="cat-intro">Segunda consulta al NB, enfocada en lo que la primera auditoría dejaba abierto (trazado del Fibonacci, gatillo, tamaño de cada orden, TP tras cada fill, cancelación, horarios, invalidación, apalancamiento y EMAs), más las decisiones tomadas para correr el método en Nautilus.</p>
 
     <div class="rule ok">
       <div class="rule-top"><div class="rule-title">Temporalidad: trazado y ejecución en 3m / 5m</div><span class="badge">Cuantificado</span></div>
@@ -405,16 +405,71 @@
       <div class="rule-foot">NB trading-brain — verificado 2026-10-08</div>
     </div>
 
-    <div class="rule partial">
-      <div class="rule-top"><div class="rule-title">Contradicción entre fuentes: rango de la sesión de NY</div><span class="badge">A resolver por backtest</span></div>
-      <div class="rule-body"><p>Consulta 2026-10-08: el rango de referencia es la apertura de NY entre <strong>8:00 y 9:30 AM EST</strong>, y la cascada se habilita con el cierre de una vela por fuera de ese rango. Consulta 2026-09-10 (sección 2): caja de <strong>8:00 a 11:00 AM EST</strong> en la que está prohibido operar, esperando a que la sesión se enfríe después de las 11:00/11:30. Las dos coinciden en no operar dentro de la caja y en esperar el cierre por fuera; difieren en dónde termina. Se implementan ambas como parámetro y se elige con backtest.</p></div>
-      <div class="rule-foot">NB trading-brain — 2026-09-10 vs 2026-10-08</div>
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Horario: la caja de NY 8:00–11:00 EST marca el rango; la cascada va después, y una segunda ventana en la apertura de Asia</div><span class="badge">Cuantificado</span></div>
+      <div class="rule-body">
+        <p>La franja de <strong>8:00 a 11:00 AM EST</strong> (sombreada en gris en su indicador IT Foundation / TC Helper) se usa <strong>solo para marcar el máximo y el mínimo</strong> del rango inicial; dentro de ella no se toman entradas. Cuando la apertura "se enfría" y una vela cierra por fuera del rango, se despliega la cascada — alrededor o después de las <strong>11:00/11:30 AM EST</strong>.</p>
+        <p>Segunda ventana: <strong>apertura de Asia, ~8:00–8:30 PM EST</strong>, donde suele tomar un trade más que deja corriendo durante la noche.</p>
+        <p>Resuelve la diferencia entre las dos consultas: el "8:00–9:30" de una respuesta del 2026-10-08 corresponde al rango del Sniper; la respuesta específica sobre horarios del DCA confirma la caja de 8:00–11:00 de la auditoría original.</p>
+      </div>
+      <div class="rule-foot">NB trading-brain — verificado 2026-10-08 (confirma 2026-09-10)</div>
     </div>
 
     <div class="rule partial">
       <div class="rule-top"><div class="rule-title">Contradicción entre fuentes: nivel del take profit inicial</div><span class="badge">A resolver por backtest</span></div>
       <div class="rule-body"><p>Consulta 2026-10-08: TP inicial en <strong>1.1272</strong>. Consulta 2026-09-10 (sección 2): TP inicial en <strong>1.272</strong> (o 1.00). Uno de los dos valores es probablemente un error de transcripción. Se implementa como parámetro y se comparan 1.00, 1.1272 y 1.272 con backtest.</p></div>
       <div class="rule-foot">NB trading-brain — 2026-09-10 vs 2026-10-08</div>
+    </div>
+
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Tamaño de la cascada: riesgo total topeado en 1R, más unidades en Limit 1 y Limit 2</div><span class="badge">Cuantificado</span></div>
+      <div class="rule-body"><p>La calculadora reparte las tres órdenes de modo que, si se llenan todas y el precio toca el SL en −0.05, la pérdida combinada sea exactamente <strong>1R</strong>. Limit 1 y Limit 2 reciben más unidades que la entrada porque están más cerca del SL, lo que arrastra el precio promedio hacia los niveles inferiores. Con la entrada sola, la ganancia se calcula sobre ese tamaño inicial; con Limit 1/Limit 2 llenas, la ganancia en dólares suele ser igual o mayor.</p></div>
+      <div class="rule-foot">NB trading-brain — verificado 2026-10-08</div>
+    </div>
+
+    <div class="rule partial">
+      <div class="rule-top"><div class="rule-title">Ratio exacto entre las tres órdenes y nivel del TP tras cada fill</div><span class="badge">Discrecional</span></div>
+      <div class="rule-body">
+        <p>El NB no da el ratio entre órdenes (lo resuelve su calculadora "de forma matemáticamente equilibrada") ni el nivel exacto del TP una vez llenas Limit 1/Limit 2 (solo que se acerca al nuevo precio promedio, para que alcance un rebote chico). La auditoría original lo ubicaba "cerca del nivel de entrada original (0.618)".</p>
+        <p>Candidatos a comparar por backtest: ratio de <strong>igual riesgo por orden</strong> (⅓R cada una, la cantidad crece sola hacia el SL); TP tras fill en <strong>el nivel de la orden anterior</strong> (0.618 tras Limit 1, 0.382 tras Limit 2) o recalculado para <strong>igualar la ganancia en dólares</strong> planeada con la entrada sola.</p>
+        <p>Variante "L1/L2 Bomb" (mantener el TP original en días con soporte/resistencia macro fuerte): discrecional, no se implementa.</p>
+      </div>
+      <div class="rule-foot">NB trading-brain — sin cuantificar (2026-10-08), requiere calibración propia</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Cancelación de las órdenes pendientes</div><span class="badge">Cuantificado</span></div>
+      <div class="rule-body"><p>Regla obligatoria: <strong>al tocar el TP</strong>, cancelar de inmediato las órdenes límite que no se llenaron, para que una fluctuación posterior no abra una posición fuera de contexto y sin gestión. También <strong>cuando el setup se invalida antes de llenarse</strong>: el precio se expande fuerte sin retroceder, rompe la estructura del rango o de la tendencia, o las EMAs pierden la alineación.</p></div>
+      <div class="rule-foot">NB trading-brain — verificado 2026-10-08</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Frecuencia, invalidación y corte diario</div><span class="badge">Cuantificado</span></div>
+      <div class="rule-body">
+        <p><strong>Frecuencia:</strong> 1 a 3 trades por día (hasta 5–7 en días laterales activos o con varios pares). No fuerza operaciones: sin ruptura del rango o sin EMAs limpias, no coloca la cascada.</p>
+        <p><strong>Invalidación:</strong> cierre por debajo del SL (−0.05, pérdida de 1R); pérdida de la alineación de las EMAs en 3m/5m; noticias de alto impacto (FOMC, CPI) y la volatilidad de la apertura de NY.</p>
+        <p><strong>Corte diario:</strong> con 3 pérdidas consecutivas (−3R) en la sesión, se cierra la jornada — misma regla que el SMC Sniper.</p>
+      </div>
+      <div class="rule-foot">NB trading-brain — verificado 2026-10-08</div>
+    </div>
+
+    <div class="rule partial">
+      <div class="rule-top"><div class="rule-title">Agotamiento de la tendencia (quinta onda de Elliott o nivel macro)</div><span class="badge">Discrecional</span></div>
+      <div class="rule-body"><p>Craig deja de entrar en una dirección si el impulso parece una quinta onda de Elliott o si el precio choca contra un soporte/resistencia macro de 15m, 1h o 4h. Ninguno de los dos tiene regla numérica. Aproximación programable propuesta: exigir que las EMAs 20/50/200 estén alineadas también en temporalidades mayores (15m/1h), como muestra su panel TC Helper.</p></div>
+      <div class="rule-foot">NB trading-brain — sin cuantificar (2026-10-08), requiere calibración propia</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">EMAs 20/50/200: filtro de dirección multitemporal, no gatillo</div><span class="badge">Cuantificado</span></div>
+      <div class="rule-body"><p>20 &gt; 50 &gt; 200 para largos y 20 &lt; 50 &lt; 200 para cortos, todas del mismo color. Son un indicador rezagado: confirman el sesgo y evitan operar contra la tendencia, pero no disparan la entrada. Una vez apiladas, se identifica el máximo y el mínimo del impulso para trazar el Fibonacci. El panel TC Helper muestra la alineación en varias temporalidades (5m, 15m, 1h) para que la micro-temporalidad vaya a favor del flujo mayor.</p></div>
+      <div class="rule-foot">NB trading-brain — verificado 2026-10-08</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Apalancamiento: el mínimo que alcance para el margen, con la liquidación por fuera del SL</div><span class="badge">Cuantificado</span></div>
+      <div class="rule-body"><p>Usa 10x a 100x según el exchange, pero el apalancamiento no cambia el riesgo en dólares (lo fija el tamaño calculado contra el SL); solo reduce el margen inmovilizado. Recomienda el menor apalancamiento necesario y verificar antes de enviar la cascada que el precio de liquidación quede por fuera del SL. Para el riesgo, en cuentas consolidadas trabaja con un monto fijo uniforme por trade.</p></div>
+      <div class="rule-foot">NB trading-brain — verificado 2026-10-08</div>
     </div>
 
     <div class="rule info">
@@ -424,9 +479,9 @@
     </div>
 
     <div class="rule info">
-      <div class="rule-top"><div class="rule-title">Decisión: pares SOL, ETH, ADA, LTC y LINK en la subcuenta demo de OKX</div><span class="badge">Decisión</span></div>
+      <div class="rule-top"><div class="rule-title">Decisión: pares SOL, ETH, ADA, LTC, LINK y BNB en la subcuenta demo de OKX</div><span class="badge">Decisión</span></div>
       <div class="rule-body">
-        <p>Lista de Craig, sin MANA ni APE por baja liquidez (Craig prohíbe operar este método en pares ilíquidos). Los cinco verificados como perpetuos activos en OKX:</p>
+        <p>Lista de Craig, sin MANA ni APE por baja liquidez (Craig prohíbe operar este método en pares ilíquidos), más <strong>BNB como excepción a su lista</strong> (BNB sí aparece entre los pares que usa con RSI Cloud y el Sniper; liquidez en OKX similar a LTC). Los seis verificados como perpetuos activos en OKX:</p>
         <div class="cmp-table-wrap">
           <table class="cmp-table">
             <thead><tr><th>Par</th><th>Valor del contrato</th><th>Mínimo</th><th>Tick</th></tr></thead>
@@ -436,6 +491,7 @@
               <tr><td>ADA-USDT-SWAP</td><td>100 ADA</td><td>0.1</td><td>0.0001</td></tr>
               <tr><td>LTC-USDT-SWAP</td><td>1 LTC</td><td>0.1</td><td>0.01</td></tr>
               <tr><td>LINK-USDT-SWAP</td><td>1 LINK</td><td>0.1</td><td>0.001</td></tr>
+              <tr><td>BNB-USDT-SWAP</td><td>0.01 BNB</td><td>1</td><td>0.1</td></tr>
             </tbody>
           </table>
         </div>
