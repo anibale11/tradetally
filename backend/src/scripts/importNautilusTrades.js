@@ -42,7 +42,12 @@ const IS_DEFAULT_SMC = !process.env.IMPORT_BROKER_NAME;
 // proyecto (feedback_reset_30trade_sample_on_fix.md): se reinicia la muestra
 // en cada fix de lógica. bot_trading tiene su propio corte (21/09) en
 // importBotTradingTrades.js.
-const CUTOFF_MS = Date.parse(process.env.IMPORT_CUTOFF || '2026-09-24T02:26:00.000Z');
+// Corte 2026-10-07 23:59 UTC: deploy de la paridad completa con bot_trading
+// (nautilus d877acf — reseteo estructural, FVG 60, trailing 1h/5m, ventanas
+// NY/Londres/Asia). Los 40 trades anteriores (-20.7R) se borraron de
+// TradeTally a pedido del usuario; respaldo en
+// backups/nautilus_smc_trades_pre_fix_2026-10-07.csv.
+const CUTOFF_MS = Date.parse(process.env.IMPORT_CUTOFF || '2026-10-07T23:59:00.000Z');
 
 // Incidente 26-29/09 (fix nautilus f7d37b0): tras cada restart las posiciones
 // quedaban como EXTERNAL y el RiskEngine denegaba sus salidas — los SL no se
