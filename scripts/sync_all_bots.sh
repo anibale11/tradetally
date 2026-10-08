@@ -33,7 +33,7 @@ scp -q -o ConnectTimeout=10 trading-server:/opt/nautilus_trading/data/nautilus_r
 new=0
 # Cada import: "<nombre>|<script>|<variables -e para docker exec>"
 IMPORTS=(
-  "nautilus-smc|importNautilusTrades|"
+  "nautilus-smc|importNautilusTrades|-e IMPORT_CUTOFF=2026-10-07T23:59:00Z"
   "bot_trading|importBotTradingTrades|"
   "nautilus-rsi-cloud|importNautilusTrades|-e IMPORT_TRADES_FILE=nautilus_rsi_trades.jsonl -e IMPORT_CUTOFF=$RSI_CUTOFF"
 )
@@ -43,7 +43,9 @@ for entry in "${IMPORTS[@]}"; do
     out=$(docker exec $envs -e "IMPORT_BROKER_NAME=nautilus-trading (RSI Cloud — OKX demo subcuenta)" \
           -e "IMPORT_STRATEGY_NAME=RSI Cloud Craig (Nautilus)" tradetally-app node "backend/src/scripts/$s.js" 2>&1)
   else
-    out=$(docker exec tradetally-app node "backend/src/scripts/$s.js" 2>&1)
+    # $envs explícito también para el SMC: el corte queda en el script aunque
+    # la imagen de la app no se haya reconstruido con el default nuevo.
+    out=$(docker exec $envs tradetally-app node "backend/src/scripts/$s.js" 2>&1)
   fi
   # Sin línea "Resumen" el import no terminó (ej. DB caída) — antes esto se
   # reportaba en silencio como "sin trades nuevos".
