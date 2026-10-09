@@ -92,7 +92,7 @@ const methods = [
     id: 'dca-range-trading',
     name: 'DCA Range Trading (Craig Percoco)',
     status: 'evaluated',
-    statusLabel: 'Implementado — listo para subcuenta OKX demo',
+    statusLabel: 'En vivo — subcuenta OKX demo',
     source: 'Estrategia independiente de Craig — nautilus-trading',
   },
   {

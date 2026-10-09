@@ -24,7 +24,7 @@ ssh -o ConnectTimeout=15 trading-server "cd /opt/nautilus_trading && python3 syn
 # DCA Range Trading (nautilus-trading) en su subcuenta OKX: mismo sync con las
 # keys de .env.subcuenta y su propio JSONL/cutoff.
 # DCA_CUTOFF se actualiza a la hora UTC de arranque del nodo en el deploy.
-DCA_CUTOFF="2026-10-09T00:00:00Z"
+DCA_CUTOFF="2026-10-09T03:26:53Z"  # arranque de nautilus-live-dca en el VPS
 ssh -o ConnectTimeout=15 trading-server "cd /opt/nautilus_trading && test -f .env.subcuenta && python3 sync_trades_from_okx.py --env .env.subcuenta --out data/nautilus_dca_trades.jsonl --cutoff \"$DCA_CUTOFF\"" 2>&1 | tail -2 || true
 if scp -q -o ConnectTimeout=10 trading-server:/opt/nautilus_trading/data/nautilus_dca_trades.jsonl "$NAUT/data/nautilus_dca_trades.jsonl.tmp" 2>/dev/null; then
   mv "$NAUT/data/nautilus_dca_trades.jsonl.tmp" "$NAUT/data/nautilus_dca_trades.jsonl"
