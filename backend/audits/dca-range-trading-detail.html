@@ -244,7 +244,7 @@
   <div class="stats">
     <div class="stat ok"><div class="n">6</div><div class="l">Cuantificado con precisión</div></div>
     <div class="stat warn"><div class="n">3</div><div class="l">Discrecional / a calibrar</div></div>
-    <div class="stat info"><div class="n">0</div><div class="l">Implementado</div></div>
+    <div class="stat info"><div class="n">3</div><div class="l">Implementado</div></div>
   </div>
 
   <div class="legend">
@@ -499,6 +499,78 @@
         <p>Corre en la subcuenta demo de OKX, separada de la cuenta principal donde opera el SMC Sniper: no comparten posiciones aunque coincidan SOL y ETH.</p>
       </div>
       <div class="rule-foot">Decisión del usuario — 2026-10-08 · especificaciones de la API pública de OKX</div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ 6. IMPLEMENTACIÓN Y BACKTEST ═══════════════════ -->
+  <section class="cat">
+    <div class="cat-head">
+      <h2>6 · Implementación en Nautilus y backtest</h2>
+      <span class="count">5 puntos</span>
+    </div>
+    <p class="cat-intro">Cómo quedó construido el método en nautilus-trading, la configuración elegida y los resultados del backtest de 90 días contra las variantes probadas.</p>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Implementación: lógica pura, estrategia por par y runner de la subcuenta</div><span class="badge">Implementado</span></div>
+      <div class="rule-body">
+        <ul>
+          <li><code>strategies/dca_logic.py</code> — lógica pura (Fibonacci, cascada, TP/SL, filtros), cubierta por 23 tests.</li>
+          <li><code>strategies/dca_range_strategy.py</code> — máquina de estados por par: SL emulado y TP móvil, adopción de posiciones sin gestión, reposición de SL/TP rechazados y corte diario.</li>
+          <li><code>run_live_dca.py</code> — corre en la subcuenta de OKX con el trader NAUTILUS-DCA-001.</li>
+          <li><code>run_backtest.py --strategy dca</code> — usa el mismo código que el vivo, con velas marcadas con su timestamp de cierre y ajuste conservador con velas de 1m.</li>
+        </ul>
+      </div>
+      <div class="rule-foot">nautilus-trading — strategies/ · run_live_dca.py · run_backtest.py</div>
+    </div>
+
+    <div class="rule info">
+      <div class="rule-top"><div class="rule-title">Configuración elegida</div><span class="badge">Decisión</span></div>
+      <div class="rule-body">
+        <ul>
+          <li>Temporalidad 3m, TP en la extensión 1.272.</li>
+          <li>TP tras cada fill igualando la ganancia en dólares (Craig: "ganancia igual o mayor").</li>
+          <li>Distancia mínima entrada→SL de 1.0% (filtro de comisiones).</li>
+          <li>Ventana de Nueva York 11:00–16:00 ET; Asia 20:00–20:30 ET.</li>
+          <li>6 pares (SOL, ETH, ADA, LTC, LINK, BNB); 1R = $10.</li>
+        </ul>
+      </div>
+      <div class="rule-foot">Decisión de implementación — backtest 90 días</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Hallazgos del backtest: comisiones y TP con varias patas llenas</div><span class="badge">Corregido</span></div>
+      <div class="rule-body">
+        <p>Sin filtro de distancia, las comisiones (12.8R) superaban la ganancia bruta (11.7R): la mayoría de las cascadas con stop corto no pagaban su costo.</p>
+        <p>Con 2–3 patas llenas, el TP al nivel anterior ganaba la mitad (+0.15R contra +0.33R). Se corrigió con <code>equal_profit</code>: el TP se recalcula para igualar la ganancia en dólares.</p>
+      </div>
+      <div class="rule-foot">Backtest 90 días — velas al 08/10, ajuste conservador</div>
+    </div>
+
+    <div class="rule ok">
+      <div class="rule-top"><div class="rule-title">Resultados del backtest de 90 días por variante</div><span class="badge">Medido</span></div>
+      <div class="rule-body">
+        <div class="cmp-table-wrap">
+          <table class="cmp-table">
+            <thead><tr><th>Variante</th><th>Cascadas</th><th>Aciertos</th><th>R total</th><th>Drawdown</th></tr></thead>
+            <tbody>
+              <tr><td>Base (TP nivel anterior, sin filtro)</td><td>194</td><td>80.9%</td><td>−3.35R</td><td>8.39</td></tr>
+              <tr><td>TP igualando $, sin filtro</td><td>195</td><td>77.9%</td><td>−1.09R</td><td>7.20</td></tr>
+              <tr><td>TP igualando $, filtro 0.8%</td><td>140</td><td>77.9%</td><td>+0.86R</td><td>5.24</td></tr>
+              <tr><td><strong>TP igualando $, filtro 1.0% (elegida)</strong></td><td>114</td><td>81.6%</td><td>+6.78R</td><td>4.78</td></tr>
+              <tr><td>Filtro 1.0% sin BNB</td><td>109</td><td>80.7%</td><td>+5.35R</td><td>4.78</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p><strong>Por mes (elegida):</strong> julio +1.56R, agosto +3.08R, septiembre +5.60R, octubre (8 días) −3.45R.</p>
+        <p><strong>Por par (elegida):</strong> ADA +4.05R, SOL +1.72R, LINK +1.42R, BNB +1.42R (5/5), LTC +0.82R, ETH −2.65R.</p>
+      </div>
+      <div class="rule-foot">Backtest 90 días — velas al 08/10, ajuste conservador con 1m</div>
+    </div>
+
+    <div class="rule partial">
+      <div class="rule-top"><div class="rule-title">Riesgo de sobreajuste</div><span class="badge">A validar</span></div>
+      <div class="rule-body"><p>El umbral de 1.0% se eligió sobre la misma ventana de 90 días en la que se mide el resultado (con 0.8% el total es +0.86R). Se valida en la subcuenta demo y se revisa a las 2 semanas de operación.</p></div>
+      <div class="rule-foot">Validación pendiente en subcuenta OKX demo</div>
     </div>
   </section>
 

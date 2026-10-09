@@ -189,7 +189,7 @@ import { formatUtc } from '@/utils/backtestTime'
 const STRATEGY_META = {
   smc: { title: 'SMC Sniper — Nautilus (beta)', className: 'CraigSMCStrategy' },
   // dca: el watcher de nautilus-trading todavía no consume su trigger, solo lectura.
-  dca: { title: 'DCA Range Trading — Nautilus (subcuenta)', className: 'CraigSMCStrategy', readOnly: true },
+  dca: { title: 'DCA Range Trading — Nautilus (subcuenta)', className: 'CraigSMCStrategy' },
 }
 const route = useRoute()
 const strategy = computed(() => (STRATEGY_META[route.query.strategy] ? route.query.strategy : 'smc'))
