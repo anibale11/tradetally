@@ -11,7 +11,7 @@
       </h1>
     </div>
 
-    <div class="card mb-6">
+    <div v-if="!meta.readOnly" class="card mb-6">
       <div class="card-body">
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
           Backtest real de <code>{{ meta.className }}</code> (NautilusTrader + OKX) — corre en el
@@ -88,6 +88,37 @@
         </div>
       </div>
 
+      <div v-if="hasDca" class="card">
+        <div class="card-body space-y-4">
+          <div v-if="result.by_legs">
+            <h2 class="text-lg font-semibold mb-2">Patas llenas por cascada</h2>
+            <div class="flex flex-wrap gap-2">
+              <span v-for="(count, k) in result.by_legs" :key="k"
+                    class="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 font-mono">
+                {{ k }}: {{ count }}
+              </span>
+            </div>
+          </div>
+          <div v-if="byMonth.length">
+            <h2 class="text-lg font-semibold mb-2">R por mes</h2>
+            <div class="flex flex-wrap gap-2">
+              <span v-for="[m, r] in byMonth" :key="m"
+                    class="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 font-mono" :class="rClass(r)">
+                {{ m }}: {{ sign(r) }}{{ fmt(r, 2) }}R
+              </span>
+            </div>
+          </div>
+          <div class="text-sm text-gray-600 dark:text-gray-300 space-y-1">
+            <div v-if="result.conservative_adjusted != null">
+              Trades ajustados por criterio conservador: <span class="font-mono">{{ result.conservative_adjusted }}</span>
+            </div>
+            <div v-if="result.unmatched_trades">
+              Posiciones adoptadas: <span class="font-mono">{{ result.unmatched_trades.length }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div v-if="discardReasons.length" class="card">
         <div class="card-body">
           <h2 class="text-lg font-semibold mb-1">Señales descartadas por filtro</h2>
@@ -142,7 +173,7 @@
       </div>
     </div>
     <p v-else class="text-sm text-gray-500 dark:text-gray-400">
-      Todavía no hay ningún resultado — ejecutá un backtest arriba.
+      {{ meta.readOnly ? 'Todavía no hay ningún resultado de esta estrategia.' : 'Todavía no hay ningún resultado — ejecutá un backtest arriba.' }}
     </p>
   </div>
 </template>
@@ -157,10 +188,17 @@ import { formatUtc } from '@/utils/backtestTime'
 // estrategia viene de ?strategy= (ver manifest en BacktestBotsView.vue).
 const STRATEGY_META = {
   smc: { title: 'SMC Sniper — Nautilus (beta)', className: 'CraigSMCStrategy' },
+  // dca: el watcher de nautilus-trading todavía no consume su trigger, solo lectura.
+  dca: { title: 'DCA Range Trading — Nautilus (subcuenta)', className: 'CraigSMCStrategy', readOnly: true },
 }
 const route = useRoute()
 const strategy = computed(() => (STRATEGY_META[route.query.strategy] ? route.query.strategy : 'smc'))
 const meta = computed(() => STRATEGY_META[strategy.value])
+const hasDca = computed(() => {
+  const r = result.value
+  return !!r && (r.by_legs || r.by_month || r.conservative_adjusted != null || r.unmatched_trades)
+})
+const byMonth = computed(() => Object.entries(result.value?.by_month || {}).sort())
 const discardReasons = computed(() => Object.entries(result.value?.discard_reasons || {}))
 
 const days = ref(90)

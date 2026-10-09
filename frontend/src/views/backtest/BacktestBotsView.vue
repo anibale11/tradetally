@@ -64,6 +64,13 @@ const bots = [
         backtestPath: '/analysis/nautilus-backtest',
         auditId: 'smc-sniper-nautilus',
       },
+      {
+        id: 'dca-range-nautilus',
+        name: 'DCA Range Trading — Nautilus',
+        description: 'Estrategia independiente de Craig, subcuenta OKX demo, en backtest (resultado de solo lectura).',
+        backtestPath: '/analysis/nautilus-backtest?strategy=dca',
+        auditId: 'dca-range-trading',
+      },
     ],
   },
 ]

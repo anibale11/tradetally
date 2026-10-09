@@ -14,6 +14,7 @@ const DATA_DIR = process.env.NAUTILUS_DATA_DIR || '/nautilus-data';
 // `rsi_cloud_entry` dentro del SMC Sniper.)
 const STRATEGIES = {
   smc: { trigger: 'backtest_trigger.json', result: 'backtest_result.json' },
+  dca: { trigger: 'backtest_trigger_dca.json', result: 'backtest_result_dca.json' },
 };
 
 function filesFor(req) {
