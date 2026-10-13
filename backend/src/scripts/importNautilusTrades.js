@@ -22,6 +22,7 @@ const readline = require('readline');
 const db = require('../config/database');
 const Trade = require('../models/Trade');
 const AnalyticsCache = require('../services/analyticsCache');
+const { netPnlFromOkxRecord } = require('./lib/nautilusPnl');
 
 const DATA_DIR = process.env.NAUTILUS_TRADING_DATA_DIR || '/nautilus-data';
 // Overrides por variable de entorno para importar otra cuenta/estrategia de
@@ -123,7 +124,9 @@ async function main() {
 
     const side = t.direction === 'long' ? 'long' : 'short';
     const symbol = t.symbol.replace('-USDT-SWAP', 'USDT');
-    const pnl = (t.realized_pnl || 0) + (t.fee || 0) + (t.funding_fee || 0);
+    // realized_pnl (OKX realizedPnl) ya incluye fee y funding — no sumarlos
+    // de nuevo (ver lib/nautilusPnl.js).
+    const pnl = netPnlFromOkxRecord(t);
 
     const tradeData = {
       symbol,
