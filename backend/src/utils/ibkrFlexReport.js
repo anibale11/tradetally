@@ -206,13 +206,19 @@ function decodeXmlReport(content) {
   });
 
   const trade_records = [];
+  const tradeHeaders = new Set();
   $('Trades > Trade').each((_, element) => {
-    trade_records.push(canonicalTradeRecord($(element).attr() || {}));
+    const attributes = $(element).attr() || {};
+    Object.keys(attributes).forEach(header => tradeHeaders.add(header));
+    trade_records.push(canonicalTradeRecord(attributes));
   });
 
   const open_position_records = [];
+  const openPositionHeaders = new Set();
   $('OpenPositions > OpenPosition').each((_, element) => {
-    open_position_records.push(canonicalOpenPositionRecord($(element).attr() || {}));
+    const attributes = $(element).attr() || {};
+    Object.keys(attributes).forEach(header => openPositionHeaders.add(header));
+    open_position_records.push(canonicalOpenPositionRecord(attributes));
   });
 
   return {
@@ -229,6 +235,10 @@ function decodeXmlReport(content) {
       trades: trade_records.length,
       open_positions: open_position_records.length
     },
+    section_headers: {
+      trades: Array.from(tradeHeaders),
+      open_positions: Array.from(openPositionHeaders)
+    },
     warnings: []
   };
 }
@@ -239,8 +249,11 @@ function decodeCsvReport(content) {
   const open_position_records = [];
   let active = null;
   let headers = null;
+  let prefixedSection = null;
   let hasTradesSection = false;
   let hasOpenPositionsSection = false;
+  const tradeHeaders = new Set();
+  const openPositionHeaders = new Set();
 
   for (const line of lines) {
     if (!line || !line.trim()) continue;
@@ -253,13 +266,25 @@ function decodeCsvReport(content) {
       const type = classifyHeaders(candidateHeaders, fields[0]);
       active = type;
       headers = type ? candidateHeaders : null;
-      if (type === 'trades') hasTradesSection = true;
-      if (type === 'open_positions') hasOpenPositionsSection = true;
+      prefixedSection = normalizeHeader(fields[0]);
+      if (type === 'trades') {
+        hasTradesSection = true;
+        candidateHeaders.forEach(header => tradeHeaders.add(header));
+      }
+      if (type === 'open_positions') {
+        hasOpenPositionsSection = true;
+        candidateHeaders.forEach(header => openPositionHeaders.add(header));
+      }
       continue;
     }
 
-    if (rowType === 'data' && active && headers) {
+    if (prefixedSection) {
+      // Statement totals and notes have different layouts from executions.
+      // Never reinterpret them as unprefixed Flex records.
+      if (rowType !== 'data' || normalizeHeader(fields[0]) !== prefixedSection || !active || !headers) continue;
       const record = recordFromFields(headers, fields.slice(2));
+      const discriminatorIndex = headers.findIndex(header => normalizeHeader(header) === 'datadiscriminator');
+      if (active === 'trades' && discriminatorIndex >= 0 && normalizeHeader(fields[discriminatorIndex + 2]) !== 'order') continue;
       if (active === 'trades') trade_records.push(record);
       if (active === 'open_positions') open_position_records.push(record);
       continue;
@@ -269,8 +294,14 @@ function decodeCsvReport(content) {
     if (selfDescribingType) {
       active = selfDescribingType;
       headers = fields;
-      if (selfDescribingType === 'trades') hasTradesSection = true;
-      if (selfDescribingType === 'open_positions') hasOpenPositionsSection = true;
+      if (selfDescribingType === 'trades') {
+        hasTradesSection = true;
+        fields.forEach(header => tradeHeaders.add(header));
+      }
+      if (selfDescribingType === 'open_positions') {
+        hasOpenPositionsSection = true;
+        fields.forEach(header => openPositionHeaders.add(header));
+      }
       continue;
     }
 
@@ -294,6 +325,10 @@ function decodeCsvReport(content) {
     row_counts: {
       trades: trade_records.length,
       open_positions: open_position_records.length
+    },
+    section_headers: {
+      trades: Array.from(tradeHeaders),
+      open_positions: Array.from(openPositionHeaders)
     },
     warnings: []
   };

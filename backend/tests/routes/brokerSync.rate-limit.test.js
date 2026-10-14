@@ -5,6 +5,7 @@ jest.mock('../../src/middleware/auth', () => ({
   })
 }));
 jest.mock('../../src/controllers/brokerSync.controller', () => ({
+  getProviders: jest.fn(),
   getConnections: jest.fn(),
   getAllSyncLogs: jest.fn(),
   getConnection: jest.fn(),
@@ -23,6 +24,8 @@ jest.mock('../../src/controllers/brokerSync.controller', () => ({
   triggerSync: jest.fn(),
   testConnection: jest.fn(),
   deleteBrokerTrades: jest.fn(),
+  listExcludedTrades: jest.fn(),
+  restoreExcludedTrade: jest.fn(),
   getSyncStatus: jest.fn()
 }));
 

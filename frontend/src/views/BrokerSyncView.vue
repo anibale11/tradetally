@@ -177,6 +177,29 @@
               </div>
             </div>
 
+            <!-- Tradovate Card: one connection per Tradovate login, so more can be added -->
+            <div
+              v-if="tradovateAvailable"
+              class="p-6 border-2 rounded-lg transition-colors"
+              :class="brokerConnecting.tradovate
+                ? 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 opacity-50 cursor-not-allowed'
+                : 'border-dashed border-gray-300 dark:border-gray-600 hover:border-primary-500 dark:hover:border-primary-400 cursor-pointer'"
+              @click="!brokerConnecting.tradovate && handleBrokerOAuthConnect('tradovate')"
+            >
+              <div class="flex items-center space-x-4">
+                <div class="flex-shrink-0 w-12 h-12 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center">
+                  <div v-if="brokerConnecting.tradovate" class="animate-spin h-6 w-6 rounded-full border-2 border-primary-200 border-t-primary-600"></div>
+                  <span v-else class="text-primary-600 dark:text-primary-400 font-bold text-lg">TV</span>
+                </div>
+                <div>
+                  <h4 class="font-medium text-gray-900 dark:text-white">Tradovate</h4>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                    {{ brokerConnecting.tradovate ? 'Connecting...' : brokerConnection('tradovate') ? 'Connect another login' : 'Futures & prop firms via OAuth' }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <!-- Alpaca Live Card -->
             <div
               class="p-6 border-2 rounded-lg transition-colors"
@@ -216,6 +239,26 @@
                 </div>
               </div>
             </div>
+
+            <!-- Webull Card -->
+            <div
+              class="p-6 border-2 rounded-lg transition-colors"
+              :class="brokerCardClass('webull')"
+              @click="canConnectBroker('webull') && handleBrokerOAuthConnect('webull')"
+            >
+              <div class="flex items-center space-x-4">
+                <div class="flex-shrink-0 w-12 h-12 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center">
+                  <div v-if="brokerConnecting.webull" class="animate-spin h-6 w-6 rounded-full border-2 border-primary-200 border-t-primary-600"></div>
+                  <span v-else class="text-primary-600 dark:text-primary-400 font-bold text-lg">WB</span>
+                </div>
+                <div>
+                  <h4 class="font-medium text-gray-900 dark:text-white">Webull</h4>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                    {{ brokerConnection('webull') ? 'Already connected' : brokerConnecting.webull ? 'Connecting...' : 'Connect via OAuth' }}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Schwab Note -->
@@ -231,8 +274,24 @@
       <ProUpgradePrompt
         v-else-if="showUpgradeGate"
         variant="card"
-        description="Broker sync is a Pro feature. Connect Interactive Brokers, Schwab, Trading 212, TradeStation, or Alpaca to import your trades automatically. Free accounts can still import via CSV (up to 100 trades per import)."
+        description="Broker sync is a Pro feature. Connect Interactive Brokers, Schwab, Trading 212, TradeStation, Alpaca, Tradovate, or Webull to import your trades automatically. Free accounts can still import via CSV (up to 100 trades per import)."
       />
+
+      <div class="card" v-if="excludedTrades.length">
+        <div class="card-body">
+          <h3 class="text-lg font-medium text-gray-900 dark:text-white">Trades excluded from IBKR sync</h3>
+          <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Deleted trades stay excluded from future syncs. Restore eligibility to import one again on the next sync.</p>
+          <div class="mt-4 max-h-64 overflow-auto divide-y divide-gray-200 dark:divide-gray-700">
+            <div v-for="entry in excludedTrades" :key="entry.id" class="flex items-center justify-between gap-3 py-2 text-sm">
+              <span class="text-gray-800 dark:text-gray-200">{{ entry.symbol }} · {{ entry.side }}<template v-if="entry.account_identifier"> · {{ entry.account_identifier }}</template> · {{ formatDate(entry.entry_time) }}</span>
+              <button type="button" class="text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                :disabled="restoringExclusion === entry.id" @click="restoreExclusion(entry.id)">
+                {{ restoringExclusion === entry.id ? 'Restoring…' : 'Allow future import' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- Sync History -->
       <div class="card">
@@ -295,6 +354,9 @@
                   </td>
                   <td class="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-white">
                     {{ log.tradesImported || 0 }}
+                    <span v-if="log.syncDetails?.excluded_trade_count" class="block text-xs text-gray-500 dark:text-gray-400">
+                      {{ log.syncDetails.excluded_trade_count }} excluded by you
+                    </span>
                   </td>
                   <td class="px-4 py-3 whitespace-nowrap text-gray-500 dark:text-gray-400">
                     {{ log.duplicatesDetected || 0 }}
@@ -365,12 +427,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useBrokerSyncStore } from '@/stores/brokerSync'
 import { useTradesStore } from '@/stores/trades'
 import { useNotification } from '@/composables/useNotification'
 import { useUserTimezone } from '@/composables/useUserTimezone'
+import api from '@/services/api'
 import BrokerConnectionCard from '@/components/broker-sync/BrokerConnectionCard.vue'
 import IBKRConnectionModal from '@/components/broker-sync/IBKRConnectionModal.vue'
 import Trading212ConnectionModal from '@/components/broker-sync/Trading212ConnectionModal.vue'
@@ -383,6 +446,8 @@ const { formatDateTime: formatDateTimeTz } = useUserTimezone()
 
 const store = useBrokerSyncStore()
 const tradesStore = useTradesStore()
+const excludedTrades = ref([])
+const restoringExclusion = ref(null)
 const route = useRoute()
 const router = useRouter()
 const { showConfirmation, showDangerConfirmation } = useNotification()
@@ -428,11 +493,28 @@ const reviewedSyncLogIds = ref(new Set())
 const schwabConnecting = ref(false)
 const brokerConnecting = ref({
   tradestation: false,
+  tradovate: false,
   alpacaLive: false,
-  alpacaPaper: false
+  alpacaPaper: false,
+  webull: false
 })
 const SCHWAB_PENDING_STORAGE_KEY = 'broker_sync_schwab_pending'
 const BROKER_PENDING_STORAGE_KEY = 'broker_sync_pending'
+
+const tradovateAvailable = computed(() => Boolean(store.providers?.tradovate?.configured))
+function reset_oauth_connecting_state() {
+  schwabConnecting.value = false
+  Object.keys(brokerConnecting.value).forEach(key => {
+    brokerConnecting.value[key] = false
+  })
+  // Clear markers left by older versions after an abandoned authorization.
+  window.sessionStorage.removeItem(SCHWAB_PENDING_STORAGE_KEY)
+  window.sessionStorage.removeItem(BROKER_PENDING_STORAGE_KEY)
+}
+
+function handle_oauth_page_show(event) {
+  if (event.persisted) reset_oauth_connecting_state()
+}
 
 const trading212Environments = computed(() =>
   store.trading212Connections.map(connection => connection.brokerEnvironment || 'live')
@@ -512,31 +594,15 @@ function openManualReviewFromSyncLog(log, force = false) {
 }
 
 async function consumeOAuthCallbackState(query) {
-  const supportedSuccess = ['schwab', 'tradestation', 'alpaca']
+  const supportedSuccess = ['schwab', 'tradestation', 'alpaca', 'webull', 'tradovate']
   const hasCallbackState = supportedSuccess.includes(query.success) || Boolean(query.error)
 
   if (!hasCallbackState) {
-    if (typeof window !== 'undefined' && window.sessionStorage.getItem(SCHWAB_PENDING_STORAGE_KEY) === 'true') {
-      schwabConnecting.value = true
-    }
-    if (typeof window !== 'undefined') {
-      const pending = window.sessionStorage.getItem(BROKER_PENDING_STORAGE_KEY)
-      if (pending && brokerConnecting.value[pending] !== undefined) {
-        brokerConnecting.value[pending] = true
-      }
-    }
+    reset_oauth_connecting_state()
     return
   }
 
-  schwabConnecting.value = false
-  Object.keys(brokerConnecting.value).forEach(key => {
-    brokerConnecting.value[key] = false
-  })
-
-  if (typeof window !== 'undefined') {
-    window.sessionStorage.removeItem(SCHWAB_PENDING_STORAGE_KEY)
-    window.sessionStorage.removeItem(BROKER_PENDING_STORAGE_KEY)
-  }
+  reset_oauth_connecting_state()
 
   await Promise.all([
     store.fetchConnections(),
@@ -554,6 +620,10 @@ async function consumeOAuthCallbackState(query) {
     scheduleSuccessMessage('TradeStation account connected successfully. Ready to sync trades.')
   } else if (query.success === 'alpaca') {
     scheduleSuccessMessage('Alpaca account connected successfully. Ready to sync trades.')
+  } else if (query.success === 'webull') {
+    scheduleSuccessMessage('Webull account connected successfully. Ready to sync trades.')
+  } else if (query.success === 'tradovate') {
+    scheduleSuccessMessage('Tradovate connected successfully. Ready to sync trades.')
   }
 
   if (query.error === 'pro_required') {
@@ -569,11 +639,19 @@ async function consumeOAuthCallbackState(query) {
 }
 
 onMounted(async () => {
+  reset_oauth_connecting_state()
+  window.addEventListener('pageshow', handle_oauth_page_show)
   await Promise.all([
     store.fetchConnections(),
-    store.fetchSyncLogs()
+    store.fetchSyncLogs(),
+    fetchExcludedTrades(),
+    store.fetchProviders()
   ])
   await consumeOAuthCallbackState(route.query)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('pageshow', handle_oauth_page_show)
 })
 
 // Watch for route changes (OAuth callback)
@@ -654,9 +732,6 @@ async function handleTrading212Save(connection) {
 async function handleSchwabConnect() {
   try {
     schwabConnecting.value = true
-    if (typeof window !== 'undefined') {
-      window.sessionStorage.setItem(SCHWAB_PENDING_STORAGE_KEY, 'true')
-    }
     const authUrl = await store.initSchwabOAuth()
     // Redirect to Schwab OAuth
     window.location.href = authUrl
@@ -678,9 +753,6 @@ async function handleBrokerOAuthConnect(broker, options = {}) {
   const key = pendingKeyFor(broker, options)
   try {
     brokerConnecting.value[key] = true
-    if (typeof window !== 'undefined') {
-      window.sessionStorage.setItem(BROKER_PENDING_STORAGE_KEY, key)
-    }
     const authUrl = await store.initBrokerOAuth(broker, options)
     window.location.href = authUrl
   } catch (error) {
@@ -729,7 +801,8 @@ async function handleSync(connection) {
         // Sync finished - refresh trades data to update P&L and counts
         await Promise.all([
           tradesStore.fetchTrades(),
-          tradesStore.fetchAnalytics()
+          tradesStore.fetchAnalytics(),
+          fetchExcludedTrades()
         ])
       }
     }
@@ -830,7 +903,8 @@ async function handleDeleteTrades(connection) {
         console.log('[BROKER-SYNC] Refreshing trades store after delete...')
         await Promise.all([
           tradesStore.fetchTrades(),
-          tradesStore.fetchAnalytics()
+          tradesStore.fetchAnalytics(),
+          fetchExcludedTrades()
         ])
         console.log('[BROKER-SYNC] Trades store refreshed. Total P&L:', tradesStore.totalPnL, 'Total trades:', tradesStore.totalTrades)
       } catch (error) {
@@ -844,6 +918,27 @@ async function handleDeleteTrades(connection) {
 
 async function refreshLogs() {
   await store.fetchSyncLogs()
+}
+
+async function fetchExcludedTrades() {
+  try {
+    const response = await api.get('/broker-sync/excluded-trades')
+    excludedTrades.value = response.data?.exclusions || []
+  } catch (error) {
+    console.error('[BROKER-SYNC] Failed to load exclusions:', error)
+  }
+}
+
+async function restoreExclusion(id) {
+  restoringExclusion.value = id
+  try {
+    await api.delete(`/broker-sync/excluded-trades/${id}`)
+    await fetchExcludedTrades()
+  } catch (error) {
+    store.error = error?.response?.data?.error || 'Unable to restore trade import eligibility'
+  } finally {
+    restoringExclusion.value = null
+  }
 }
 
 function formatDate(date) {

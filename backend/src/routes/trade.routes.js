@@ -213,7 +213,7 @@ router.post('/', flexibleAuth, requireApiScope('trades:write'), validate(schemas
  *                 enum: [long, short]
  *               instrumentType:
  *                 type: string
- *                 enum: [stock, option, future, crypto]
+ *                 enum: [stock, option, future, crypto, forex]
  *                 default: stock
  *               broker:
  *                 type: string
@@ -344,6 +344,26 @@ router.post('/force-complete-enrichment', authenticate, tradeController.forceCom
  *         description: Open positions with current quotes
  */
 router.get('/open-positions-quotes', authenticate, tradeController.getOpenPositionsWithQuotes);
+
+/**
+ * @swagger
+ * /api/trades/open-positions-ranges:
+ *   get:
+ *     summary: Get 52-week high/low for open position symbols
+ *     tags: [Trades]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: symbols
+ *         schema:
+ *           type: string
+ *         description: Comma-separated symbols (max 50)
+ *     responses:
+ *       200:
+ *         description: Map of symbol to { week_52_high, week_52_low } or null
+ */
+router.get('/open-positions-ranges', authenticate, tradeController.getOpenPositionRanges);
 
 /**
  * @swagger
@@ -661,6 +681,8 @@ router.post('/cusip/resolve-unresolved', authenticate, tradeController.resolveUn
  */
 router.delete('/bulk', authenticate, tradeController.bulkDeleteTrades);
 router.patch('/bulk', authenticate, tradeController.bulkUpdateMetadata);
+router.patch('/bulk/stops', authenticate, tradeController.bulkUpdateStops);
+router.post('/bulk/stops/preview', authenticate, tradeController.previewBulkStops);
 
 /**
  * @swagger

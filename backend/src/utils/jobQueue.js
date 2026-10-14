@@ -2,6 +2,8 @@ const db = require('../config/database');
 const logger = require('./logger');
 const marketData = require('./finnhub');
 const { PARALLEL_JOB_TYPES } = require('./jobQueueConfig');
+const { publishEnrichmentCompleted } = require('../events/enrichmentEvents');
+const { scheduleEnrichmentStatusPush } = require('../services/enrichmentStatusPush');
 
 class JobQueue {
   constructor() {
@@ -20,7 +22,7 @@ class JobQueue {
 
   /**
    * Add a job to the queue
-   * @param {string} type - Job type (cusip_resolution, strategy_classification, news_enrichment, news_backfill, quality_backfill, mae_recalc, leaderboard_update, verification_email, password_reset_email, account_lockout_email, support_request_email)
+   * @param {string} type - Job type (cusip_resolution, strategy_classification, news_enrichment, news_backfill, quality_backfill, mae_recalc, leaderboard_update, revenge_analysis, verification_email, password_reset_email, account_lockout_email, support_request_email)
    * @param {object} data - Job data
    * @param {number} priority - Priority (1=highest, 5=lowest)
    * @param {string} userId - User ID for the job
@@ -237,6 +239,7 @@ class JobQueue {
    * Start processing jobs (self-scheduling poll loop with idle backoff)
    */
   startProcessing() {
+    if (process.env.DISABLE_BACKGROUND_JOBS === 'true') return;
     if (this.isProcessing) {
       return;
     }
@@ -359,8 +362,14 @@ class JobQueue {
         case 'mae_recalc':
           result = await this.processMAERecalc(data);
           break;
+        case 'r_value_backfill':
+          result = await this.processRValueBackfill(data);
+          break;
         case 'leaderboard_update':
           result = await this.processLeaderboardUpdate(data);
+          break;
+        case 'revenge_analysis':
+          result = await this.processRevengeAnalysis(data);
           break;
         case 'verification_email':
           result = await this.processVerificationEmail(data);
@@ -530,7 +539,7 @@ class JobQueue {
   async checkAndUpdateTradeEnrichmentStatus(tradeId) {
     try {
       // First check if the trade still exists
-      const tradeExistsQuery = `SELECT id FROM trades WHERE id = $1`;
+      const tradeExistsQuery = `SELECT id, user_id FROM trades WHERE id = $1`;
       const tradeExists = await db.query(tradeExistsQuery, [tradeId]);
       
       if (tradeExists.rows.length === 0) {
@@ -565,35 +574,10 @@ class JobQueue {
         const updateResult = await db.query(updateQuery, [tradeId]);
         
         if (updateResult.rowCount > 0) {
+          const userId = tradeExists.rows[0].user_id;
           logger.logImport(`Trade ${tradeId} enrichment completed - all background jobs finished`);
-          
-          // Send real-time enrichment update notification
-          try {
-            const updatedTrade = updateResult.rows[0];
-            if (updatedTrade && updatedTrade.user_id) {
-              const notificationsController = require('../controllers/notifications.controller');
-              
-              // Get current enrichment status for this user
-              const enrichmentStatusQuery = `
-                SELECT enrichment_status, COUNT(*) as count
-                FROM trades 
-                WHERE user_id = $1
-                GROUP BY enrichment_status
-                ORDER BY enrichment_status
-              `;
-              const statusResult = await db.query(enrichmentStatusQuery, [updatedTrade.user_id]);
-              
-              await notificationsController.sendEnrichmentUpdateToUser(updatedTrade.user_id, {
-                tradeId: tradeId,
-                tradeEnrichment: statusResult.rows.map(row => ({
-                  enrichment_status: row.enrichment_status,
-                  count: row.count
-                }))
-              });
-            }
-          } catch (notificationError) {
-            logger.logError(`Failed to send enrichment notification for trade ${tradeId}: ${notificationError.message}`);
-          }
+          publishEnrichmentCompleted(userId, [tradeId], 'jobs_finished', 'jobQueue');
+          scheduleEnrichmentStatusPush(userId);
         }
       }
     } catch (error) {
@@ -668,6 +652,7 @@ class JobQueue {
     const tradeQualityService = require('../services/tradeQuality.service');
     const { userId, batchSize = 10, maxTrades = null } = data;
     const staleQualityCondition = tradeQualityService.getStaleQualityCondition();
+    const tradeLimit = parseInt(maxTrades, 10);
 
     logger.logImport(`Starting quality backfill for user ${userId}`);
 
@@ -680,7 +665,7 @@ class JobQueue {
         AND ${staleQualityCondition}
         AND (instrument_type IS NULL OR instrument_type != 'future')
       ORDER BY trade_date DESC
-      ${maxTrades ? `LIMIT ${maxTrades}` : ''}
+      ${Number.isInteger(tradeLimit) && tradeLimit > 0 ? `LIMIT ${tradeLimit}` : ''}
     `;
 
     const result = await db.query(tradesQuery, [userId]);
@@ -743,6 +728,24 @@ class JobQueue {
 
     logger.logImport(`Quality backfill completed: ${graded} graded, ${skipped} skipped`);
     return { message: `Quality backfill completed: ${graded} graded, ${skipped} skipped` };
+  }
+
+  /**
+   * Restore missing persisted R values using the same net calculation as a
+   * normal trade update. A cursor ensures invalid rows cannot cause retries
+   * to loop on the same batch.
+   */
+  async processRValueBackfill(data) {
+    if (!data?.userId) throw new Error('R-value backfill requires a user ID');
+    const result = await require('../services/rValueBackfillService')
+      .runBatch(data.userId, data.afterId);
+    if (result.next_after) {
+      await this.addJob('r_value_backfill', {
+        userId: data.userId,
+        afterId: result.next_after
+      }, 4, data.userId);
+    }
+    return result;
   }
 
   /**
@@ -896,6 +899,24 @@ class JobQueue {
    * achievementService when achievements are awarded, instead of running the
    * full rebuild inline on the award path.
    */
+  // Full-history revenge analysis queued by AchievementService after trade
+  // changes, followed by an achievement check so no-revenge badges are
+  // judged on fresh detection. Keeps the user's real-time behavioral alerts.
+  async processRevengeAnalysis(data) {
+    const BehavioralAnalyticsServiceV2 = require('../services/behavioralAnalyticsServiceV2');
+    const AchievementService = require('../services/achievementService');
+    const { userId } = data;
+
+    const analysis = await BehavioralAnalyticsServiceV2.analyzeHistoricalTradesV2(userId, {}, { keepAlerts: true });
+    const awarded = await AchievementService.checkAndAwardAchievements(userId, { skipRevengeAnalysis: true });
+
+    return {
+      tradesAnalyzed: analysis.tradesAnalyzed,
+      revengeEventsCreated: analysis.revengeEventsCreated,
+      achievementsAwarded: awarded.length
+    };
+  }
+
   async processLeaderboardUpdate() {
     const LeaderboardService = require('../services/leaderboardService');
 

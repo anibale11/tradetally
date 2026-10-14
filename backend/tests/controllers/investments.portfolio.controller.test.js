@@ -19,10 +19,17 @@ jest.mock('../../src/services/portfolioService', () => ({
   setTarget: jest.fn(),
   evaluateAlerts: jest.fn()
 }));
+jest.mock('../../src/services/retirementService', () => ({
+  get: jest.fn(),
+  calculate: jest.fn(),
+  savePlan: jest.fn(),
+  deletePlan: jest.fn()
+}));
 
 const investmentsController = require('../../src/controllers/investments.controller');
 const HoldingsService = require('../../src/services/holdingsService');
 const PortfolioService = require('../../src/services/portfolioService');
+const RetirementService = require('../../src/services/retirementService');
 
 function createMockRes() {
   return {
@@ -144,5 +151,67 @@ describe('investments portfolio controller', () => {
       message: 'Refreshed 2 holdings',
       updated: 2
     });
+  });
+
+  test('getRetirementPlan returns an account-filtered preview', async () => {
+    const req = { user: { id: 'user-4' }, query: { accounts: 'ira-1' } };
+    const res = createMockRes();
+    RetirementService.get.mockResolvedValue({ has_saved_plan: true });
+
+    await investmentsController.getRetirementPlan(req, res);
+
+    expect(RetirementService.get).toHaveBeenCalledWith('user-4', { accounts: 'ira-1' });
+    expect(res.json).toHaveBeenCalledWith({ has_saved_plan: true });
+  });
+
+  test('saveRetirementPlan persists inputs and returns the all-account projection', async () => {
+    const req = {
+      user: { id: 'user-5' },
+      query: { accounts: 'ignored-on-save' },
+      body: { current_age: 40 }
+    };
+    const res = createMockRes();
+    RetirementService.savePlan.mockResolvedValue({ current_age: 40 });
+    RetirementService.calculate.mockResolvedValue({ projection: { scenarios: [] } });
+
+    await investmentsController.saveRetirementPlan(req, res);
+
+    expect(RetirementService.savePlan).toHaveBeenCalledWith('user-5', req.body);
+    expect(RetirementService.calculate).toHaveBeenCalledWith(
+      'user-5',
+      { current_age: 40 }
+    );
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      has_saved_plan: true
+    }));
+  });
+
+  test('deleteRetirementPlan resets only the current user plan', async () => {
+    const req = { user: { id: 'user-6' } };
+    const res = createMockRes();
+    RetirementService.deletePlan.mockResolvedValue(true);
+
+    await investmentsController.deleteRetirementPlan(req, res);
+
+    expect(RetirementService.deletePlan).toHaveBeenCalledWith('user-6');
+    expect(res.json).toHaveBeenCalledWith({ deleted: true });
+  });
+});
+
+
+describe('portfolio explicit reporting dates', () => {
+  beforeEach(() => jest.clearAllMocks());
+  test('passes explicit calendar boundaries with the account filter', async () => {
+    const res = createMockRes();
+    const query = { period: 'last_month', start_date: '2026-08-01', end_date: '2026-08-31', accounts: 'acct-1' };
+    PortfolioService.getPerformance.mockResolvedValue({ series: [] });
+    await investmentsController.getPortfolioPerformance({ user: { id: 'owner' }, query }, res);
+    expect(PortfolioService.getPerformance).toHaveBeenCalledWith('owner', expect.objectContaining(query));
+  });
+  test('rejects partial boundaries without requesting market data', async () => {
+    const res = createMockRes();
+    await investmentsController.getPortfolioPerformance({ user: { id: 'owner' }, query: { start_date: '2026-08-01' } }, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(PortfolioService.getPerformance).not.toHaveBeenCalled();
   });
 });

@@ -1,3 +1,5 @@
+const { instructionsForPrompt } = require('../utils/aiAnalysisInstructions');
+const { sendAIUnavailable } = require('../utils/aiErrorResponse');
 const db = require('../config/database');
 const crypto = require('crypto');
 const aiService = require('../utils/aiService');
@@ -2592,35 +2594,9 @@ const analyticsController = {
 
       const userSettings = await aiService.getUserSettings(req.user.id);
 
-      if (!userSettings.provider) {
-        console.log('[ERROR] AI provider not configured');
-        return res.status(400).json({
-          error: 'AI recommendations are not available. AI provider not configured in settings.'
-        });
-      }
-
-      // Check if API key is required for this provider
-      const providersRequiringApiKey = ['gemini', 'claude', 'openai', 'deepseek', 'kimi', 'perplexity'];
-      if (providersRequiringApiKey.includes(userSettings.provider) && !userSettings.apiKey) {
-        console.log(`[ERROR] API key required for ${userSettings.provider} provider`);
-        return res.status(400).json({
-          error: `AI recommendations are not available. API key required for ${userSettings.provider} provider.`
-        });
-      }
-
-      // Check if API URL is required for this provider
-      const providersRequiringApiUrl = ['ollama', 'lmstudio', 'local', 'custom'];
-      if (providersRequiringApiUrl.includes(userSettings.provider) && !userSettings.apiUrl) {
-        console.log(`[ERROR] API URL required for ${userSettings.provider} provider`);
-        return res.status(400).json({
-          error: `AI recommendations are not available. API URL required for ${userSettings.provider} provider.`
-        });
-      }
-
-      if (userSettings.provider === 'custom' && !userSettings.model) {
-        return res.status(400).json({
-          error: 'AI recommendations are not available. Model required for custom provider.'
-        });
+      if (!aiService.isProviderConfigured(userSettings)) {
+        console.error('[AI] Recommendations provider configuration is incomplete');
+        return sendAIUnavailable(res);
       }
 
       console.log(`[OK] AI provider configured: ${userSettings.provider}`);
@@ -2829,15 +2805,13 @@ const analyticsController = {
       console.log('[AI] Generating AI recommendations with sector analysis...');
       let recommendations;
       try {
-        recommendations = await aiService.generateResponse(req.user.id, analyticsController.buildRecommendationPrompt(metrics, trades, tradingProfile, sectorData));
+        recommendations = await aiService.generateResponse(req.user.id, analyticsController.buildRecommendationPrompt(metrics, trades, tradingProfile, sectorData) + instructionsForPrompt(userProfileSettings?.ai_analysis_instructions));
         if (!recommendations) {
           throw new Error('AI service returned undefined recommendations');
         }
       } catch (aiError) {
         console.error('[ERROR] AI service error:', aiError.message);
-        return res.status(500).json({
-          error: 'Failed to generate AI recommendations: ' + aiError.message
-        });
+        return sendAIUnavailable(res);
       }
       console.log('[SUCCESS] AI recommendations generated successfully');
       console.log('[DEBUG] Recommendations type:', typeof recommendations);
@@ -2858,7 +2832,7 @@ const analyticsController = {
 
     } catch (error) {
       console.error('Error generating recommendations:', error);
-      next(error);
+      return sendAIUnavailable(res);
     }
   },
 
@@ -3272,7 +3246,9 @@ const analyticsController = {
       const filterHashKey = createFilterHash(convertQueryToTradeFilters(req.query));
       const groupByPosition = await isPositionGroupingEnabled(req.user.id);
       const be = await analyticsBreakevenPredicate(req.user.id, groupByPosition);
-      const summaryCacheKey = `ai_insight_summary_${req.user.id}_${filterHashKey}_grp${groupByPosition ? 'pos' : 'leg'}_be${createFilterHash(be)}`;
+      const analysis_settings = await User.getSettings(req.user.id);
+      const ai_analysis_instructions = analysis_settings?.ai_analysis_instructions || '';
+      const summaryCacheKey = `ai_insight_summary_${req.user.id}_${filterHashKey}_grp${groupByPosition ? 'pos' : 'leg'}_be${createFilterHash(be)}_instructions${createFilterHash({ ai_analysis_instructions })}`;
 
       const cached = cache.get(summaryCacheKey);
       if (cached) {
@@ -3464,7 +3440,7 @@ const analyticsController = {
         try {
           const useAI = await analyticsController.shouldUseAIEnrichment(req.user.id);
           if (useAI) {
-            summaries = await analyticsController.enrichInsightsWithAI(req.user.id, summaries);
+            summaries = await analyticsController.enrichInsightsWithAI(req.user.id, summaries, ai_analysis_instructions);
           }
         } catch (aiErr) {
           console.warn('[AI] enrichment failed, returning deterministic insights:', aiErr.message);
@@ -3821,7 +3797,7 @@ const analyticsController = {
   // single batched prompt to keep cost/latency bounded regardless of how many
   // insights are in the list. Falls back to the original deterministic
   // body on any parsing/AI failure so the dashboard never goes blank.
-  async enrichInsightsWithAI(userId, insights) {
+  async enrichInsightsWithAI(userId, insights, ai_analysis_instructions = '') {
     if (!Array.isArray(insights) || insights.length === 0) return insights;
 
     // Pre-strip non-enrichable insights (e.g. system/empty-state). We still
@@ -3858,7 +3834,7 @@ Respond with the JSON array now.`;
 
     let raw;
     try {
-      raw = await aiService.generateResponse(userId, prompt);
+      raw = await aiService.generateResponse(userId, prompt + instructionsForPrompt(ai_analysis_instructions));
     } catch (err) {
       console.warn('[AI] enrichment call failed:', err.message);
       return insights;

@@ -1,5 +1,6 @@
 const AISessionService = require('../services/aiSessionService');
 const AICreditService = require('../services/aiCreditService');
+const { sendAIUnavailable } = require('../utils/aiErrorResponse');
 
 /**
  * AI Controller
@@ -35,6 +36,7 @@ const aiController = {
         ...result
       });
     } catch (error) {
+      if (error.code === 'AI_IMAGE_INPUT_REJECTED') return res.status(400).json({ error: error.code, message: error.message });
       console.error('[AI_CONTROLLER] Error creating session:', error.message);
 
       // Handle specific error types
@@ -50,14 +52,6 @@ const aiController = {
         return res.status(403).json({
           success: false,
           error: 'Pro subscription required',
-          message: error.message
-        });
-      }
-
-      if (error.message.includes('API key')) {
-        return res.status(500).json({
-          success: false,
-          error: 'AI configuration error',
           message: error.message
         });
       }
@@ -78,7 +72,7 @@ const aiController = {
         });
       }
 
-      next(error);
+      return sendAIUnavailable(res);
     }
   },
 
@@ -118,9 +112,10 @@ const aiController = {
         ...result
       });
     } catch (error) {
+      if (error.code === 'AI_IMAGE_INPUT_REJECTED') return res.status(400).json({ error: error.code, message: error.message });
       console.error('[AI_CONTROLLER] Error processing follow-up:', error.message);
 
-      if (error.message.includes('not found')) {
+      if (error.message === 'Session not found or access denied') {
         return res.status(404).json({
           success: false,
           error: 'Session not found',
@@ -128,12 +123,16 @@ const aiController = {
         });
       }
 
-      if (error.message.includes('expired')) {
+      if (error.message === 'Session has expired. Please start a new session.') {
         return res.status(410).json({
           success: false,
           error: 'Session expired',
           message: error.message
         });
+      }
+
+      if (/^Session is (closed|expired)\. Please start a new session\.$/.test(error.message)) {
+        return res.status(410).json({ success: false, error: 'Session closed', message: error.message });
       }
 
       if (error.message.includes('Maximum follow-up')) {
@@ -160,7 +159,7 @@ const aiController = {
         });
       }
 
-      next(error);
+      return sendAIUnavailable(res);
     }
   },
 

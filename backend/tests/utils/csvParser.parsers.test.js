@@ -517,6 +517,27 @@ describe('IBKR parser', () => {
     expect(result.trades[0].tradeDate).toBeDefined();
   });
 
+  test('uses the IBKR report timezone independently from the user display timezone', async () => {
+    const csv = [
+      'Symbol,Date/Time,Quantity,Price,Commission',
+      'AAPL,20260904;093319,100,150.00,-1.00',
+      'AAPL,20260904;100000,-100,155.00,-1.00'
+    ].join('\n');
+
+    const result = await parseCSV(buf(csv), 'ibkr', {
+      userTimezone: 'Europe/London',
+      sourceTimezone: 'America/New_York'
+    });
+
+    expect(result.trades).toHaveLength(1);
+    expect(result.trades[0].entryTime).toBe('2026-09-04T13:33:19Z');
+    expect(result.trades[0].exitTime).toBe('2026-09-04T14:00:00Z');
+    expect(result.trades[0].executions.map(execution => execution.datetime)).toEqual([
+      '2026-09-04T13:33:19Z',
+      '2026-09-04T14:00:00Z'
+    ]);
+  });
+
   test('handles negative commission (IBKR convention)', async () => {
     const result = await parseCSV(buf(ibkrActivityCSV), 'ibkr', {});
     if (result.trades.length > 0) {
@@ -727,6 +748,18 @@ describe('TradingView parser', () => {
     const result = await parseCSV(buf(tvFuturesNoStatusCSV), 'tradingview', {});
     expectValidResult(result);
     expect(result.trades.length).toBeGreaterThanOrEqual(1);
+  });
+
+  test('preserves forex quantities above one million units from TradingView order history', async () => {
+    const csv = [
+      'Symbol,Side,Type,Quantity,Limit price,Stop price,Fill price,Commission,Placing time,Closing time,Order ID,Level ID,Leverage,Margin',
+      'TEST:EURUSD,Buy,Market,2235309,,,1.10000,,2026-01-01 09:00:00,2026-01-01 09:00:00,1001,,100x,',
+      'TEST:EURUSD,Sell,Stop Loss,2235309,,1.09900,1.09900,,2026-01-01 09:00:00,2026-01-01 09:10:00,1002,,,'
+    ].join('\n');
+    const result = await parseCSV(buf(csv), 'tradingview', {});
+    expectValidResult(result);
+    expect(result.trades).toHaveLength(1);
+    expect(result.trades[0].quantity).toBe(2235309);
   });
 
   test('parses performance export format', async () => {
@@ -1448,8 +1481,8 @@ describe('Generic parser', () => {
     expect(result.trades[0]).toEqual(expect.objectContaining({
       symbol: 'TSLA',
       tradeDate: '2026-04-15',
-      entryTime: '2026-04-15T15:09:58',
-      exitTime: '2026-04-17T15:53:04',
+      entryTime: '2026-04-15T15:09:58-04:00',
+      exitTime: '2026-04-17T15:53:04-04:00',
       entryPrice: 392.06,
       exitPrice: 400.24,
       quantity: 2,

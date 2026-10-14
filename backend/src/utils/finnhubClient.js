@@ -9,6 +9,7 @@ const { validateAiProviderUrl, fetchAiProviderUrl } = require('./urlSecurity');
 const { FinnhubPriority, FinnhubRequestScheduler } = require('./finnhubScheduler');
 const { getDateInTimezone, localToUTC } = require('./timezone');
 const { CRYPTO_SYMBOLS, CRYPTO_TO_COINGECKO } = require('./cryptoAssets');
+const { toFinnhubForexSymbol } = require('./forexSymbols');
 
 // Daily chart window settings. A negative reverses the window and a
 // non-finite one yields an invalid date, so anything that is not a bounded
@@ -727,13 +728,9 @@ class FinnhubClient {
           max_completion_tokens: 50
         };
         
-        // Only add temperature for models that support it.
-        // Reasoning models (o-series, all gpt-5 variants) reject any non-default temperature.
+        // OpenAI model capabilities change independently of model names, so
+        // omit temperature and let the selected model use its default.
         const modelName = settings.default_ai_model || 'gpt-3.5-turbo';
-        const isReasoningModel = /^(o\d|gpt-5)/i.test(modelName);
-        if (!isReasoningModel) {
-          requestParams.temperature = 0.1;
-        }
         
         // For GPT-5 models, use the official guide format (no extra parameters)
         if (modelName.includes('gpt-5')) {
@@ -1504,8 +1501,48 @@ Please provide just the ticker symbol (like "AAPL" for Apple). If you don't know
     }
   }
 
+  async getForexCandles(symbol, resolution = '1', from, to, userIdOrOptions = null, options = {}) {
+    const normalizedContext = this.normalizeUserContext(userIdOrOptions, options);
+    const userId = normalizedContext.userId;
+    const requestOptions = normalizedContext.options;
+    const providerSymbol = toFinnhubForexSymbol(symbol);
+    const cacheKey = `${providerSymbol}_${resolution}_${from}_${to}`;
+    const cached = await cache.get('forex_candles', cacheKey);
+    if (cached) return cached;
+
+    await this.enforceUsageLimit(userId, 'candle');
+    const candles = await this.makeRequest('/forex/candle', {
+      symbol: providerSymbol,
+      resolution,
+      from,
+      to
+    }, {
+      source: requestOptions.source || 'forex_candles',
+      priority: requestOptions.priority ?? (userId ? FinnhubPriority.ACTIVE_CANDLE : FinnhubPriority.ACTIVE_OTHER),
+      userId,
+      background: requestOptions.background,
+      maxQueueWaitMs: requestOptions.maxQueueWaitMs
+    });
+
+    if (!candles || candles.s !== 'ok' || !candles.c || candles.c.length === 0) {
+      throw new Error(`No forex candle data available for ${symbol} (${providerSymbol})`);
+    }
+
+    const formattedCandles = candles.c.map((close, index) => ({
+      time: candles.t[index],
+      open: candles.o[index],
+      high: candles.h[index],
+      low: candles.l[index],
+      close,
+      volume: candles.v?.[index] ?? null
+    }));
+    await cache.set('forex_candles', cacheKey, formattedCandles);
+    if (userId) await ApiUsageService.trackApiCall(userId, 'candle');
+    return formattedCandles;
+  }
+
   // Get appropriate candle data based on trade duration for Pro users
-  async getTradeChartData(symbol, entryDate, exitDate = null, userId = null, requestedResolution = '1') {
+  async getTradeChartData(symbol, entryDate, exitDate = null, userId = null, requestedResolution = '1', marketType = 'stock') {
     // Log the dates we're working with to debug timezone issues
     console.log('getTradeChartData input dates:', {
       entryDate,
@@ -1588,20 +1625,27 @@ Please provide just the ticker symbol (like "AAPL" for Apple). If you don't know
 
     try {
       const intervalName = intervals[resolution];
-      console.log(`Fetching ${intervalName} Finnhub data for ${symbol}`);
+      console.log(`Fetching ${intervalName} Finnhub ${marketType} data for ${symbol}`);
       
-      const candles = await this.getStockCandles(symbol, resolution, fromTimestamp, toTimestamp, userId);
+      const candles = marketType === 'forex'
+        ? await this.getForexCandles(symbol, resolution, fromTimestamp, toTimestamp, userId)
+        : await this.getStockCandles(symbol, resolution, fromTimestamp, toTimestamp, userId);
 
       return {
         type: resolution === 'D' ? 'daily' : 'intraday',
         interval: intervalName,
         candles: candles,
-        source: 'finnhub'
+        source: 'finnhub',
+        ...(marketType === 'forex' && { chart_symbol: toFinnhubForexSymbol(symbol) })
       };
     } catch (error) {
       console.error(`Error fetching Finnhub chart data for ${symbol}:`, error);
       throw error;
     }
+  }
+
+  async getForexTradeChartData(symbol, entryDate, exitDate = null, userId = null, requestedResolution = '1') {
+    return this.getTradeChartData(symbol, entryDate, exitDate, userId, requestedResolution, 'forex');
   }
 
   /**

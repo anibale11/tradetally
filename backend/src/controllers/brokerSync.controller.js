@@ -8,6 +8,8 @@ const ibkrService = require('../services/brokerSync/ibkrService');
 const schwabService = require('../services/brokerSync/schwabService');
 const tradestationService = require('../services/brokerSync/tradestationService');
 const alpacaService = require('../services/brokerSync/alpacaService');
+const webullService = require('../services/brokerSync/webullService');
+const tradovateService = require('../services/brokerSync/tradovateService');
 const trading212Service = require('../services/brokerSync/trading212Service');
 const brokerSyncService = require('../services/brokerSync');
 const TierService = require('../services/tierService');
@@ -17,13 +19,16 @@ const logger = require('../utils/logger');
 const { getUserTimezone } = require('../utils/timezone');
 const db = require('../config/database');
 const crypto = require('crypto');
+const BrokerTradeExclusions = require('../services/brokerTradeExclusions');
 
 const OAUTH_STATE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const SCHWAB_REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 const OAUTH_BROKER_SERVICES = {
   tradestation: tradestationService,
-  alpaca: alpacaService
+  alpaca: alpacaService,
+  webull: webullService,
+  tradovate: tradovateService
 };
 
 function redactAccountNumber(accountNumber) {
@@ -213,7 +218,7 @@ const brokerSyncController = {
       });
 
       // Update status to active after validation
-      await BrokerConnection.updateStatus(connection.id, 'active', 'Connection validated successfully');
+      await BrokerConnection.updateStatus(connection.id, 'active', validation.message);
 
       // Calculate next sync time if auto-sync enabled
       if (autoSyncEnabled && syncFrequency !== 'manual') {
@@ -232,7 +237,8 @@ const brokerSyncController = {
       res.status(201).json({
         success: true,
         data: updatedConnection,
-        message: 'IBKR connection added successfully'
+        message: 'IBKR connection added successfully',
+        warnings: validation.warnings || []
       });
     } catch (error) {
       logger.logError('Error adding IBKR connection:', error);
@@ -500,6 +506,21 @@ const brokerSyncController = {
         details: error.message || 'oauth_failed',
         status: errorCode
       });
+    }
+  },
+
+  /**
+   * Report which OAuth broker integrations are configured on this server so
+   * the UI only offers connections that can succeed.
+   */
+  async getProviders(req, res, next) {
+    try {
+      const providers = Object.fromEntries(
+        Object.entries(OAUTH_BROKER_SERVICES).map(([broker, service]) => [broker, { configured: service.isConfigured() }])
+      );
+      res.json({ success: true, providers });
+    } catch (error) {
+      next(error);
     }
   },
 
@@ -972,7 +993,8 @@ const brokerSyncController = {
 
       res.json({
         success: testResult.valid,
-        message: testResult.message
+        message: testResult.message,
+        warnings: testResult.warnings || []
       });
     } catch (error) {
       logger.logError('Error testing connection:', error);
@@ -1029,25 +1051,33 @@ const brokerSyncController = {
       // Delete trades synced from this specific broker connection. IBKR legacy
       // sync rows can be missing broker_connection_id, so fall back by broker.
       const db = require('../config/database');
-      const result = await db.query(
-        `DELETE FROM trades WHERE user_id = $1 AND broker_connection_id = $2 RETURNING id`,
-        [userId, id]
-      );
-
-      let legacyDeletedCount = 0;
-      if (String(connection.brokerType).toLowerCase() === 'ibkr') {
-        const legacyResult = await db.query(
-          `DELETE FROM trades
-           WHERE user_id = $1
-             AND broker_connection_id IS NULL
-             AND LOWER(broker) = LOWER($2)
-           RETURNING id`,
-          [userId, connection.brokerType]
+      const { deletedCount, legacyDeletedCount } = await db.withTransaction(async client => {
+        const current = await client.query(
+          'SELECT id FROM trades WHERE user_id = $1 AND broker_connection_id = $2',
+          [userId, id]
         );
-        legacyDeletedCount = legacyResult.rowCount;
-      }
-
-      const deletedCount = result.rowCount + legacyDeletedCount;
+        await BrokerTradeExclusions.recordDeleted(client, userId, current.rows.map(row => row.id));
+        const result = await client.query(
+          'DELETE FROM trades WHERE user_id = $1 AND broker_connection_id = $2 RETURNING id',
+          [userId, id]
+        );
+        let legacyCount = 0;
+        if (String(connection.brokerType).toLowerCase() === 'ibkr') {
+          const legacy = await client.query(
+            `SELECT id FROM trades WHERE user_id = $1
+              AND broker_connection_id IS NULL AND LOWER(broker) = LOWER($2)
+              AND import_id IS NULL`, [userId, connection.brokerType]
+          );
+          await BrokerTradeExclusions.recordDeleted(client, userId, legacy.rows.map(row => row.id));
+          const deletedLegacy = await client.query(
+            `DELETE FROM trades WHERE user_id = $1
+              AND broker_connection_id IS NULL AND LOWER(broker) = LOWER($2)
+              AND import_id IS NULL RETURNING id`, [userId, connection.brokerType]
+          );
+          legacyCount = deletedLegacy.rowCount;
+        }
+        return { deletedCount: result.rowCount + legacyCount, legacyDeletedCount: legacyCount };
+      });
       console.log(`[BROKER-SYNC] Deleted ${deletedCount} synced trades for connection ${id} (user ${userId}); legacy=${legacyDeletedCount}`);
 
       if (deletedCount > 0) {
@@ -1066,6 +1096,25 @@ const brokerSyncController = {
       logger.logError('Error deleting broker trades:', error);
       next(error);
     }
+  },
+
+  async listExcludedTrades(req, res, next) {
+    try {
+      const exclusions = await BrokerTradeExclusions.list(req.user.id);
+      res.json({ exclusions: exclusions.map(({ executions, ...entry }) => entry) });
+    } catch (error) { next(error); }
+  },
+
+  async restoreExcludedTrade(req, res, next) {
+    try {
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(req.params.id)) {
+        return res.status(400).json({ error: 'Invalid excluded trade ID' });
+      }
+      if (!await BrokerTradeExclusions.restore(req.user.id, req.params.id)) {
+        return res.status(404).json({ error: 'Excluded trade not found' });
+      }
+      res.json({ success: true });
+    } catch (error) { next(error); }
   }
 };
 
