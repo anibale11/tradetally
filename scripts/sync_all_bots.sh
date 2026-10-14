@@ -32,25 +32,45 @@ else
   echo "INFO: DCA sin trades todavía"
 fi
 
+# Michael Saylor (nautilus-trading) en su subcuenta OKX demo: mismo esquema que
+# el DCA, con las keys de .env.saylor y su propio JSONL/cutoff.
+SAYLOR_CUTOFF="2026-10-14T01:50:32Z"  # arranque de nautilus-live-saylor en el VPS
+ssh -o ConnectTimeout=15 trading-server "cd /opt/nautilus_trading && test -f .env.saylor && python3 sync_trades_from_okx.py --env .env.saylor --out data/nautilus_saylor_trades.jsonl --cutoff \"$SAYLOR_CUTOFF\"" 2>&1 | tail -2 || true
+if scp -q -o ConnectTimeout=10 trading-server:/opt/nautilus_trading/data/nautilus_saylor_trades.jsonl "$NAUT/data/nautilus_saylor_trades.jsonl.tmp" 2>/dev/null; then
+  mv "$NAUT/data/nautilus_saylor_trades.jsonl.tmp" "$NAUT/data/nautilus_saylor_trades.jsonl"
+else
+  rm -f "$NAUT/data/nautilus_saylor_trades.jsonl.tmp"
+  echo "INFO: Saylor sin trades todavía"
+fi
+
 new=0
 # Cada import: "<nombre>|<script>|<variables -e para docker exec>"
 IMPORTS=(
   "nautilus-smc|importNautilusTrades|-e IMPORT_CUTOFF=2026-10-07T23:59:00Z"
   "bot_trading|importBotTradingTrades|"
   "nautilus-dca|importNautilusTrades|-e IMPORT_TRADES_FILE=nautilus_dca_trades.jsonl -e IMPORT_CUTOFF=$DCA_CUTOFF"
+  "nautilus-saylor|importNautilusTrades|-e IMPORT_TRADES_FILE=nautilus_saylor_trades.jsonl -e IMPORT_CUTOFF=$SAYLOR_CUTOFF"
 )
 for entry in "${IMPORTS[@]}"; do
   IFS='|' read -r label s envs <<< "$entry"
   # $envs explícito también para el SMC: el corte queda en el script aunque
   # la imagen de la app no se haya reconstruido con el default nuevo.
-  if [ "$label" = "nautilus-dca" ]; then
-    # Sin archivo todavía (la subcuenta no operó): no es un fallo.
-    if [ ! -f "$NAUT/data/nautilus_dca_trades.jsonl" ]; then continue; fi
-    out=$(docker exec $envs -e "IMPORT_BROKER_NAME=nautilus-trading (DCA Range — OKX demo subcuenta)" \
-          -e "IMPORT_STRATEGY_NAME=DCA Range Trading Craig (Nautilus)" tradetally-app node "backend/src/scripts/$s.js" 2>&1)
-  else
-    out=$(docker exec $envs tradetally-app node "backend/src/scripts/$s.js" 2>&1)
-  fi
+  # Sin archivo todavía (la subcuenta no operó): no es un fallo.
+  case "$label" in
+    nautilus-dca)
+      if [ ! -f "$NAUT/data/nautilus_dca_trades.jsonl" ]; then continue; fi
+      out=$(docker exec $envs -e "IMPORT_BROKER_NAME=nautilus-trading (DCA Range — OKX demo subcuenta)" \
+            -e "IMPORT_STRATEGY_NAME=DCA Range Trading Craig (Nautilus)" tradetally-app node "backend/src/scripts/$s.js" 2>&1)
+      ;;
+    nautilus-saylor)
+      if [ ! -f "$NAUT/data/nautilus_saylor_trades.jsonl" ]; then continue; fi
+      out=$(docker exec $envs -e "IMPORT_BROKER_NAME=nautilus-trading (Saylor — OKX demo)" \
+            -e "IMPORT_STRATEGY_NAME=Michael Saylor (Nautilus)" tradetally-app node "backend/src/scripts/$s.js" 2>&1)
+      ;;
+    *)
+      out=$(docker exec $envs tradetally-app node "backend/src/scripts/$s.js" 2>&1)
+      ;;
+  esac
   # Sin línea "Resumen" el import no terminó (ej. DB caída) — antes esto se
   # reportaba en silencio como "sin trades nuevos".
   if ! echo "$out" | grep -q "Resumen:"; then
