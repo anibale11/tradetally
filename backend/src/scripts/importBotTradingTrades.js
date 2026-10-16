@@ -32,7 +32,9 @@ const BROKER_NAME = 'bot_trading (SMC Sniper — BingX)';
 // Inicio del día 2026-09-21 (00:00 America/Sao_Paulo = 03:00 UTC): última
 // tanda de fixes a la lógica de las estrategias. Solo se importan trades
 // abiertos desde este corte (mismo valor que importNautilusTrades.js).
-const CUTOFF_MS = Date.parse('2026-09-21T03:00:00.000Z');
+// Overridable con IMPORT_CUTOFF (mismo patrón que importNautilusTrades.js);
+// scripts/sync_all_bots.sh pasa el corte vigente explícito.
+const CUTOFF_MS = Date.parse(process.env.IMPORT_CUTOFF || '2026-09-21T03:00:00.000Z');
 
 // close_reason que significan "la orden límite nunca se llenó" — no hubo
 // trade real, no tiene sentido importarlos como si fueran una operación.

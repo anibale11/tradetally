@@ -24,7 +24,7 @@ ssh -o ConnectTimeout=15 trading-server "cd /opt/nautilus_trading && python3 syn
 # DCA Range Trading (nautilus-trading) en su subcuenta OKX: mismo sync con las
 # keys de .env.subcuenta y su propio JSONL/cutoff.
 # DCA_CUTOFF se actualiza a la hora UTC de arranque del nodo en el deploy.
-DCA_CUTOFF="2026-10-09T03:26:53Z"  # arranque de nautilus-live-dca en el VPS
+DCA_CUTOFF="2026-10-14T01:22:00Z"  # reinicio de conteo (ver comentario de IMPORTS)
 ssh -o ConnectTimeout=15 trading-server "cd /opt/nautilus_trading && test -f .env.subcuenta && python3 sync_trades_from_okx.py --env .env.subcuenta --out data/nautilus_dca_trades.jsonl --cutoff \"$DCA_CUTOFF\"" 2>&1 | tail -2 || true
 if scp -q -o ConnectTimeout=10 trading-server:/opt/nautilus_trading/data/nautilus_dca_trades.jsonl "$NAUT/data/nautilus_dca_trades.jsonl.tmp" 2>/dev/null; then
   mv "$NAUT/data/nautilus_dca_trades.jsonl.tmp" "$NAUT/data/nautilus_dca_trades.jsonl"
@@ -45,9 +45,12 @@ fi
 
 new=0
 # Cada import: "<nombre>|<script>|<variables -e para docker exec>"
+# Cortes: reinicio de conteo 2026-10-15 tras los cambios de estrategia del
+# 14/10 (backup en backups/reset_20261015). SMC y bot_trading desde
+# 2026-10-14T17:26:00Z, DCA desde 2026-10-14T01:22:00Z (DCA_CUTOFF arriba).
 IMPORTS=(
-  "nautilus-smc|importNautilusTrades|-e IMPORT_CUTOFF=2026-10-07T23:59:00Z"
-  "bot_trading|importBotTradingTrades|"
+  "nautilus-smc|importNautilusTrades|-e IMPORT_CUTOFF=2026-10-14T17:26:00Z"
+  "bot_trading|importBotTradingTrades|-e IMPORT_CUTOFF=2026-10-14T17:26:00Z"
   "nautilus-dca|importNautilusTrades|-e IMPORT_TRADES_FILE=nautilus_dca_trades.jsonl -e IMPORT_CUTOFF=$DCA_CUTOFF"
   "nautilus-saylor|importNautilusTrades|-e IMPORT_TRADES_FILE=nautilus_saylor_trades.jsonl -e IMPORT_CUTOFF=$SAYLOR_CUTOFF"
 )
