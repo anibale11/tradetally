@@ -84,7 +84,10 @@ async function main() {
   const rows = await readTradeLines();
   const closed = rows.filter(t =>
     t.status === 'closed'
+    // Cualquier limit_order_* es una orden límite que nunca se llenó (incluye los
+    // motivos nuevos limit_order_choch_15m / limit_order_tp1_touched, 2026-10-14).
     && !NO_FILL_REASONS.has(t.close_reason)
+    && !String(t.close_reason || '').startsWith('limit_order_')
     && Date.parse(toIsoNoTz(t.open_time)) >= CUTOFF_MS
   );
 
