@@ -50,6 +50,11 @@ const IS_DEFAULT_SMC = !process.env.IMPORT_BROKER_NAME;
 // backups/nautilus_smc_trades_pre_fix_2026-10-07.csv.
 const CUTOFF_MS = Date.parse(process.env.IMPORT_CUTOFF || '2026-10-07T23:59:00.000Z');
 
+// IMPORT_SYMBOLS="SOL-USDT-SWAP,ETH-USDT-SWAP": si se define, solo se importan esos instrumentos.
+const SYMBOLS = process.env.IMPORT_SYMBOLS
+  ? new Set(process.env.IMPORT_SYMBOLS.split(',').map(s => s.trim()).filter(Boolean))
+  : null;
+
 // Incidente 26-29/09 (fix nautilus f7d37b0): tras cada restart las posiciones
 // quedaban como EXTERNAL y el RiskEngine denegaba sus salidas — los SL no se
 // ejecutaban y las posiciones se re-adoptaban con SL recalculado, fuera del
@@ -115,6 +120,9 @@ async function main() {
 
   for (const t of rows) {
     if (!t.open_time_ms || t.open_time_ms < CUTOFF_MS) continue;
+    // Solo los pares del bot: pruebas manuales o de otras estrategias en la misma
+    // subcuenta no son trades del bot (04/11: 7 pruebas de BTC se colaron).
+    if (SYMBOLS && !SYMBOLS.has(t.symbol)) { excluded += 1; continue; }
     if (affectedByIncident(t)) { excluded += 1; continue; }
     const key = dedupKey(t);
     if (await alreadyImported(userId, t)) {

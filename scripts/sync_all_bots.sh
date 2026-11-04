@@ -51,8 +51,8 @@ new=0
 IMPORTS=(
   "nautilus-smc|importNautilusTrades|-e IMPORT_CUTOFF=2026-10-14T17:26:00Z"
   "bot_trading|importBotTradingTrades|-e IMPORT_CUTOFF=2026-10-14T17:26:00Z"
-  "nautilus-dca|importNautilusTrades|-e IMPORT_TRADES_FILE=nautilus_dca_trades.jsonl -e IMPORT_CUTOFF=$DCA_CUTOFF"
-  "nautilus-saylor|importNautilusTrades|-e IMPORT_TRADES_FILE=nautilus_saylor_trades.jsonl -e IMPORT_CUTOFF=$SAYLOR_CUTOFF"
+  "nautilus-dca|importNautilusTrades|-e IMPORT_TRADES_FILE=nautilus_dca_trades.jsonl -e IMPORT_CUTOFF=$DCA_CUTOFF -e IMPORT_SYMBOLS=SOL-USDT-SWAP,ETH-USDT-SWAP,ADA-USDT-SWAP,LTC-USDT-SWAP,LINK-USDT-SWAP,BNB-USDT-SWAP"
+  "nautilus-saylor|importNautilusTrades|-e IMPORT_TRADES_FILE=nautilus_saylor_trades.jsonl -e IMPORT_CUTOFF=$SAYLOR_CUTOFF -e IMPORT_SYMBOLS=SOL-USDT-SWAP"
 )
 for entry in "${IMPORTS[@]}"; do
   IFS='|' read -r label s envs <<< "$entry"
