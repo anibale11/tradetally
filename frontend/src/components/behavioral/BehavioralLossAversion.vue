@@ -50,7 +50,7 @@
                         <!-- Main Insight Message -->
                         <div
                             v-if="lossAversionData.analysis.message"
-                            class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4 mb-6"
+                            class="callout-warning mb-6"
                         >
                             <div class="flex">
                                 <div class="flex-shrink-0">
@@ -81,10 +81,10 @@
                         <!-- Hold Time Comparison -->
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                             <div
-                                class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4"
+                                class="callout-success"
                             >
                                 <h4
-                                    class="text-sm font-medium text-green-800 dark:text-green-300"
+                                    class="heading-sub text-green-800 dark:text-green-300"
                                 >
                                     Winners Hold Time
                                 </h4>
@@ -106,10 +106,10 @@
                             </div>
 
                             <div
-                                class="bg-red-50 dark:bg-red-900/20 rounded-lg p-4"
+                                class="callout-danger"
                             >
                                 <h4
-                                    class="text-sm font-medium text-red-800 dark:text-red-300"
+                                    class="heading-sub text-red-800 dark:text-red-300"
                                 >
                                     Losers Hold Time
                                 </h4>
@@ -131,24 +131,22 @@
                             </div>
 
                             <div
-                                class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4"
+                                class="callout-info"
                             >
                                 <h4
-                                    class="text-sm font-medium text-purple-800 dark:text-purple-300"
+                                    class="heading-sub text-primary-800 dark:text-primary-300"
                                 >
                                     Hold Time Ratio
                                 </h4>
                                 <p
-                                    class="text-2xl font-bold text-purple-900 dark:text-purple-200"
+                                    class="text-2xl font-bold text-primary-900 dark:text-primary-200"
                                 >
                                     {{
-                                        lossAversionData.analysis.holdTimeRatio.toFixed(
-                                            2,
-                                        )
+                                        formatDecimal(lossAversionData.analysis.holdTimeRatio)
                                     }}x
                                 </p>
                                 <p
-                                    class="text-xs text-purple-700 dark:text-purple-400"
+                                    class="text-xs text-primary-700 dark:text-primary-400"
                                 >
                                     Losers vs Winners
                                 </p>
@@ -160,7 +158,7 @@
                             class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-6"
                         >
                             <h4
-                                class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
+                                class="heading-sub mb-3"
                             >
                                 Financial Impact
                             </h4>
@@ -173,11 +171,7 @@
                                     <span
                                         class="text-sm font-medium text-red-600 dark:text-red-400"
                                     >
-                                        ${{
-                                            lossAversionData.analysis.financialImpact.estimatedMonthlyCost.toFixed(
-                                                2,
-                                            )
-                                        }}
+                                        {{ money(lossAversionData.analysis.financialImpact.estimatedMonthlyCost) }}
                                     </span>
                                 </div>
                                 <div class="flex justify-between">
@@ -188,11 +182,7 @@
                                     <span
                                         class="text-sm font-medium text-yellow-600 dark:text-yellow-400"
                                     >
-                                        ${{
-                                            lossAversionData.analysis.financialImpact.missedProfitPotential.toFixed(
-                                                2,
-                                            )
-                                        }}
+                                        {{ money(lossAversionData.analysis.financialImpact.missedProfitPotential) }}
                                     </span>
                                 </div>
                                 <div class="flex justify-between">
@@ -203,11 +193,7 @@
                                     <span
                                         class="text-sm font-medium text-red-600 dark:text-red-400"
                                     >
-                                        ${{
-                                            lossAversionData.analysis.financialImpact.unnecessaryLossExtension.toFixed(
-                                                2,
-                                            )
-                                        }}
+                                        {{ money(lossAversionData.analysis.financialImpact.unnecessaryLossExtension) }}
                                     </span>
                                 </div>
                             </div>
@@ -217,7 +203,7 @@
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <h4
-                                    class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                    class="heading-sub mb-1"
                                 >
                                     Planned Risk/Reward
                                 </h4>
@@ -225,15 +211,13 @@
                                     class="text-lg font-semibold text-gray-900 dark:text-white"
                                 >
                                     1:{{
-                                        lossAversionData.analysis.financialImpact.avgPlannedRiskReward.toFixed(
-                                            2,
-                                        )
+                                        formatDecimal(lossAversionData.analysis.financialImpact.avgPlannedRiskReward)
                                     }}
                                 </p>
                             </div>
                             <div>
                                 <h4
-                                    class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                    class="heading-sub mb-1"
                                 >
                                     Actual Risk/Reward
                                 </h4>
@@ -241,9 +225,7 @@
                                     class="text-lg font-semibold text-gray-900 dark:text-white"
                                 >
                                     1:{{
-                                        lossAversionData.analysis.financialImpact.avgActualRiskReward.toFixed(
-                                            2,
-                                        )
+                                        formatDecimal(lossAversionData.analysis.financialImpact.avgActualRiskReward)
                                     }}
                                 </p>
                             </div>
@@ -259,14 +241,14 @@
                         >
                             <div class="flex items-center justify-between mb-4">
                                 <h4
-                                    class="text-lg font-medium text-gray-700 dark:text-gray-300"
+                                    class="heading-card"
                                 >
                                     Trades That Could Have Been More Profitable
                                 </h4>
                                 <div class="flex space-x-2">
                                     <button
                                         @click="$emit('scroll-to-missed')"
-                                        class="px-3 py-2 text-sm font-medium text-orange-600 bg-orange-50 border border-orange-200 rounded-md hover:bg-orange-100 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800 dark:hover:bg-orange-900/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 flex items-center"
+                                        class="px-3 py-2 text-sm font-medium text-yellow-600 bg-yellow-50 border border-yellow-200 rounded-md hover:bg-yellow-100 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800 dark:hover:bg-yellow-900/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 flex items-center"
                                     >
                                         <MdiIcon
                                             :icon="mdiTarget"
@@ -277,7 +259,7 @@
                                     </button>
                                     <button
                                         @click="$emit('view-trades')"
-                                        class="px-3 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                                        class="btn-primary"
                                     >
                                         View All
                                         {{
@@ -291,19 +273,19 @@
                             </div>
 
                             <div
-                                class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-4"
+                                class="callout-info mb-4"
                             >
                                 <div
                                     class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center"
                                 >
                                     <div>
                                         <p
-                                            class="text-sm text-blue-700 dark:text-blue-300"
+                                            class="text-sm text-primary-700 dark:text-primary-300"
                                         >
                                             Total Analyzed
                                         </p>
                                         <p
-                                            class="text-xl font-bold text-blue-900 dark:text-blue-100"
+                                            class="text-xl font-bold text-primary-900 dark:text-primary-100"
                                         >
                                             {{
                                                 lossAversionData.analysis
@@ -314,34 +296,28 @@
                                     </div>
                                     <div>
                                         <p
-                                            class="text-sm text-blue-700 dark:text-blue-300"
+                                            class="text-sm text-primary-700 dark:text-primary-300"
                                         >
                                             Total Missed Profit
                                         </p>
                                         <p
-                                            class="text-xl font-bold text-blue-900 dark:text-blue-100"
+                                            class="text-xl font-bold text-primary-900 dark:text-primary-100"
                                         >
-                                            ${{
-                                                lossAversionData.analysis.priceHistoryAnalysis.totalMissedProfit.toFixed(
-                                                    2,
-                                                )
-                                            }}
+                                            {{ money(lossAversionData.analysis.priceHistoryAnalysis.totalMissedProfit) }}
                                         </p>
                                     </div>
                                     <div>
                                         <p
-                                            class="text-sm text-blue-700 dark:text-blue-300"
+                                            class="text-sm text-primary-700 dark:text-primary-300"
                                         >
                                             Avg Missed %
                                         </p>
                                         <p
-                                            class="text-xl font-bold text-blue-900 dark:text-blue-100"
+                                            class="text-xl font-bold text-primary-900 dark:text-primary-100"
                                         >
                                             {{
-                                                lossAversionData.analysis.priceHistoryAnalysis.avgMissedProfitPercent.toFixed(
-                                                    1,
-                                                )
-                                            }}%
+                                                formatPercent(lossAversionData.analysis.priceHistoryAnalysis.avgMissedProfitPercent)
+                                            }}
                                         </p>
                                     </div>
                                 </div>
@@ -352,7 +328,7 @@
                                     v-for="trade in lossAversionData.analysis
                                         .priceHistoryAnalysis.exampleTrades"
                                     :key="trade.tradeId"
-                                    class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+                                    class="card p-4"
                                 >
                                     <div
                                         class="flex justify-between items-start mb-3"
@@ -374,25 +350,19 @@
                                                 •
                                                 {{ trade.side.toUpperCase() }}
                                                 •
-                                                {{ trade.quantity }} shares
+                                                {{ formatQuantity(trade.quantity) }} shares
                                             </p>
                                         </div>
                                         <div class="text-right">
                                             <p
-                                                class="text-sm text-orange-600 dark:text-orange-400 font-medium"
+                                                class="text-sm text-yellow-600 dark:text-yellow-400 font-medium"
                                             >
                                                 +{{
                                                     trade.missedOpportunityPercent
                                                 }}% missed opportunity
                                             </p>
                                             <p class="text-xs text-gray-500">
-                                                ${{
-                                                    (
-                                                        trade
-                                                            .potentialAdditionalProfit
-                                                            ?.optimal || 0
-                                                    ).toFixed(2)
-                                                }}
+                                                {{ money(( trade.potentialAdditionalProfit ?.optimal || 0 )) }}
                                                 additional profit
                                             </p>
                                         </div>
@@ -408,11 +378,7 @@
                                                 Exit Price
                                             </p>
                                             <p class="font-medium">
-                                                ${{
-                                                    (
-                                                        trade.exitPrice || 0
-                                                    ).toFixed(2)
-                                                }}
+                                                {{ price(( trade.exitPrice || 0 )) }}
                                             </p>
                                         </div>
                                         <div>
@@ -422,11 +388,7 @@
                                                 Actual Profit
                                             </p>
                                             <p class="font-medium">
-                                                ${{
-                                                    (
-                                                        trade.actualProfit || 0
-                                                    ).toFixed(2)
-                                                }}
+                                                {{ money(( trade.actualProfit || 0 )) }}
                                             </p>
                                         </div>
                                         <div>
@@ -436,21 +398,7 @@
                                                 Peak Price (24h)
                                             </p>
                                             <p class="font-medium">
-                                                ${{
-                                                    trade.side === "long"
-                                                        ? (
-                                                              trade
-                                                                  .priceMovement
-                                                                  ?.maxPriceWithin24Hours ||
-                                                              0
-                                                          ).toFixed(2)
-                                                        : (
-                                                              trade
-                                                                  .priceMovement
-                                                                  ?.minPriceWithin24Hours ||
-                                                              0
-                                                          ).toFixed(2)
-                                                }}
+                                                {{ price(trade.side === "long" ? ( trade.priceMovement ?.maxPriceWithin24Hours || 0 ) : ( trade.priceMovement ?.minPriceWithin24Hours || 0 )) }}
                                             </p>
                                         </div>
                                         <div>
@@ -508,7 +456,7 @@
                                                         3,
                                                     )"
                                                     :key="`${signal.type}-${signal.signal}`"
-                                                    class="px-2 py-1 text-xs rounded"
+                                                    class="badge"
                                                     :class="{
                                                         'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400':
                                                             signal.signal.includes(
@@ -524,7 +472,7 @@
                                                             signal.signal.includes(
                                                                 'overbought',
                                                             ),
-                                                        'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400':
+                                                        'bg-primary-100 text-primary-700 dark:bg-primary-900/20 dark:text-primary-400':
                                                             signal.signal.includes(
                                                                 'pattern',
                                                             ) ||
@@ -587,6 +535,15 @@
 import MdiIcon from "@/components/MdiIcon.vue";
 import { formatMinutes } from "@/utils/behavioralFormatters";
 import { mdiTarget } from "@mdi/js";
+import { useCurrencyFormatter } from '@/composables/useCurrencyFormatter'
+import { formatDecimal, formatPercent, formatQuantity } from '@/utils/formatters'
+
+const { formatCurrency: _fmtCurrency, formatSignedCurrency: _fmtSigned } = useCurrencyFormatter()
+// Money follows the user's display currency (the API converts it). Quote
+// prices stay in the instrument's currency, as they do in trade views.
+const money = (v, o = {}) => _fmtCurrency(Number(v) || 0, o)
+const price = (v, o = {}) => _fmtCurrency(Number(v) || 0, { currency: 'USD', ...o })
+const moneySigned = (v, o = {}) => _fmtSigned(Number(v) || 0, o)
 
 defineProps({
     lossAversionData: { type: Object, default: null },

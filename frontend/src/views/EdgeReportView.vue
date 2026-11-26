@@ -9,19 +9,19 @@
         </p>
       </div>
       <button class="btn-primary" :disabled="generating" @click="generateNow">
-        {{ generating ? 'Generating...' : 'Generate for this week' }}
+        {{ generating ? 'Generating...' : 'Generate latest report' }}
       </button>
     </div>
 
     <!-- Loading (initial only) -->
     <div v-if="initialLoading" class="flex justify-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div class="spinner spinner-lg"></div>
     </div>
 
     <!-- Empty state -->
     <div v-else-if="reports.length === 0" class="text-center py-16">
       <DocumentChartBarIcon class="mx-auto h-12 w-12 text-gray-400" />
-      <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No edge reports yet</h3>
+      <h3 class="heading-sub mt-2">No edge reports yet</h3>
       <p class="mt-1 mx-auto max-w-md text-sm text-gray-500 dark:text-gray-400">
         Reports are generated every Monday for the prior week when enabled in
         Settings, or you can generate one now for the most recent completed week.
@@ -45,9 +45,7 @@
           :key="r.id"
           type="button"
           class="rounded-full border px-3 py-1 text-xs font-medium transition-colors"
-          :class="selectedId === r.id
-            ? 'border-primary-600 bg-primary-600 text-white'
-            : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'"
+          :class="selectedId === r.id ? 'border-primary-600 bg-primary-700 text-white' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'"
           @click="selectedId = r.id"
         >
           {{ formatTradeDate(r.period_start, 'MMM dd') }} – {{ formatTradeDate(r.period_end, 'MMM dd') }}
@@ -59,7 +57,7 @@
         <div class="card">
           <div class="card-body">
             <div class="flex items-baseline justify-between gap-4">
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 class="heading-card">
                 Week of {{ formatTradeDate(selected.period_start, 'MMM dd') }} – {{ formatTradeDate(selected.period_end, 'MMM dd, yyyy') }}
               </h2>
               <span class="text-xs text-gray-500 dark:text-gray-400">Generated {{ formatTradeDate(selected.created_at, 'MMM dd, yyyy') }}</span>
@@ -67,7 +65,7 @@
 
             <div class="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
               <div>
-                <div class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">Net P&L</div>
+                <div class="text-label">Net P&L</div>
                 <div class="mt-1 text-xl font-semibold" :class="pnlClass(week.total_pnl)">
                   {{ formatSignedMoney(week.total_pnl) }}
                 </div>
@@ -76,7 +74,7 @@
                 </div>
               </div>
               <div>
-                <div class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">Win Rate</div>
+                <div class="text-label">Win Rate</div>
                 <div class="mt-1 text-xl font-semibold text-gray-900 dark:text-white">
                   {{ formatPercent(week.win_rate) }}
                 </div>
@@ -85,7 +83,7 @@
                 </div>
               </div>
               <div>
-                <div class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">Trades</div>
+                <div class="text-label">Trades</div>
                 <div class="mt-1 text-xl font-semibold text-gray-900 dark:text-white">
                   {{ week.total_trades }}
                 </div>
@@ -94,9 +92,9 @@
                 </div>
               </div>
               <div>
-                <div class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">Profit Factor</div>
+                <div class="text-label">Profit Factor</div>
                 <div class="mt-1 text-xl font-semibold text-gray-900 dark:text-white">
-                  {{ week.profit_factor != null ? Number(week.profit_factor).toFixed(2) : '-' }}
+                  {{ formatDecimal(week.profit_factor) }}
                 </div>
               </div>
             </div>
@@ -107,7 +105,7 @@
         <div class="grid gap-6 lg:grid-cols-2">
           <div class="card">
             <div class="card-body">
-              <h3 class="text-sm font-semibold uppercase tracking-wider text-success">Your edge</h3>
+              <h3 class="heading-sub uppercase tracking-wider text-success">Your edge</h3>
               <template v-if="report.edge">
                 <p class="mt-2 text-lg font-semibold text-gray-900 dark:text-white">
                   {{ edgeLabel(report.edge) }}
@@ -125,7 +123,7 @@
 
           <div class="card">
             <div class="card-body">
-              <h3 class="text-sm font-semibold uppercase tracking-wider text-danger">Your leak</h3>
+              <h3 class="heading-sub uppercase tracking-wider text-danger">Your leak</h3>
               <template v-if="report.leak">
                 <p class="mt-2 text-lg font-semibold text-gray-900 dark:text-white">
                   {{ leakLabel(report.leak) }}
@@ -147,7 +145,7 @@
         <!-- Action item -->
         <div v-if="report.action_item" class="card border-primary-200 bg-primary-50/60 dark:border-primary-900/50 dark:bg-primary-900/10">
           <div class="card-body">
-            <h3 class="text-sm font-semibold uppercase tracking-wider text-primary-700 dark:text-primary-300">This week's action item</h3>
+            <h3 class="heading-sub uppercase tracking-wider text-primary-700 dark:text-primary-300">This week's action item</h3>
             <p class="mt-2 text-sm text-gray-900 dark:text-gray-100">{{ report.action_item }}</p>
           </div>
         </div>
@@ -155,7 +153,7 @@
         <!-- Narrative -->
         <div v-if="selected.narrative" class="card">
           <div class="card-body">
-            <h3 class="text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Coach's notes</h3>
+            <h3 class="text-label">Coach's notes</h3>
             <p class="mt-2 whitespace-pre-line text-sm leading-relaxed text-gray-700 dark:text-gray-300">{{ selected.narrative }}</p>
           </div>
         </div>
@@ -163,7 +161,7 @@
         <!-- Playbook adherence -->
         <div v-if="report.playbook" class="card">
           <div class="card-body">
-            <h3 class="text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Playbook adherence</h3>
+            <h3 class="text-label">Playbook adherence</h3>
             <div class="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-4">
               <div>
                 <div class="text-xs text-gray-500 dark:text-gray-400">Reviewed trades</div>
@@ -196,7 +194,7 @@ import { ref, computed, onMounted } from 'vue'
 import { DocumentChartBarIcon } from '@heroicons/vue/24/outline'
 import api from '@/services/api'
 import { formatTradeDate } from '@/utils/date'
-import { formatPercent as formatPercentBase } from '@/utils/formatters'
+import { formatDecimal, formatPercent as formatPercentBase } from '@/utils/formatters'
 import { useNotification } from '@/composables/useNotification'
 
 const { showError, showSuccess } = useNotification()
@@ -233,7 +231,7 @@ function formatPercent(value) {
 function formatSignedPercent(value) {
   const parsed = parseFloat(value)
   if (!Number.isFinite(parsed)) return '-'
-  return `${parsed >= 0 ? '+' : ''}${parsed.toFixed(1)}pp`
+  return `${formatDecimal(parsed, { digits: 1, showSign: true })}pp`
 }
 
 const TYPE_LABELS = {

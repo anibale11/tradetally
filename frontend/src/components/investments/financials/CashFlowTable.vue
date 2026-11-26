@@ -1,15 +1,15 @@
 <template>
   <div class="overflow-x-auto">
     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-      <thead class="bg-gray-50 dark:bg-gray-700">
+      <thead class="table-head">
         <tr>
-          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider sticky left-0 bg-gray-50 dark:bg-gray-700">
+          <th class="text-left sticky left-0 bg-gray-50 dark:bg-gray-700 table-th px-4 py-2">
             Metric
           </th>
           <th
             v-for="period in data"
             :key="period.year"
-            class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider min-w-[120px]"
+            class="text-right min-w-[120px] table-th px-4 py-2"
           >
             {{ period.year }}
           </th>
@@ -18,18 +18,18 @@
       <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
         <!-- Operating Activities -->
         <tr class="bg-gray-100 dark:bg-gray-700/50">
-          <td colspan="100" class="px-4 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+          <td colspan="100" class="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase px-4 py-3">
             Operating Activities
           </td>
         </tr>
         <tr>
-          <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap sticky left-0 bg-white dark:bg-gray-800">
+          <td class="text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap sticky left-0 bg-white dark:bg-gray-800 px-4 py-3">
             Operating Cash Flow
           </td>
           <td
             v-for="(period, index) in data"
             :key="period.year + '-ocf'"
-            class="px-4 py-3 text-sm text-right whitespace-nowrap"
+            class="text-sm text-right whitespace-nowrap px-4 py-3"
           >
             <div :class="getCashFlowClass(period.operatingCashFlow)">
               {{ formatLargeNumber(period.operatingCashFlow) }}
@@ -42,18 +42,18 @@
 
         <!-- Investing Activities -->
         <tr class="bg-gray-100 dark:bg-gray-700/50">
-          <td colspan="100" class="px-4 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+          <td colspan="100" class="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase px-4 py-3">
             Investing Activities
           </td>
         </tr>
         <tr>
-          <td class="px-4 py-3 text-sm text-gray-900 dark:text-white whitespace-nowrap sticky left-0 bg-white dark:bg-gray-800">
+          <td class="text-sm text-gray-900 dark:text-white whitespace-nowrap sticky left-0 bg-white dark:bg-gray-800 px-4 py-3">
             Capital Expenditures
           </td>
           <td
             v-for="period in data"
             :key="period.year + '-capex'"
-            class="px-4 py-3 text-sm text-right text-red-600 dark:text-red-400 whitespace-nowrap"
+            class="text-sm text-right text-red-600 dark:text-red-400 whitespace-nowrap px-4 py-3"
           >
             {{ formatCapex(period.capitalExpenditures) }}
           </td>
@@ -61,18 +61,18 @@
 
         <!-- Financing Activities -->
         <tr class="bg-gray-100 dark:bg-gray-700/50">
-          <td colspan="100" class="px-4 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+          <td colspan="100" class="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase px-4 py-3">
             Financing Activities
           </td>
         </tr>
         <tr>
-          <td class="px-4 py-3 text-sm text-gray-900 dark:text-white whitespace-nowrap sticky left-0 bg-white dark:bg-gray-800">
+          <td class="text-sm text-gray-900 dark:text-white whitespace-nowrap sticky left-0 bg-white dark:bg-gray-800 px-4 py-3">
             Dividends Paid
           </td>
           <td
             v-for="period in data"
             :key="period.year + '-dividends'"
-            class="px-4 py-3 text-sm text-right whitespace-nowrap"
+            class="text-sm text-right whitespace-nowrap px-4 py-3"
             :class="period.dividendsPaid ? 'text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'"
           >
             {{ formatDividends(period.dividendsPaid) }}
@@ -81,18 +81,18 @@
 
         <!-- Free Cash Flow -->
         <tr class="bg-gray-100 dark:bg-gray-700/50">
-          <td colspan="100" class="px-4 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+          <td colspan="100" class="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase px-4 py-3">
             Free Cash Flow
           </td>
         </tr>
         <tr>
-          <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap sticky left-0 bg-white dark:bg-gray-800">
+          <td class="text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap sticky left-0 bg-white dark:bg-gray-800 px-4 py-3">
             Free Cash Flow
           </td>
           <td
             v-for="(period, index) in data"
             :key="period.year + '-fcf'"
-            class="px-4 py-3 text-sm text-right whitespace-nowrap"
+            class="text-sm text-right whitespace-nowrap px-4 py-3"
           >
             <div :class="getCashFlowClass(period.freeCashFlow)" class="font-medium">
               {{ formatLargeNumber(period.freeCashFlow) }}
@@ -103,13 +103,13 @@
           </td>
         </tr>
         <tr>
-          <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap sticky left-0 bg-white dark:bg-gray-800 pl-8">
+          <td class="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap sticky left-0 bg-white dark:bg-gray-800 pl-8 px-4 py-3">
             FCF Margin
           </td>
           <td
             v-for="period in data"
             :key="period.year + '-fcfmargin'"
-            class="px-4 py-3 text-sm text-right text-gray-600 dark:text-gray-400 whitespace-nowrap"
+            class="text-sm text-right text-gray-600 dark:text-gray-400 whitespace-nowrap px-4 py-3"
           >
             {{ formatFcfMargin(period) }}
           </td>
@@ -117,18 +117,18 @@
 
         <!-- Cash Flow Quality -->
         <tr class="bg-gray-100 dark:bg-gray-700/50">
-          <td colspan="100" class="px-4 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+          <td colspan="100" class="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase px-4 py-3">
             Cash Flow Quality
           </td>
         </tr>
         <tr>
-          <td class="px-4 py-3 text-sm text-gray-900 dark:text-white whitespace-nowrap sticky left-0 bg-white dark:bg-gray-800">
+          <td class="text-sm text-gray-900 dark:text-white whitespace-nowrap sticky left-0 bg-white dark:bg-gray-800 px-4 py-3">
             CapEx to OCF Ratio
           </td>
           <td
             v-for="period in data"
             :key="period.year + '-capexratio'"
-            class="px-4 py-3 text-sm text-right text-gray-700 dark:text-gray-300 whitespace-nowrap"
+            class="text-sm text-right text-gray-700 dark:text-gray-300 whitespace-nowrap px-4 py-3"
           >
             {{ formatCapexRatio(period) }}
           </td>
@@ -139,7 +139,9 @@
 </template>
 
 <script setup>
+import { pnlClass } from '@/utils/metricTone'
 import { useCurrencyFormatter } from '@/composables/useCurrencyFormatter'
+import { formatDecimal, formatPercent } from '@/utils/formatters'
 
 const props = defineProps({
   data: {
@@ -186,25 +188,24 @@ function formatNumber(value) {
 function formatDividends(value) {
   if (value === null || value === undefined || value === 0) return '-'
   // Dividends paid is typically negative (cash outflow)
-  return `($${formatNumber(Math.abs(value))})`
+  return `(${symbolFor(props.currency)}${formatNumber(Math.abs(value))})`
 }
 
 function formatGrowth(current, previous) {
   if (!current || !previous) return ''
   const growth = ((current - previous) / Math.abs(previous)) * 100
-  const sign = growth >= 0 ? '+' : ''
-  return `${sign}${growth.toFixed(1)}% YoY`
+  return `${formatDecimal(growth, { digits: 1, showSign: true })}% YoY`
 }
 
 function getGrowthClass(current, previous) {
   if (!current || !previous) return 'text-gray-400'
   const growth = ((current - previous) / Math.abs(previous)) * 100
-  return growth >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+  return pnlClass(growth)
 }
 
 function getCashFlowClass(value) {
   if (value === null || value === undefined) return 'text-gray-700 dark:text-gray-300'
-  return value >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+  return pnlClass(value)
 }
 
 function formatFcfMargin(period) {
@@ -217,6 +218,6 @@ function formatFcfMargin(period) {
 function formatCapexRatio(period) {
   if (!period.capitalExpenditures || !period.operatingCashFlow) return '-'
   const ratio = (Math.abs(period.capitalExpenditures) / period.operatingCashFlow) * 100
-  return `${ratio.toFixed(1)}%`
+  return formatPercent(ratio, { digits: 1 })
 }
 </script>

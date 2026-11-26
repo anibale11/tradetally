@@ -1,6 +1,7 @@
 const db = require('../config/database');
 const logger = require('../utils/logger');
 const { uuidv4 } = require('../utils/uuid');
+const CsvMappingSuggestionService = require('../services/csvMappingSuggestionService');
 
 const csvMappingController = {
   // Get all CSV mappings for the current user
@@ -78,6 +79,35 @@ const csvMappingController = {
       });
     } catch (error) {
       logger.logError('Error fetching CSV mapping:', error);
+      next(error);
+    }
+  },
+
+  // Ask the AI which column of an unrecognised file holds each field. The
+  // result only pre-fills the mapping modal; nothing is saved here.
+  async suggestMapping(req, res, next) {
+    // The modal aborts the request when its answer can no longer be used. A
+    // response stream that closes before it finished means nobody is waiting.
+    let clientGone = false;
+    if (typeof res.on === 'function') {
+      res.on('close', () => {
+        if (!res.writableFinished) clientGone = true;
+      });
+    }
+    try {
+      const suggestion = await CsvMappingSuggestionService.suggest(req.user.id, {
+        headers: req.body?.headers,
+        sampleRows: req.body?.sampleRows
+      }, { isCancelled: () => clientGone });
+      res.json({ success: true, data: suggestion });
+    } catch (error) {
+      if (error.code === 'CANCELLED') {
+        return res.end();
+      }
+      if (error.status && error.code) {
+        return res.status(error.status).json({ success: false, code: error.code, error: error.message });
+      }
+      logger.logError('Error suggesting CSV mapping:', error);
       next(error);
     }
   },

@@ -18,8 +18,8 @@
           type="button"
           role="switch"
           :aria-checked="showDollarAmounts"
-          class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-          :class="showDollarAmounts ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-600'"
+          class="switch"
+          :class="showDollarAmounts ? 'switch-on' : ''"
           @click="showDollarAmounts = !showDollarAmounts"
         >
           <span
@@ -45,7 +45,7 @@
                 This trade is private. Make it public to get a link anyone can open.
               </p>
             </div>
-            <button type="button" class="btn-secondary text-sm flex-shrink-0" :disabled="makingPublic" @click="makePublic">
+            <button type="button" class="btn-secondary flex-shrink-0" :disabled="makingPublic" @click="makePublic">
               {{ makingPublic ? 'Updating...' : 'Make public' }}
             </button>
           </div>
@@ -66,21 +66,19 @@
         <div v-if="showCopyMenu" class="fixed inset-0 z-10" @click="showCopyMenu = false"></div>
         <div
           v-if="showCopyMenu"
-          class="absolute bottom-full left-0 z-20 mb-2 w-48 overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800"
+          class="popover absolute bottom-full left-0 z-20 mb-2 w-48 overflow-hidden"
         >
           <button
             type="button"
-            class="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700"
+            class="menu-item"
             @click="copyImageFromMenu"
           >
             Copy image
           </button>
           <button
             type="button"
-            class="block w-full px-4 py-2.5 text-left text-sm"
-            :class="isPublic
-              ? 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700'
-              : 'cursor-not-allowed text-gray-400 dark:text-gray-600'"
+            class="menu-item"
+            :class="isPublic ? 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700' : 'cursor-not-allowed text-gray-400 dark:text-gray-600'"
             :disabled="!isPublic"
             :title="isPublic ? '' : 'Make the trade public first'"
             @click="copyLinkFromMenu"
@@ -104,6 +102,8 @@
 import { ref, watch, nextTick, computed } from 'vue'
 import BaseModal from '@/components/common/BaseModal.vue'
 import { formatTradeDate } from '@/utils/date'
+import { formatDecimal } from '@/utils/formatters'
+import { formatR } from '@/utils/rFormat'
 import api from '@/services/api'
 import { ChevronUpIcon } from '@heroicons/vue/24/outline'
 import { useNotification } from '@/composables/useNotification'
@@ -183,7 +183,7 @@ const COLORS = {
   textPrimary: '#f4f4f5',
   textSecondary: '#9ca3af',
   textMuted: '#6b7280',
-  win: '#10b981',
+  win: '#15803d',
   loss: '#ef4444',
   divider: '#262d36'
 }
@@ -365,9 +365,9 @@ function draw(logo) {
   } else if (showDollarAmounts.value) {
     hero = formatMoney(pnl)
   } else if (pnlPercent !== null) {
-    hero = `${pnlPercent >= 0 ? '+' : ''}${pnlPercent.toFixed(2)}%`
+    hero = `${formatDecimal(pnlPercent, { digits: 1, showSign: true })}%`
   } else if (rValue !== null) {
-    hero = `${rValue >= 0 ? '+' : ''}${rValue.toFixed(1)}R`
+    hero = formatR(rValue)
   } else {
     hero = isWin ? 'WIN' : 'LOSS'
   }
@@ -382,10 +382,10 @@ function draw(logo) {
     secondaryParts.push('unrealized')
   }
   if (showDollarAmounts.value && pnlPercent !== null) {
-    secondaryParts.push(`${pnlPercent >= 0 ? '+' : ''}${pnlPercent.toFixed(2)}%`)
+    secondaryParts.push(`${formatDecimal(pnlPercent, { digits: 1, showSign: true })}%`)
   }
   if (rValue !== null) {
-    secondaryParts.push(`${rValue >= 0 ? '+' : ''}${rValue.toFixed(1)}R`)
+    secondaryParts.push(formatR(rValue))
   }
   if (secondaryParts.length > 0) {
     ctx.fillText(secondaryParts.join('  ·  '), PAD + heroWidth + 36, heroY - 8)

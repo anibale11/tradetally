@@ -1,7 +1,7 @@
 <template>
-  <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg">
+  <div class="card">
     <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-      <h3 class="text-lg font-medium text-gray-900 dark:text-white">R-Multiple Analysis</h3>
+      <h3 class="heading-card">R-Multiple Analysis</h3>
       <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
         Compare actual performance vs potential based on your risk parameters
       </p>
@@ -13,7 +13,7 @@
         <!-- Actual R -->
         <div class="r-multiple-card flex flex-col min-h-[5rem] p-3 sm:p-4 rounded-lg" :class="getActualRClass">
           <div class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 mb-0.5 shrink-0 truncate">Actual R (Net)</div>
-          <div class="text-xl sm:text-2xl md:text-3xl font-bold truncate" :class="analysis.actual_r >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+          <div class="stat-value truncate" :class="pnlClass(analysis.actual_r)">
             {{ formatR(analysis.actual_r) }}
           </div>
           <div class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1 truncate shrink-0">
@@ -22,12 +22,12 @@
         </div>
 
         <!-- Target R -->
-        <div v-if="effectiveTargetR !== null" class="r-multiple-card flex flex-col min-h-[5rem] p-3 sm:p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
+        <div v-if="effectiveTargetR !== null" class="callout-info r-multiple-card flex flex-col min-h-[5rem] sm:p-4">
           <div class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 mb-0.5 shrink-0 truncate">
             Target R (Net)
             <span v-if="showWeightedAverageHint" class="text-xs font-normal">(weighted avg)</span>
           </div>
-          <div class="text-xl sm:text-2xl md:text-3xl font-bold truncate text-primary-600 dark:text-primary-400">
+          <div class="stat-value truncate text-primary-700 dark:text-primary-400">
             {{ formatR(effectiveTargetR) }}
           </div>
           <div class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1 truncate shrink-0">
@@ -49,7 +49,7 @@
           <div class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 mb-0.5 shrink-0 truncate">
             Management Impact
           </div>
-          <div class="text-xl sm:text-2xl md:text-3xl font-bold truncate" :class="getManagementRTextClass">
+          <div class="stat-value truncate" :class="getManagementRTextClass">
             {{ formatR(analysis.management_r) }}
           </div>
           <div v-if="analysis.management_r !== 0" class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1 truncate shrink-0">
@@ -61,7 +61,7 @@
           <div class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 mb-0.5 shrink-0 truncate">
             {{ effectiveRLost > 0 ? 'R Left on Table' : (effectiveRLost === 0 ? 'Target Hit' : 'R Exceeded') }}
           </div>
-          <div class="text-xl sm:text-2xl md:text-3xl font-bold truncate" :class="getRLostTextClass">
+          <div class="stat-value truncate" :class="getRLostTextClass">
             {{ formatR(Math.abs(effectiveRLost)) }}
           </div>
           <div class="text-xs sm:text-sm truncate shrink-0" :class="effectiveRLost === 0 ? 'text-yellow-600 dark:text-yellow-400' : 'text-gray-600 dark:text-gray-400'" v-if="getRLostDescription">
@@ -91,7 +91,7 @@
           <!-- Actual bar (foreground) -->
           <div
             class="absolute h-full rounded-full transition-all duration-500"
-            :class="analysis.actual_r >= 0 ? 'bg-emerald-500 dark:bg-emerald-600' : 'bg-red-500 dark:bg-red-600'"
+            :class="analysis.actual_r >= 0 ? 'bg-green-500 dark:bg-green-600' : 'bg-red-500 dark:bg-red-600'"
             :style="{ width: `${Math.min(100, Math.max(0, (analysis.actual_r / maxR) * 100))}%` }"
           ></div>
           <!-- Labels -->
@@ -110,7 +110,7 @@
       <div class="p-4 rounded-lg" :class="getAssessmentClass">
         <div class="flex items-center">
           <div class="flex-shrink-0 mr-3">
-            <svg v-if="analysis.management_score.color === 'green'" class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg v-if="analysis.management_score.color === 'green'" class="w-6 h-6 text-green-700 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <svg v-else-if="analysis.management_score.color === 'yellow'" class="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -135,6 +135,7 @@
 </template>
 
 <script setup>
+import { pnlClass } from '@/utils/metricTone'
 import { computed } from 'vue'
 import { useCurrencyFormatter } from '@/composables/useCurrencyFormatter'
 import { formatR } from '@/utils/rFormat'
@@ -297,7 +298,7 @@ const getRLostTextClass = computed(() => {
   if (effectiveRLost.value === 0) {
     return 'text-yellow-600 dark:text-yellow-400'
   }
-  return 'text-green-600 dark:text-green-400'
+  return 'text-green-700 dark:text-green-400'
 })
 
 const getRLostDescription = computed(() => {
@@ -325,7 +326,7 @@ const getManagementRClass = computed(() => {
 const getManagementRTextClass = computed(() => {
   const mgmtR = props.analysis.management_r
   if (mgmtR > 0) {
-    return 'text-green-600 dark:text-green-400'
+    return 'text-green-700 dark:text-green-400'
   }
   // 0 or negative gets yellow/orange text
   return 'text-yellow-600 dark:text-yellow-400'
@@ -373,11 +374,11 @@ const getAssessmentTextClass = computed(() => {
   const color = props.analysis.management_score?.color
   switch (color) {
     case 'green':
-      return 'text-green-800 dark:text-green-200'
+      return 'text-green-700 dark:text-green-400'
     case 'yellow':
       return 'text-yellow-800 dark:text-yellow-200'
     case 'red':
-      return 'text-red-800 dark:text-red-200'
+      return 'text-red-600 dark:text-red-400'
     default:
       return 'text-gray-800 dark:text-gray-200'
   }

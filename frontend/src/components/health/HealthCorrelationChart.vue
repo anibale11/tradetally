@@ -2,7 +2,7 @@
   <div class="card">
     <div class="card-body">
       <div class="flex items-center justify-between mb-6">
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+        <h3 class="heading-card">
           Health-Trading Correlations
         </h3>
         <div class="flex items-center space-x-2">
@@ -32,16 +32,16 @@
               type="checkbox"
               v-model="removeOutliers"
               @change="updateChart"
-              class="mr-2 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
+              class="checkbox mr-2"
             />
             Remove Outliers
           </label>
         </div>
       </div>
 
-      <p v-if="loading && !initialLoading" class="text-xs text-primary-600 mb-2" role="status">Updating...</p>
+      <p v-if="loading && !initialLoading" class="text-xs text-primary-700 mb-2" role="status">Updating...</p>
       <div v-if="initialLoading" class="flex justify-center py-12">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <div class="spinner spinner-lg"></div>
       </div>
 
       <div v-else-if="correlationData.length === 0" class="text-center py-12">
@@ -61,30 +61,30 @@
 
         <!-- Correlation Statistics -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+          <div class="bg-gray-50 dark:bg-gray-900/40 rounded-lg p-4">
             <div class="text-xs text-gray-500 dark:text-gray-400">Correlation Coefficient</div>
             <div class="text-xl font-semibold" :class="getCorrelationClass(statistics.correlation)">
-              {{ statistics.correlation.toFixed(3) }}
+              {{ formatDecimal(statistics.correlation, { digits: 3 }) }}
             </div>
             <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
               {{ getCorrelationStrength(statistics.correlation) }}
             </div>
           </div>
           
-          <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+          <div class="bg-gray-50 dark:bg-gray-900/40 rounded-lg p-4">
             <div class="text-xs text-gray-500 dark:text-gray-400">Average P&L Impact</div>
-            <div class="text-xl font-semibold" :class="statistics.avgImpact >= 0 ? 'text-green-600' : 'text-red-600'">
-              ${{ Math.abs(statistics.avgImpact).toFixed(2) }}
+            <div class="stat-value text-mono-num" :class="pnlClass(statistics.avgImpact)">
+              {{ formatSignedCurrency(statistics.avgImpact) }}
             </div>
             <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Per {{ getMetricUnit(selectedMetric) }}
             </div>
           </div>
 
-          <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+          <div class="bg-gray-50 dark:bg-gray-900/40 rounded-lg p-4">
             <div class="text-xs text-gray-500 dark:text-gray-400">Win Rate Impact</div>
-            <div class="text-xl font-semibold" :class="statistics.winRateImpact >= 0 ? 'text-green-600' : 'text-red-600'">
-              {{ statistics.winRateImpact > 0 ? '+' : '' }}{{ statistics.winRateImpact.toFixed(1) }}%
+            <div class="text-xl font-semibold" :class="pnlClass(statistics.winRateImpact)">
+              {{ formatDecimal(statistics.winRateImpact, { digits: 1, showSign: true }) }}%
             </div>
             <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
               When {{ getMetricCondition(selectedMetric) }}
@@ -94,7 +94,7 @@
 
         <!-- Insights -->
         <div v-if="insights.length > 0" class="space-y-3">
-          <h4 class="text-sm font-medium text-gray-900 dark:text-white">Key Insights</h4>
+          <h4 class="heading-sub">Key Insights</h4>
           <div v-for="(insight, index) in insights" :key="index" 
                class="p-3 rounded-lg border"
                :class="getInsightClass(insight.type)">
@@ -122,8 +122,11 @@
 </template>
 
 <script setup>
+import { pnlClass } from '@/utils/metricTone'
 import { resolveDatePreset, monthPresetOptions } from '@/utils/datePresets'
 import { useGlobalAccountFilter } from '@/composables/useGlobalAccountFilter'
+import { useCurrencyFormatter } from '@/composables/useCurrencyFormatter'
+import { formatDecimal, formatPercent } from '@/utils/formatters'
 import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import { Chart } from '@/lib/chartSetup'
 import api from '@/services/api'
@@ -134,6 +137,7 @@ const props = defineProps({
 })
 
 const { selectedAccount } = useGlobalAccountFilter()
+const { formatSignedCurrency } = useCurrencyFormatter()
 watch(selectedAccount, () => loadCorrelationData())
 
 const loading = ref(false)
@@ -383,7 +387,7 @@ function generateInsights() {
   if (Math.abs(statistics.value.winRateImpact) > 10) {
     insights.value.push({
       type: statistics.value.winRateImpact > 0 ? 'positive' : 'warning',
-      message: `${getMetricCondition(metric)} shows ${Math.abs(statistics.value.winRateImpact).toFixed(1)}% ${statistics.value.winRateImpact > 0 ? 'higher' : 'lower'} win rate`,
+      message: `${getMetricCondition(metric)} shows ${formatPercent(statistics.value.winRateImpact, { abs: true })} ${statistics.value.winRateImpact > 0 ? 'higher' : 'lower'} win rate`,
       recommendation: statistics.value.winRateImpact > 0 ? 
         `Continue maintaining good ${getMetricLabel(metric)} habits` :
         `Improve ${getMetricLabel(metric)} to potentially increase win rate`
@@ -484,8 +488,8 @@ function updateChart() {
           callbacks: {
             label: function(context) {
               return [
-                `${getMetricLabel(metric)}: ${context.parsed.x.toFixed(1)} ${getMetricUnit(metric)}`,
-                `P&L: $${context.parsed.y.toFixed(2)}`
+                `${getMetricLabel(metric)}: ${formatDecimal(context.parsed.x, { digits: 1 })} ${getMetricUnit(metric)}`,
+                `P&L: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y)}`
               ]
             }
           }
@@ -542,8 +546,8 @@ function getMetricCondition(metric) {
 
 function getCorrelationClass(correlation) {
   const abs = Math.abs(correlation)
-  if (abs > 0.7) return correlation > 0 ? 'text-green-600' : 'text-red-600'
-  if (abs > 0.4) return correlation > 0 ? 'text-green-500' : 'text-orange-500'
+  if (abs > 0.7) return correlation > 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+  if (abs > 0.4) return correlation > 0 ? 'text-green-700 dark:text-green-400' : 'text-yellow-500'
   return 'text-gray-600'
 }
 
@@ -559,7 +563,7 @@ function getInsightClass(type) {
   const classes = {
     positive: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-300',
     warning: 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-300',
-    info: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-300'
+    info: 'bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800 text-primary-800 dark:text-primary-300'
   }
   return classes[type] || classes.info
 }

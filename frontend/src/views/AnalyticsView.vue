@@ -25,7 +25,7 @@
               Filters
               <span
                 v-if="activeFilterCount > 0"
-                class="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-primary-600 px-1.5 text-xs font-semibold text-white"
+                class="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-primary-700 px-1.5 text-xs font-semibold text-white"
               >{{ activeFilterCount }}</span>
             </span>
             <ChevronDownIcon
@@ -41,92 +41,76 @@
             <TradeFilters :auto-apply-on-mount="false" @filter="handleFilter" />
           </div>
 
-          <!-- R-Value Mode Toggle -->
-          <div class="mt-6 border-t border-gray-200 dark:border-gray-700 pt-4">
-            <div class="flex items-center justify-between">
-              <div>
-                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Display Charts in R-Multiples
-                </label>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Show performance in terms of risk units instead of dollar amounts
-                </p>
-              </div>
+          <!-- Toolbar: display mode on the left, layout and AI actions on the right. -->
+          <div class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-3 flex flex-wrap items-center justify-between gap-3">
+            <label class="inline-flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
               <button
-                @click="rValueMode = !rValueMode"
-                :class="[
-                  rValueMode ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-700',
-                  'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2'
-                ]"
                 type="button"
+                role="switch"
+                :aria-checked="rValueMode"
+                :class="[ rValueMode ? 'switch-on' : '', 'switch' ]"
+                @click="rValueMode = !rValueMode"
               >
-                <span
-                  :class="[
-                    rValueMode ? 'translate-x-5' : 'translate-x-0',
-                    'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out'
-                  ]"
-                />
+                <span :class="[ rValueMode ? 'translate-x-5' : 'translate-x-0', 'switch-knob' ]" />
               </button>
-            </div>
-          </div>
-
-          <!-- AI Recommendations and Chart Customization buttons -->
-          <div class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
-            <div class="flex gap-2 flex-wrap">
+              <span>Show charts in R-multiples</span>
+            </label>
+            <div class="flex flex-wrap gap-2">
               <button
                 @click="toggleCustomization"
-                class="px-3 py-2 text-sm font-medium border rounded-md transition-colors"
-                :class="isCustomizing ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 border-primary-300 dark:border-primary-700' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'"
+                :class="isCustomizing ? 'btn-tint btn-sm' : 'btn-secondary btn-sm'"
               >
-                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
                 {{ isCustomizing ? 'Done' : 'Reorder Charts' }}
-              </button>
-              <button
-                @click="showLayoutSettings = true"
-                class="px-3 py-2 text-sm font-medium border rounded-md transition-colors bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
-              >
-                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-                Show/Hide Charts
               </button>
               <button
                 v-if="isCustomizing"
                 @click="resetChartLayout"
-                class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                class="btn-secondary btn-sm"
               >
                 Reset to Default
               </button>
+              <button
+                @click="showLayoutSettings = true"
+                class="btn-secondary btn-sm"
+              >
+                Show/Hide Charts
+              </button>
+              <button
+                @click="toggleAIPanel"
+                :class="showAIPanel ? 'btn-tint btn-sm' : 'btn-primary btn-sm'"
+              >
+                <SparklesIcon class="w-4 h-4 mr-1.5" />
+                <span>{{ showAIPanel ? 'Hide AI Assistant' : 'AI Assistant' }}</span>
+                <span
+                  v-if="showProLock"
+                  class="ml-2"
+                  :class="showAIPanel ? 'badge-primary' : 'badge bg-white/20'"
+                >Pro</span>
+              </button>
             </div>
-            <button
-              @click="showAIPanel = !showAIPanel"
-              class="px-3 py-2 text-sm font-medium border rounded-md transition-colors"
-              :class="showAIPanel
-                ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 border-primary-300 dark:border-primary-700'
-                : 'text-white bg-primary-600 border-transparent hover:bg-primary-700'"
-            >
-              <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-              </svg>
-              <span>{{ showAIPanel ? 'Hide AI Assistant' : 'AI Assistant' }}</span>
-            </button>
           </div>
         </div>
       </div>
 
       <!-- AI Conversation Panel -->
-      <div v-if="showAIPanel" class="card">
+      <div v-if="showAIPanel && isProUser" class="card">
         <AIConversationPanel />
+        <p class="px-4 pb-4 text-xs text-gray-500 dark:text-gray-400">
+          Want to ask about something else, like a stock you hold?
+          <router-link to="/ai-chat" class="font-medium text-primary-700 hover:text-primary-800 dark:text-primary-400">Open AI Chat</router-link>
+        </p>
       </div>
+      <ProUpgradePrompt
+        v-else-if="showAIPanel && showProLock"
+        variant="card"
+        description="Chat with the AI Trading Assistant about your performance, patterns, and areas to improve with TradeTally Pro."
+      />
 
       <!-- Customization Mode Message -->
       <div v-if="isCustomizing" class="card bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800">
         <div class="card-body">
           <div class="flex items-center gap-3">
-            <svg class="w-5 h-5 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-5 h-5 text-primary-700 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div>
@@ -139,7 +123,7 @@
 
       <!-- Full page spinner only on initial load -->
       <div v-if="initialLoading" class="flex justify-center py-12">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <div class="spinner spinner-lg"></div>
       </div>
 
       <!-- Section Tabs -->
@@ -149,12 +133,7 @@
             v-for="tab in analyticsTabs"
             :key="tab.id"
             @click="activeAnalyticsTab = tab.id"
-            :class="[
-              'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors',
-              activeAnalyticsTab === tab.id
-                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-            ]"
+            :class="[ 'tab', activeAnalyticsTab === tab.id ? 'tab-active' : 'tab-inactive' ]"
           >
             {{ tab.label }}
           </button>
@@ -166,7 +145,7 @@
         <!-- Subtle refresh indicator -->
         <div v-if="loading && !initialLoading" class="absolute top-0 right-0 z-10">
           <div class="flex items-center space-x-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm border border-gray-200 dark:border-gray-700">
-            <div class="animate-spin rounded-full h-4 w-4 border-2 border-primary-600 border-t-transparent"></div>
+            <div class="spinner spinner-xs"></div>
             <span class="text-xs text-gray-600 dark:text-gray-400">Updating...</span>
           </div>
         </div>
@@ -180,11 +159,7 @@
         <template #item="{ element }">
           <div
             v-if="element.visible"
-            :class="[
-              getChartSizeClass(element),
-              isCustomizing ? 'ring-2 ring-primary-300 dark:ring-primary-700 rounded-lg transition-all' : '',
-              'overflow-visible'
-            ]"
+            :class="[ getChartSizeClass(element), isCustomizing ? 'ring-2 ring-primary-300 dark:ring-primary-700 rounded-lg transition-all' : '', 'overflow-visible' ]"
           >
             <!-- Drag Handle (only visible in customize mode) -->
             <div v-if="isCustomizing" class="drag-handle flex items-center justify-center py-2 bg-gray-100 dark:bg-gray-800 rounded-t-lg cursor-move hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
@@ -211,6 +186,11 @@
                 :monthly-price-per-month-label="monthlyPricePerMonthLabel"
                 @navigate-symbol="navigateToSymbolTrades"
               />
+            </template>
+
+            <!-- What-If Mistake Simulator -->
+            <template v-else-if="element.id === 'what-if-simulator'">
+              <WhatIfSimulatorCard data-tour="what-if-simulator" :filter-params="whatIfFilterParams" />
             </template>
 
             <!-- Performance Chart -->
@@ -240,6 +220,10 @@
 
             <!-- Sector Performance -->
             <template v-else-if="element.id === 'sector-performance'">
+              <ProLockedSection
+                title="Sector Performance"
+                description="See how your trading performs across market sectors and industries with Pro."
+              >
       <div class="card">
         <div class="card-body">
           <div class="flex items-center justify-between mb-4">
@@ -247,9 +231,9 @@
               <h3 class="heading-card">Sector Performance</h3>
               <div v-if="sectorStats.uncategorizedSymbols > 0 || showCompletionMessage" class="mt-2">
                 <div class="flex items-center justify-between text-xs mb-1" 
-                     :class="showCompletionMessage ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'">
+                     :class="showCompletionMessage ? 'text-green-700 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'">
                   <span>
-                    <MdiIcon v-if="showCompletionMessage" :icon="mdiCheckCircle" :size="16" class="mr-1 text-green-500" />
+                    <MdiIcon v-if="showCompletionMessage" :icon="mdiCheckCircle" :size="16" class="mr-1 text-green-700 dark:text-green-400" />
                     {{ showCompletionMessage ? 'All symbols processed!' : 'Processing symbols in background...' }}
                   </span>
                   <span>{{ categorizationProgress.completed }}/{{ categorizationProgress.total }}</span>
@@ -258,10 +242,10 @@
                   {{ sectorStats.symbolsAnalyzed }} categorized, {{ sectorStats.failedSymbols }} failed, {{ sectorStats.uncategorizedSymbols }} pending
                 </div>
                 <div class="w-full rounded-full h-1.5"
-                     :class="showCompletionMessage ? 'bg-green-200 dark:bg-green-800' : 'bg-amber-200 dark:bg-amber-800'">
+                     :class="showCompletionMessage ? 'bg-green-200 dark:bg-green-800' : 'bg-yellow-200 dark:bg-yellow-800'">
                   <div 
                     class="h-1.5 rounded-full transition-all duration-500 ease-out"
-                    :class="showCompletionMessage ? 'bg-green-500 dark:bg-green-400' : 'bg-amber-500 dark:bg-amber-400'"
+                    :class="showCompletionMessage ? 'bg-green-500 dark:bg-green-400' : 'bg-yellow-500 dark:bg-yellow-400'"
                     :style="{ width: `${categorizationProgress.percentage}%` }"
                   ></div>
                 </div>
@@ -274,10 +258,10 @@
                 :disabled="loadingSectorRefresh"
                 class="px-3 py-1 text-xs bg-primary-100 hover:bg-primary-200 dark:bg-primary-900 dark:hover:bg-primary-800 text-primary-700 dark:text-primary-300 rounded-md transition-colors disabled:opacity-50"
               >
-                <div v-if="loadingSectorRefresh" class="animate-spin rounded-full h-3 w-3 border-b border-current"></div>
+                <div v-if="loadingSectorRefresh" class="spinner h-3 w-3 spinner-current"></div>
                 <span v-else>Refresh</span>
               </button>
-              <div v-if="loadingSectors" class="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-600"></div>
+              <div v-if="loadingSectors" class="spinner spinner-sm"></div>
             </div>
           </div>
           
@@ -287,7 +271,7 @@
             <!-- Loading overlay -->
             <div v-if="loadingSectors" class="absolute inset-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm z-10 flex items-center justify-center">
               <div class="text-center">
-                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                <div class="spinner spinner-md mx-auto mb-4"></div>
                 <p class="text-sm text-gray-600 dark:text-gray-400">Fetching industry data...</p>
                 <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">This may take a moment</p>
               </div>
@@ -304,13 +288,13 @@
             >
               <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center">
-                  <h4 class="font-medium text-gray-900 dark:text-white text-sm truncate pr-2">{{ sector.industry }}</h4>
+                  <h4 class="heading-sub truncate pr-2">{{ sector.industry }}</h4>
                   <svg class="w-3 h-3 text-gray-400 dark:text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
                   </svg>
                 </div>
                 <span 
-                  class="text-xs font-semibold px-2 py-1 rounded whitespace-nowrap"
+                  class="badge"
                   :class="sector.total_pnl >= 0 ? 'text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-900/30' : 'text-red-700 bg-red-100 dark:text-red-400 dark:bg-red-900/30'"
                 >
                   {{ formatCurrency(sector.total_pnl) }}
@@ -324,7 +308,7 @@
                 </div>
                 <div class="flex justify-between">
                   <span class="text-gray-500 dark:text-gray-400">Win Rate:</span>
-                  <span class="font-medium">{{ sector.win_rate }}%</span>
+                  <span class="font-medium" :class="winRateClass(sector.win_rate)">{{ formatPercent(sector.win_rate) }}</span>
                 </div>
               </div>
               
@@ -333,20 +317,20 @@
                   <span 
                     v-for="symbol in sector.symbols.slice(0, 6)" 
                     :key="symbol.symbol"
-                    class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                    class="badge-neutral"
                     :title="`${symbol.trades} trades, ${formatCurrency(symbol.pnl)} P&L`"
                   >
                     <StockLogo
                       :symbol="symbol.symbol"
                       size-class="w-5 h-5"
                       rounded-class="rounded-sm"
-                      fallback-text-class="text-[9px] font-semibold"
+                      fallback-text-class="text-xs font-semibold"
                       class="mr-1"
                     />
                     {{ symbol.symbol }}
                     <span 
                       class="ml-1 text-xs"
-                      :class="symbol.pnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'"
+                      :class="pnlClass(symbol.pnl)"
                     >
                       {{ formatCurrency(symbol.pnl, { compact: true, minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}
                     </span>
@@ -386,14 +370,14 @@
               <button 
                 v-if="sectorsToShow > 10"
                 @click="collapseSectors"
-                class="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700"
+                class="btn-secondary btn-sm"
               >
                 Show Less
               </button>
               <button 
                 v-if="hasMoreSectors"
                 @click="loadMoreSectors"
-                class="px-3 py-1.5 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
+                class="btn-primary btn-sm"
               >
                 Show More
               </button>
@@ -401,15 +385,22 @@
           </div>
         </div>
       </div>
+              </ProLockedSection>
             </template>
 
             <!-- Drawdown Chart -->
             <template v-else-if="element.id === 'drawdown-chart'">
       <div id="drawdown" class="card">
         <div class="card-body">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Drawdown Analysis</h3>
+          <h3 class="heading-card mb-4">Drawdown Analysis</h3>
           <div class="h-80 relative">
             <canvas ref="drawdownChart" class="absolute inset-0 w-full h-full"></canvas>
+            <!-- R mode needs trades with a stop loss; say so instead of drawing empty axes. -->
+            <div v-if="rValueMode && !drawdownHasRData" class="absolute inset-0 flex items-center justify-center bg-white dark:bg-gray-800">
+              <p class="max-w-xs text-center text-sm text-gray-600 dark:text-gray-400">
+                No R-multiple data in this range. R drawdown uses trades that have a stop loss.
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -419,7 +410,7 @@
             <template v-else-if="element.id === 'daily-volume-chart'">
       <div class="card">
         <div class="card-body">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Daily Volume Traded</h3>
+          <h3 class="heading-card mb-4">Daily Volume Traded</h3>
           <div class="h-80 relative">
             <canvas ref="dailyVolumeChart" class="absolute inset-0 w-full h-full"></canvas>
           </div>
@@ -429,22 +420,27 @@
 
             <!-- Day of Week Performance -->
             <template v-else-if="element.id === 'day-of-week'">
+              <ProLockedSection
+                title="Performance by Day of Week"
+                description="Find your strongest and weakest trading days of the week with Pro."
+              >
       <div class="card">
         <div class="card-body">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Performance by Day of Week</h3>
+          <h3 class="heading-card mb-4">Performance by Day of Week</h3>
           <div class="h-80 relative">
             <canvas ref="dayOfWeekChart" class="absolute inset-0 w-full h-full"></canvas>
           </div>
         </div>
       </div>
+              </ProLockedSection>
             </template>
 
             <!-- Performance by Hold Time -->
             <template v-else-if="element.id === 'performance-by-hold-time'">
       <div class="card">
         <div class="card-body">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Performance by Hold Time</h3>
-          <div class="h-96 relative">
+          <h3 class="heading-card mb-4">Performance by Hold Time</h3>
+          <div class="h-80 relative">
             <canvas ref="performanceByHoldTimeChart" class="absolute inset-0 w-full h-full"></canvas>
           </div>
         </div>
@@ -455,7 +451,7 @@
             <template v-else-if="element.id === 'trade-distribution'">
       <div class="card">
         <div class="card-body">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Trade Distribution by Price</h3>
+          <h3 class="heading-card mb-4">Trade Distribution by Price</h3>
           <div class="h-80 relative">
             <canvas ref="tradeDistributionChart" class="absolute inset-0 w-full h-full"></canvas>
           </div>
@@ -467,7 +463,7 @@
             <template v-else-if="element.id === 'performance-by-price'">
       <div class="card">
         <div class="card-body">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Performance by Price</h3>
+          <h3 class="heading-card mb-4">Performance by Price</h3>
           <div class="h-80 relative">
             <canvas ref="performanceByPriceChart" class="absolute inset-0 w-full h-full"></canvas>
           </div>
@@ -479,7 +475,7 @@
             <template v-else-if="element.id === 'performance-by-volume'">
       <div class="card">
         <div class="card-body">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Performance by Volume Traded</h3>
+          <h3 class="heading-card mb-4">Performance by Volume Traded</h3>
           <div class="h-80 relative">
             <canvas
               ref="performanceByVolumeChart"
@@ -506,7 +502,7 @@
             <template v-else-if="element.id === 'performance-by-position-size'">
       <div class="card">
         <div class="card-body">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Performance by Position Size ($)</h3>
+          <h3 class="heading-card mb-4">Performance by Position Size ({{ currencySymbol }})</h3>
           <div class="h-80 relative">
             <canvas
               ref="performanceByPositionSizeChart"
@@ -534,17 +530,17 @@
       <div class="relative">
         <!-- Pro Tier Overlay for Free Users -->
         <div v-if="isFreeTier" class="absolute inset-0 z-10 flex items-center justify-center bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm rounded-lg">
-          <div class="text-center p-8 bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md">
-            <svg class="mx-auto h-12 w-12 text-primary-600 dark:text-primary-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div role="dialog" aria-modal="true" class="modal-panel text-center p-6 max-w-md">
+            <svg class="mx-auto h-12 w-12 text-primary-700 dark:text-primary-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
-            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Pro Feature</h3>
+            <h3 class="modal-title mb-2">Pro Feature</h3>
             <p class="text-gray-600 dark:text-gray-400 mb-6">
               Unlock news sentiment correlation analytics to see how news affects your trading performance with Pro.
             </p>
             <router-link
               to="/pricing"
-              class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+              class="btn-primary py-3"
             >
               Upgrade to Pro - {{ monthlyPricePerMonthLabel }}
             </router-link>
@@ -568,25 +564,40 @@
 
             <!-- Strategy/Setup Performance -->
             <template v-else-if="element.id === 'strategy-performance'">
+              <ProLockedSection
+                title="Strategy / Setup Performance"
+                description="Compare P&L and win rate across your strategies and setups with Pro."
+              >
               <StrategyPerformanceTable
                 :stats="filteredStrategyStats"
                 :r-value-mode="rValueMode"
                 :calculation-method="calculationMethod"
               />
+              </ProLockedSection>
             </template>
 
             <!-- Hour of Day Performance -->
             <template v-else-if="element.id === 'hour-of-day-performance'">
+              <ProLockedSection
+                title="Performance by Hour of Day"
+                description="Discover which hours of the trading day work best for you with Pro."
+              >
               <HourOfDayTable
                 :stats="filteredHourOfDayStats"
                 :r-value-mode="rValueMode"
                 :calculation-method="calculationMethod"
               />
+              </ProLockedSection>
             </template>
 
             <!-- MAE / MFE Analysis -->
             <template v-else-if="element.id === 'mae-mfe-analysis'">
+              <ProLockedSection
+                title="MAE / MFE Analysis"
+                description="Measure maximum adverse and favorable excursion to see how well you manage entries and exits with Pro."
+              >
       <MaeMfeAnalysis :filters="filters" />
+              </ProLockedSection>
             </template>
 
           </div>
@@ -597,22 +608,22 @@
 
     <!-- Chart Layout Settings Modal -->
     <div v-if="showLayoutSettings" class="fixed inset-0 z-50 overflow-y-auto" @click="showLayoutSettings = false">
-      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center ">
+        <div class="modal-backdrop"></div>
 
         <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
 
-        <div
-          class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full sm:p-6"
+        <div role="dialog" aria-modal="true"
+          class="modal-panel w-full p-6 max-w-2xl"
           @click.stop
         >
           <div class="flex items-center justify-between mb-6">
-            <h3 class="heading-card">
+            <h3 class="modal-title">
               Chart Visibility & Size
             </h3>
             <button
               @click="showLayoutSettings = false"
-              class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              class="btn-ghost btn-sm"
             >
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -623,7 +634,7 @@
           <div class="space-y-6">
             <!-- Stats Section -->
             <div>
-              <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Statistics</h4>
+              <h4 class="heading-sub mb-3">Statistics</h4>
               <div class="space-y-2">
                 <div v-for="chart in chartDefinitions.filter(c => c.category === 'stats')" :key="chart.id" class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                   <div class="flex items-center gap-3">
@@ -632,7 +643,7 @@
                         type="checkbox"
                         :checked="chartLayout.find(c => c.id === chart.id)?.visible"
                         @change="toggleChartVisibility(chart.id)"
-                        class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                        class="checkbox"
                       />
                       <span class="ml-2 text-sm text-gray-900 dark:text-white">{{ chart.title }}</span>
                     </label>
@@ -643,7 +654,7 @@
 
             <!-- Charts Section -->
             <div>
-              <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Charts</h4>
+              <h4 class="heading-sub mb-3">Charts</h4>
               <div class="space-y-2">
                 <div v-for="chart in chartDefinitions.filter(c => c.category === 'charts')" :key="chart.id" class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                   <div class="flex items-center gap-3">
@@ -652,7 +663,7 @@
                         type="checkbox"
                         :checked="chartLayout.find(c => c.id === chart.id)?.visible"
                         @change="toggleChartVisibility(chart.id)"
-                        class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                        class="checkbox"
                       />
                       <span class="ml-2 text-sm text-gray-900 dark:text-white">{{ chart.title }}</span>
                     </label>
@@ -670,7 +681,7 @@
 
             <!-- Tables Section -->
             <div>
-              <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Performance Tables</h4>
+              <h4 class="heading-sub mb-3">Performance Tables</h4>
               <div class="space-y-2">
                 <div v-for="chart in chartDefinitions.filter(c => c.category === 'tables')" :key="chart.id" class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                   <div class="flex items-center gap-3">
@@ -679,7 +690,7 @@
                         type="checkbox"
                         :checked="chartLayout.find(c => c.id === chart.id)?.visible"
                         @change="toggleChartVisibility(chart.id)"
-                        class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                        class="checkbox"
                       />
                       <span class="ml-2 text-sm text-gray-900 dark:text-white">{{ chart.title }}</span>
                     </label>
@@ -692,13 +703,13 @@
           <div class="mt-6 flex justify-between">
             <button
               @click="resetChartLayout"
-              class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600"
+              class="btn-secondary"
             >
               Reset to Defaults
             </button>
             <button
               @click="showLayoutSettings = false"
-              class="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
+              class="btn-primary"
             >
               Done
             </button>
@@ -710,6 +721,7 @@
 </template>
 
 <script setup>
+import { pnlClass, winRateClass } from '@/utils/metricTone'
 import { resolveDatePreset, resolveMonthlyFilterParams } from '@/utils/datePresets'
 import { ref, onMounted, onUnmounted, nextTick, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
@@ -717,13 +729,17 @@ import { useAuthStore } from '@/stores/auth'
 import { useUiPreferencesStore } from '@/stores/uiPreferences'
 import api from '@/services/api'
 import { parseTradeDate } from '@/utils/date'
-import { FunnelIcon, ChevronDownIcon } from '@heroicons/vue/24/outline'
+import { FunnelIcon, ChevronDownIcon, SparklesIcon } from '@heroicons/vue/24/outline'
 import PerformanceChart from '@/components/charts/PerformanceChart.vue'
 import MdiIcon from '@/components/MdiIcon.vue'
 import NewsCorrelationAnalytics from '@/components/analytics/NewsCorrelationAnalytics.vue'
 import MaeMfeAnalysis from '@/components/analytics/MaeMfeAnalysis.vue'
+import ProLockedSection from '@/components/common/ProLockedSection.vue'
+import ProUpgradePrompt from '@/components/ProUpgradePrompt.vue'
+import { useProAccess } from '@/composables/useProAccess'
 import OverviewStats from '@/components/analytics/OverviewStats.vue'
 import DetailedStats from '@/components/analytics/DetailedStats.vue'
+import WhatIfSimulatorCard from '@/components/analytics/WhatIfSimulatorCard.vue'
 import TagPerformanceTable from '@/components/analytics/TagPerformanceTable.vue'
 import StrategyPerformanceTable from '@/components/analytics/StrategyPerformanceTable.vue'
 import HourOfDayTable from '@/components/analytics/HourOfDayTable.vue'
@@ -738,7 +754,9 @@ import { useAIStore } from '@/stores/ai'
 import { useGlobalAccountFilter } from '@/composables/useGlobalAccountFilter'
 import { usePricingExperiment } from '@/composables/usePricingExperiment'
 import { useCurrencyFormatter } from '@/composables/useCurrencyFormatter'
-import { Chart } from '@/lib/chartSetup'
+import { formatPercent } from '@/utils/formatters'
+import { formatR } from '@/utils/rFormat'
+import { Chart, chartGain, chartLoss, chartAccent } from '@/lib/chartSetup'
 
 const { formatCurrency, currencySymbol } = useCurrencyFormatter()
 const { monthlyPricePerMonthLabel } = usePricingExperiment()
@@ -771,10 +789,20 @@ const { selectedAccount } = useGlobalAccountFilter()
 const showAdvanced = ref(false)
 const showAIPanel = ref(false)
 
-// Check if user is on free tier
-const isFreeTier = computed(() => {
-  return authStore.user?.tier !== 'pro'
-})
+// The AI store is shared with the AI Chat page and trade detail panel; only
+// keep a loaded session here if it is a performance analysis.
+function toggleAIPanel() {
+  showAIPanel.value = !showAIPanel.value
+  const analysisType = aiStore.currentSession?.trade_summary?.analysis_type
+  if (showAIPanel.value && (analysisType === 'chat' || analysisType === 'single_trade')) {
+    aiStore.reset()
+  }
+}
+
+// Pro gating. isFreeTier is false-safe: it stays true until the user is
+// loaded and confirmed Pro, so Pro-only data never renders early.
+const { isProUser, showProLock } = useProAccess()
+const isFreeTier = computed(() => !isProUser.value)
 
 // Dropdown visibility
 const showStrategyDropdown = ref(false)
@@ -934,6 +962,7 @@ const showCompletionMessage = ref(false)
 const chartDefinitions = [
   { id: 'overview', title: 'Overview Stats', defaultSize: 'full', category: 'stats', tab: 'overview' },
   { id: 'detailed-stats', title: 'Detailed Stats', defaultSize: 'full', category: 'stats', tab: 'overview' },
+  { id: 'what-if-simulator', title: 'What-If Mistake Simulator', defaultSize: 'full', category: 'charts', tab: 'overview' },
   { id: 'performance-chart', title: 'Performance Over Time', defaultSize: 'full', category: 'charts', tab: 'time' },
   { id: 'sector-performance', title: 'Sector Performance', defaultSize: 'full', category: 'charts', tab: 'symbol' },
   { id: 'drawdown-chart', title: 'Drawdown Analysis', defaultSize: 'half', category: 'charts', tab: 'time' },
@@ -1156,6 +1185,7 @@ function handleClickOutside(event) {
 
 // Fetch available sectors for filter dropdown
 async function fetchAvailableSectorsForFilter() {
+  if (!isProUser.value) return
   loadingSectorsFilter.value = true
   try {
     const response = await api.get('/analytics/sectors/available')
@@ -1228,6 +1258,7 @@ const performanceByHoldTimeCounts = ref([])
 const dayOfWeekData = ref([])
 const dailyVolumeData = ref([])
 const drawdownData = ref([])
+const drawdownHasRData = computed(() => drawdownData.value.some(d => Number(d.r_trade_count) > 0))
 
 // Dynamic chart labels
 const chartLabels = ref({
@@ -1305,8 +1336,8 @@ function createTradeDistributionChart() {
       datasets: [{
         label: 'Number of Trades',
         data: tradeDistributionData.value,
-        backgroundColor: '#f3a05a',
-        borderColor: '#e89956',
+        backgroundColor: chartAccent(0.75),
+        borderColor: chartAccent(1),
         borderWidth: 1
       }]
     },
@@ -1366,7 +1397,7 @@ function createPerformanceByPriceChart() {
   // Use R-value data if in R-value mode, otherwise use P&L data
   const chartData = rValueMode.value ? performanceByPriceRData.value : performanceByPriceData.value
   const chartLabel = rValueMode.value ? 'Total R-Multiple' : 'Total P&L'
-  const xAxisLabel = rValueMode.value ? 'Total R-Multiple' : 'Total P&L ($)'
+  const xAxisLabel = rValueMode.value ? 'Total R-Multiple' : `Total P&L (${currencySymbol.value})`
 
   performanceByPriceChartInstance = new Chart(ctx, {
     type: 'bar',
@@ -1375,7 +1406,7 @@ function createPerformanceByPriceChart() {
       datasets: [{
         label: chartLabel,
         data: chartData,
-        backgroundColor: chartData.map(val => val >= 0 ? '#4ade80' : '#f87171'),
+        backgroundColor: chartData.map(val => val >= 0 ? chartGain() : chartLoss()),
         borderWidth: 1
       }]
     },
@@ -1401,7 +1432,8 @@ function createPerformanceByPriceChart() {
               if (context.tick.value === 0) {
                 return '#9ca3af'
               }
-              return 'rgba(0,0,0,0.1)'
+              // Theme-aware default (set in lib/chartSetup.js)
+              return Chart.defaults.borderColor
             }
           }
         },
@@ -1422,9 +1454,9 @@ function createPerformanceByPriceChart() {
               const index = context.dataIndex
               const tradeCount = performanceByPriceCounts.value[index] || 0
               if (rValueMode.value) {
-                return `Total R-Multiple: ${context.parsed.x.toFixed(2)}R (${tradeCount} trades)`
+                return `Total R-Multiple: ${formatR(context.parsed.x)} (${tradeCount} trades)`
               }
-              return `Total P&L: ${currencySymbol.value}${context.parsed.x.toFixed(2)} (${tradeCount} trades)`
+              return `Total P&L: ${formatCurrency(context.parsed.x)} (${tradeCount} trades)`
             }
           }
         }
@@ -1450,7 +1482,7 @@ function createPerformanceByVolumeChart() {
   const ctx = performanceByVolumeChart.value.getContext('2d')
   const labels = chartLabels.value.volume.length > 0 ? chartLabels.value.volume : []
   const chartLabel = rValueMode.value ? 'Total R-Multiple' : 'Total P&L'
-  const xAxisLabel = rValueMode.value ? 'Total R-Multiple' : 'Total P&L ($)'
+  const xAxisLabel = rValueMode.value ? 'Total R-Multiple' : `Total P&L (${currencySymbol.value})`
 
   performanceByVolumeChartInstance = new Chart(ctx, {
     type: 'bar',
@@ -1459,7 +1491,7 @@ function createPerformanceByVolumeChart() {
       datasets: [{
         label: chartLabel,
         data: chartData,
-        backgroundColor: chartData.map(val => val >= 0 ? '#4ade80' : '#f87171'),
+        backgroundColor: chartData.map(val => val >= 0 ? chartGain() : chartLoss()),
         borderWidth: 1
       }]
     },
@@ -1485,7 +1517,8 @@ function createPerformanceByVolumeChart() {
               if (context.tick.value === 0) {
                 return '#9ca3af'
               }
-              return 'rgba(0,0,0,0.1)'
+              // Theme-aware default (set in lib/chartSetup.js)
+              return Chart.defaults.borderColor
             }
           }
         },
@@ -1506,9 +1539,9 @@ function createPerformanceByVolumeChart() {
               const index = context.dataIndex
               const tradeCount = performanceByVolumeCounts.value[index] || 0
               if (rValueMode.value) {
-                return `Total R-Multiple: ${context.parsed.x.toFixed(2)}R (${tradeCount} trades)`
+                return `Total R-Multiple: ${formatR(context.parsed.x)} (${tradeCount} trades)`
               }
-              return `Total P&L: ${currencySymbol.value}${context.parsed.x.toFixed(2)} (${tradeCount} trades)`
+              return `Total P&L: ${formatCurrency(context.parsed.x)} (${tradeCount} trades)`
             }
           }
         }
@@ -1534,7 +1567,7 @@ function createPerformanceByPositionSizeChart() {
   const ctx = performanceByPositionSizeChart.value.getContext('2d')
   const labels = chartLabels.value.positionSize?.length > 0 ? chartLabels.value.positionSize : []
   const chartLabel = rValueMode.value ? 'Total R-Multiple' : 'Total P&L'
-  const xAxisLabel = rValueMode.value ? 'Total R-Multiple' : 'Total P&L ($)'
+  const xAxisLabel = rValueMode.value ? 'Total R-Multiple' : `Total P&L (${currencySymbol.value})`
 
   performanceByPositionSizeChartInstance = new Chart(ctx, {
     type: 'bar',
@@ -1543,7 +1576,7 @@ function createPerformanceByPositionSizeChart() {
       datasets: [{
         label: chartLabel,
         data: chartData,
-        backgroundColor: chartData.map(val => val >= 0 ? '#4ade80' : '#f87171'),
+        backgroundColor: chartData.map(val => val >= 0 ? chartGain() : chartLoss()),
         borderWidth: 1
       }]
     },
@@ -1569,14 +1602,15 @@ function createPerformanceByPositionSizeChart() {
               if (context.tick.value === 0) {
                 return '#9ca3af'
               }
-              return 'rgba(0,0,0,0.1)'
+              // Theme-aware default (set in lib/chartSetup.js)
+              return Chart.defaults.borderColor
             }
           }
         },
         y: {
           title: {
             display: true,
-            text: 'Position Size ($)'
+            text: `Position Size (${currencySymbol.value})`
           }
         }
       },
@@ -1590,9 +1624,9 @@ function createPerformanceByPositionSizeChart() {
               const index = context.dataIndex
               const tradeCount = performanceByPositionSizeCounts.value[index] || 0
               if (rValueMode.value) {
-                return `Total R-Multiple: ${context.parsed.x.toFixed(2)}R (${tradeCount} trades)`
+                return `Total R-Multiple: ${formatR(context.parsed.x)} (${tradeCount} trades)`
               }
-              return `Total P&L: ${currencySymbol.value}${context.parsed.x.toFixed(2)} (${tradeCount} trades)`
+              return `Total P&L: ${formatCurrency(context.parsed.x)} (${tradeCount} trades)`
             }
           }
         }
@@ -1602,6 +1636,8 @@ function createPerformanceByPositionSizeChart() {
 }
 
 function createDayOfWeekChart() {
+  // Day-of-week data is omitted from /analytics/charts for free users
+  if (!isProUser.value || !Array.isArray(dayOfWeekData.value)) return
   if (!dayOfWeekChart.value) {
     console.error('Day of week chart canvas not found')
     return
@@ -1622,7 +1658,7 @@ function createDayOfWeekChart() {
     ? weekdayData.map(d => d.total_r_value || 0)
     : weekdayData.map(d => d.total_pnl || 0)
   const chartLabel = rValueMode.value ? 'Total R-Multiple' : 'Total P&L'
-  const xAxisLabel = rValueMode.value ? 'Total R-Multiple' : 'Total P&L ($)'
+  const xAxisLabel = rValueMode.value ? 'Total R-Multiple' : `Total P&L (${currencySymbol.value})`
 
   dayOfWeekChartInstance = new Chart(ctx, {
     type: 'bar',
@@ -1631,7 +1667,7 @@ function createDayOfWeekChart() {
       datasets: [{
         label: chartLabel,
         data: chartData,
-        backgroundColor: chartData.map(val => val >= 0 ? '#4ade80' : '#f87171'),
+        backgroundColor: chartData.map(val => val >= 0 ? chartGain() : chartLoss()),
         borderWidth: 1,
         barThickness: 30,
         categoryPercentage: 0.7
@@ -1660,7 +1696,8 @@ function createDayOfWeekChart() {
               if (context.tick.value === 0) {
                 return '#9ca3af'
               }
-              return 'rgba(0,0,0,0.1)'
+              // Theme-aware default (set in lib/chartSetup.js)
+              return Chart.defaults.borderColor
             }
           }
         },
@@ -1679,9 +1716,9 @@ function createDayOfWeekChart() {
           callbacks: {
             label: function(context) {
               if (rValueMode.value) {
-                return `R-Multiple: ${context.parsed.x.toFixed(2)}R`
+                return `R-Multiple: ${formatR(context.parsed.x)}`
               }
-              return `P&L: ${currencySymbol.value}${context.parsed.x.toFixed(2)}`
+              return `P&L: ${formatCurrency(context.parsed.x)}`
             }
           }
         }
@@ -1706,7 +1743,7 @@ function createPerformanceByHoldTimeChart() {
   // Use R-value data if in R-value mode, otherwise use P&L data
   const chartData = rValueMode.value ? performanceByHoldTimeRData.value : performanceByHoldTimeData.value
   const chartLabel = rValueMode.value ? 'Total R-Multiple' : 'Total P&L'
-  const xAxisLabel = rValueMode.value ? 'Total R-Multiple' : 'Total P&L ($)'
+  const xAxisLabel = rValueMode.value ? 'Total R-Multiple' : `Total P&L (${currencySymbol.value})`
 
   performanceByHoldTimeChartInstance = new Chart(ctx, {
     type: 'bar',
@@ -1715,7 +1752,7 @@ function createPerformanceByHoldTimeChart() {
       datasets: [{
         label: chartLabel,
         data: chartData,
-        backgroundColor: chartData.map(val => val >= 0 ? '#4ade80' : '#f87171'),
+        backgroundColor: chartData.map(val => val >= 0 ? chartGain() : chartLoss()),
         borderWidth: 1,
         barThickness: 20,
         categoryPercentage: 0.4
@@ -1752,7 +1789,8 @@ function createPerformanceByHoldTimeChart() {
               if (context.tick.value === 0) {
                 return '#9ca3af'
               }
-              return 'rgba(0,0,0,0.1)'
+              // Theme-aware default (set in lib/chartSetup.js)
+              return Chart.defaults.borderColor
             }
           }
         },
@@ -1765,6 +1803,8 @@ function createPerformanceByHoldTimeChart() {
       },
       plugins: {
         legend: {
+          // Single series, labeled by the axis title (matches day of week)
+          display: false,
           onClick: null // Disable legend clicking
         },
         tooltip: {
@@ -1773,9 +1813,9 @@ function createPerformanceByHoldTimeChart() {
               const index = context.dataIndex
               const tradeCount = performanceByHoldTimeCounts.value[index] || 0
               if (rValueMode.value) {
-                return `Total R-Multiple: ${context.parsed.x.toFixed(2)}R (${tradeCount} trades)`
+                return `Total R-Multiple: ${formatR(context.parsed.x)} (${tradeCount} trades)`
               }
-              return `Total P&L: ${currencySymbol.value}${context.parsed.x.toFixed(2)} (${tradeCount} trades)`
+              return `Total P&L: ${formatCurrency(context.parsed.x)} (${tradeCount} trades)`
             }
           }
         }
@@ -1808,8 +1848,8 @@ function createDailyVolumeChart() {
       datasets: [{
         label: 'Total Volume',
         data: volumes,
-        backgroundColor: '#f3a05a',
-        borderColor: '#e89956',
+        backgroundColor: chartAccent(0.75),
+        borderColor: chartAccent(1),
         borderWidth: 1
       }]
     },
@@ -1826,7 +1866,7 @@ function createDailyVolumeChart() {
       scales: {
         x: {
           title: {
-            display: true,
+            display: false,
             text: 'Date'
           },
           ticks: {
@@ -1893,10 +1933,10 @@ function createDrawdownChart() {
 
   // Use R-value drawdown if in R-value mode, otherwise use dollar drawdown
   const drawdowns = rValueMode.value
-    ? drawdownData.value.map(d => d.r_value_drawdown || 0)
-    : drawdownData.value.map(d => d.drawdown)
+    ? drawdownData.value.map(d => Number(d.r_value_drawdown) || 0)
+    : drawdownData.value.map(d => Number(d.drawdown) || 0)
 
-  const yAxisLabel = rValueMode.value ? 'Drawdown (R)' : 'Drawdown ($)'
+  const yAxisLabel = rValueMode.value ? 'Drawdown (R)' : `Drawdown (${currencySymbol.value})`
 
   // Log drawdown data for debugging
   console.log('Drawdown chart data:', {
@@ -1913,8 +1953,8 @@ function createDrawdownChart() {
       datasets: [{
         label: 'Drawdown',
         data: drawdowns,
-        borderColor: '#ef4444',
-        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+        borderColor: chartLoss(1),
+        backgroundColor: chartLoss(0.1),
         borderWidth: 2,
         fill: true,
         tension: 0.4
@@ -1933,7 +1973,7 @@ function createDrawdownChart() {
       scales: {
         x: {
           title: {
-            display: true,
+            display: false,
             text: 'Date'
           },
           ticks: {
@@ -1949,13 +1989,15 @@ function createDrawdownChart() {
           }
         },
         y: {
+          suggestedMax: 0,
           title: {
             display: true,
             text: yAxisLabel
           },
           afterDataLimits: function(scale) {
-            const minValue = Math.min(...drawdowns)
-            const range = Math.abs(minValue)
+            const minValue = Math.min(0, ...drawdowns)
+            // A flat series (no drawdown yet) still needs a visible range.
+            const range = Math.abs(minValue) || (rValueMode.value ? 1 : 100)
             scale.max = range * 0.15 // Add 15% padding above 0
             scale.min = minValue - (range * 0.05) // Add small padding below minimum
           }
@@ -1969,9 +2011,9 @@ function createDrawdownChart() {
           callbacks: {
             label: function(context) {
               if (rValueMode.value) {
-                return `Drawdown: ${context.parsed.y.toFixed(2)}R`
+                return `Drawdown: ${formatR(context.parsed.y)}`
               }
-              return `Drawdown: ${currencySymbol.value}${context.parsed.y.toFixed(2)}`
+              return `Drawdown: ${formatCurrency(context.parsed.y)}`
             },
             title: function(context) {
               const originalDate = drawdownData.value[context[0].dataIndex].trade_date
@@ -2010,7 +2052,7 @@ async function fetchChartData() {
     performanceByHoldTimeData.value = response.data.performanceByHoldTime
     performanceByHoldTimeRData.value = response.data.performanceByHoldTimeR || []
     performanceByHoldTimeCounts.value = response.data.performanceByHoldTimeCounts || []
-    dayOfWeekData.value = response.data.dayOfWeek
+    dayOfWeekData.value = response.data.dayOfWeek || []
     dailyVolumeData.value = response.data.dailyVolume
     
     // Update dynamic labels if provided
@@ -2125,6 +2167,8 @@ function initializeAllCharts() {
 
 // Helper function to build filter params
 // IMPORTANT: Use filters.value directly, just like trades store does with ...filters.value
+const whatIfFilterParams = computed(() => buildFilterParams())
+
 function buildFilterParams(additionalParams = {}) {
   // Start with additional params, then spread filters.value directly
   // This ensures ALL filters are included, even empty ones (which will be filtered out by the API)
@@ -2181,6 +2225,8 @@ async function fetchPerformance() {
 }
 
 async function fetchSymbolStats() {
+  // /analytics/symbols is Pro-only (403 for free users)
+  if (!isProUser.value) return
   try {
     const params = buildFilterParams()
     console.log('[SYMBOLS] Fetching symbol stats with filters:', params)
@@ -2203,6 +2249,8 @@ async function fetchTagStats() {
 }
 
 async function fetchStrategyStats() {
+  // /analytics/strategies is Pro-only (403 for free users)
+  if (!isProUser.value) return
   try {
     const params = buildFilterParams()
     const response = await api.get('/analytics/strategies', { params })
@@ -2213,6 +2261,8 @@ async function fetchStrategyStats() {
 }
 
 async function fetchHourOfDayStats() {
+  // /analytics/hours is Pro-only (403 for free users)
+  if (!isProUser.value) return
   try {
     const params = buildFilterParams()
     const response = await api.get('/analytics/hours', { params })
@@ -2520,6 +2570,8 @@ async function clearFilters() {
 }
 
 async function getRecommendations() {
+  // Full AI recommendations are Pro-only
+  if (!isProUser.value) return
   try {
     console.log('[START] Starting AI recommendations request...')
     loadingRecommendations.value = true
@@ -2592,6 +2644,8 @@ async function getRecommendations() {
 }
 
 async function fetchSectorData() {
+  // /analytics/sectors* is Pro-only (403 for free users)
+  if (!isProUser.value) return
   try {
     loadingSectors.value = true
     const params = buildFilterParams()
@@ -2648,6 +2702,7 @@ function navigateToSectorTrades(sectorName) {
 }
 
 async function refreshSectorData() {
+  if (!isProUser.value) return
   try {
     loadingSectorRefresh.value = true
     const params = new URLSearchParams()
@@ -3013,6 +3068,17 @@ function navigateToTradesByDate(date) {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   })
 }
+
+// If the user's tier resolves after mount (slow /auth/me), load the
+// Pro-only sections that were skipped on the first pass.
+watch(isProUser, async (is_pro, was_pro) => {
+  if (!is_pro || was_pro) return
+  fetchAvailableSectorsForFilter()
+  await Promise.all([fetchSymbolStats(), fetchStrategyStats(), fetchHourOfDayStats()])
+  fetchSectorData()
+  await nextTick()
+  createDayOfWeekChart()
+})
 
 // Watch for global account filter changes
 watch(selectedAccount, () => {

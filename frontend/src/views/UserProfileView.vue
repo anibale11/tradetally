@@ -1,11 +1,11 @@
 <template>
   <div class="content-wrapper py-8">
-    <div v-if="loading" class="flex justify-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+    <div v-if="initialLoading" class="flex justify-center py-12">
+      <div class="spinner spinner-lg"></div>
     </div>
 
     <div v-else-if="error" class="text-center py-12">
-      <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">{{ error }}</h3>
+      <h3 class="heading-sub mt-2">{{ error }}</h3>
       <div class="mt-6">
         <router-link to="/public" class="btn-primary">
           Back to Public Trades
@@ -50,15 +50,15 @@
       <!-- Public Trades -->
       <div class="card">
         <div class="card-body">
-          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-6">Public Trades</h2>
+          <h2 class="heading-card mb-6">Public Trades</h2>
           
           <div v-if="tradesLoading" class="flex justify-center py-8">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+            <div class="spinner spinner-md"></div>
           </div>
 
           <div v-else-if="trades.length === 0" class="text-center py-8">
             <DocumentTextIcon class="mx-auto h-12 w-12 text-gray-400" />
-            <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No public trades</h3>
+            <h3 class="heading-sub mt-2">No public trades</h3>
             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
               This user hasn't shared any trades publicly yet.
             </p>
@@ -76,7 +76,7 @@
                     <h3 class="heading-card">
                       {{ trade.symbol }}
                     </h3>
-                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
+                    <span class="badge"
                       :class="[
                         trade.side === 'long' 
                           ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
@@ -84,12 +84,8 @@
                       ]">
                       {{ trade.side }}
                     </span>
-                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
-                      :class="[
-                        trade.exit_price 
-                          ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                          : 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400'
-                      ]">
+                    <span class="badge"
+                      :class="[ trade.exit_price ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' : 'bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-400' ]">
                       {{ trade.exit_price ? 'Closed' : 'Open' }}
                     </span>
                   </div>
@@ -100,12 +96,12 @@
                 
                 <div class="text-right">
                   <div class="text-lg font-semibold" :class="[
-                    trade.pnl >= 0 ? 'text-green-600' : 'text-red-600'
+                    pnlClass(trade.pnl)
                   ]">
                     {{ trade.pnl ? formatCurrency(trade.pnl) : 'Open' }}
                   </div>
                   <div v-if="trade.pnl_percent" class="text-sm text-gray-500 dark:text-gray-400">
-                    {{ trade.pnl_percent > 0 ? '+' : '' }}{{ formatNumber(trade.pnl_percent) }}%
+                    {{ formatDecimal(trade.pnl_percent, { digits: 1, showSign: true }) }}%
                   </div>
                 </div>
               </div>
@@ -136,7 +132,7 @@
                   <span
                     v-for="tag in trade.tags"
                     :key="tag"
-                    class="px-2 py-1 bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-400 text-xs rounded-full"
+                    class="badge-primary"
                   >
                     {{ tag }}
                   </span>
@@ -152,7 +148,7 @@
               <div class="mt-3 flex justify-end">
                 <router-link
                   :to="`/trades/${trade.id}`"
-                  class="text-primary-600 hover:text-primary-500 text-sm font-medium"
+                  class="text-primary-700 hover:text-primary-500 text-sm font-medium"
                 >
                   View Details
                 </router-link>
@@ -166,17 +162,20 @@
 </template>
 
 <script setup>
+import { pnlClass } from '@/utils/metricTone'
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { formatTradeDate } from '@/utils/date'
 import { DocumentTextIcon } from '@heroicons/vue/24/outline'
 import api from '@/services/api'
 import { useCurrencyFormatter } from '@/composables/useCurrencyFormatter'
+import { formatDecimal } from '@/utils/formatters'
 
 const { formatCurrency } = useCurrencyFormatter()
 
 const route = useRoute()
 const loading = ref(true)
+const initialLoading = ref(true)
 const tradesLoading = ref(false)
 const error = ref(null)
 const profile = ref(null)
@@ -257,6 +256,8 @@ async function loadData() {
   }
   
   loading.value = false
+  
+  initialLoading.value = false
 }
 
 onMounted(() => {

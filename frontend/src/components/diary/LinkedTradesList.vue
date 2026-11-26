@@ -11,28 +11,26 @@
       :key="trade.id"
       :to="`/trades/${trade.id}`"
       class="inline-flex items-center px-3 py-1.5 rounded-lg border transition-all hover:shadow-md"
-      :class="trade.pnl >= 0
-        ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 hover:border-green-300 dark:hover:border-green-700'
-        : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 hover:border-red-300 dark:hover:border-red-700'"
+      :class="trade.pnl >= 0 ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 hover:border-green-300 dark:hover:border-green-700' : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 hover:border-red-300 dark:hover:border-red-700'"
     >
       <div class="flex items-center space-x-2">
         <span
           class="text-sm font-medium"
           :class="trade.pnl >= 0
-            ? 'text-green-800 dark:text-green-200'
-            : 'text-red-800 dark:text-red-200'"
+            ? 'text-green-700 dark:text-green-400'
+            : 'text-red-600 dark:text-red-400'"
         >
           {{ trade.symbol }}
         </span>
         <span
-          class="text-xs font-semibold px-1.5 py-0.5 rounded"
+          class="badge"
           :class="trade.side === 'buy' || trade.side === 'long'
             ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
             : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'"
         >
           {{ (trade.side || '').toUpperCase() }}
         </span>
-        <span v-if="trade.pnl !== null && trade.pnl !== undefined" class="text-xs font-medium" :class="trade.pnl >= 0 ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'">
+        <span v-if="trade.pnl !== null && trade.pnl !== undefined" class="text-xs font-medium" :class="trade.pnl >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
           {{ formatSignedCurrency(trade.pnl) }}
         </span>
       </div>

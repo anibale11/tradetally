@@ -6,7 +6,7 @@
                 <li class="inline-flex items-center">
                     <router-link
                         to="/import"
-                        class="inline-flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400"
+                        class="inline-flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-primary-800 dark:hover:text-primary-400"
                     >
                         <ArrowUpTrayIcon class="w-4 h-4 mr-2" />
                         Import
@@ -25,7 +25,7 @@
             </ol>
         </nav>
 
-        <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
+        <div class="card">
             <!-- Header -->
             <div
                 class="px-6 py-4 border-b border-gray-200 dark:border-gray-700"
@@ -43,7 +43,7 @@
                     <div class="flex items-center space-x-3">
                         <button
                             @click="showCreateModal = true"
-                            class="btn-primary text-sm"
+                            class="btn-primary"
                         >
                             <PlusIcon class="h-4 w-4 mr-2" />
                             Add Mapping
@@ -51,7 +51,7 @@
                         <button
                             @click="refreshData"
                             :disabled="loading"
-                            class="btn-secondary text-sm"
+                            class="btn-secondary"
                         >
                             <ArrowPathIcon
                                 class="h-4 w-4 mr-2"
@@ -80,7 +80,7 @@
                             type="text"
                             placeholder="Search CUSIP, ticker, or company..."
                             aria-label="Search CUSIP mappings"
-                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:text-white text-sm"
+                            class="input dark:bg-gray-800"
                         />
                     </div>
                     <div>
@@ -119,7 +119,7 @@
                     <div class="flex items-end">
                         <button
                             @click="fetchMappingsForReview"
-                            class="btn-yellow text-sm w-full"
+                            class="btn-yellow w-full"
                         >
                             <ExclamationTriangleIcon class="h-4 w-4 mr-2" />
                             Review Needed
@@ -160,7 +160,7 @@
                 class="p-8 text-center"
             >
                 <div
-                    class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"
+                    class="spinner spinner-md mx-auto"
                 ></div>
                 <p class="text-gray-500 dark:text-gray-400 mt-4">
                     Loading CUSIP mappings...
@@ -173,7 +173,7 @@
                     class="h-16 w-16 text-gray-400 mx-auto mb-4"
                 />
                 <h3
-                    class="text-lg font-medium text-gray-900 dark:text-white mb-2"
+                    class="heading-card mb-2"
                 >
                     No CUSIP mappings found
                 </h3>
@@ -198,30 +198,30 @@
                 <table
                     class="min-w-full divide-y divide-gray-200 dark:divide-gray-700"
                 >
-                    <thead class="bg-gray-50 dark:bg-gray-700">
+                    <thead class="table-head">
                         <tr>
                             <th
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                class="text-left table-th px-4 py-2"
                             >
                                 CUSIP / Ticker
                             </th>
                             <th
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                class="text-left table-th px-4 py-2"
                             >
                                 Company
                             </th>
                             <th
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                class="text-left table-th px-4 py-2"
                             >
                                 Source / Status
                             </th>
                             <th
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                class="text-left table-th px-4 py-2"
                             >
                                 Usage
                             </th>
                             <th
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                class="text-left table-th px-4 py-2"
                             >
                                 Actions
                             </th>
@@ -235,7 +235,7 @@
                             :key="mapping.id"
                             class="hover:bg-gray-50 dark:hover:bg-gray-700"
                         >
-                            <td class="px-6 py-4 whitespace-nowrap">
+                            <td class="whitespace-nowrap px-4 py-3">
                                 <div>
                                     <div class="flex items-center">
                                         <code
@@ -247,14 +247,14 @@
                                             class="h-4 w-4 text-gray-400 mx-2"
                                         />
                                         <span
-                                            class="text-sm font-semibold text-primary-600 dark:text-primary-400"
+                                            class="text-sm font-semibold text-primary-700 dark:text-primary-400"
                                         >
                                             {{ mapping.ticker }}
                                         </span>
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
+                            <td class="whitespace-nowrap px-4 py-3">
                                 <div
                                     class="text-sm text-gray-900 dark:text-white"
                                 >
@@ -264,16 +264,11 @@
                                     }}
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
+                            <td class="whitespace-nowrap px-4 py-3">
                                 <div class="space-y-1">
                                     <span
-                                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                                        :class="
-                                            getSourceBadgeClass(
-                                                mapping.resolution_source,
-                                                mapping.is_user_override,
-                                            )
-                                        "
+                                        class="badge"
+                                        :class="getSourceBadgeClass( mapping.resolution_source, mapping.is_user_override, )"
                                     >
                                         {{
                                             getSourceLabel(
@@ -284,7 +279,7 @@
                                     </span>
                                     <div class="flex items-center space-x-2">
                                         <span
-                                            class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                                            class="badge"
                                             :class="
                                                 mapping.verified
                                                     ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
@@ -309,11 +304,11 @@
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
+                            <td class="whitespace-nowrap px-4 py-3">
                                 <div class="space-y-1">
                                     <div
                                         v-if="mapping.used_in_trades"
-                                        class="flex items-center text-sm text-green-600 dark:text-green-400"
+                                        class="flex items-center text-sm text-green-700 dark:text-green-400"
                                     >
                                         <CheckCircleIcon class="h-4 w-4 mr-1" />
                                         {{ mapping.trade_count }} trade{{
@@ -329,7 +324,7 @@
                                 </div>
                             </td>
                             <td
-                                class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
+                                class="whitespace-nowrap text-right text-sm font-medium px-4 py-3"
                             >
                                 <div class="flex items-center space-x-2">
                                     <button
@@ -337,14 +332,14 @@
                                         @click="
                                             verifyMapping(mapping.cusip, true)
                                         "
-                                        class="text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
+                                        class="text-green-700 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300"
                                         title="Verify this mapping"
                                     >
                                         <CheckIcon class="h-4 w-4" />
                                     </button>
                                     <button
                                         @click="editMapping(mapping)"
-                                        class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+                                        class="btn-link"
                                         title="Edit mapping"
                                     >
                                         <PencilIcon class="h-4 w-4" />
@@ -391,7 +386,7 @@
                         <button
                             @click="loadPage(pagination.page - 1)"
                             :disabled="pagination.page <= 1 || loading"
-                            class="btn-secondary text-sm"
+                            class="btn-secondary"
                         >
                             Previous
                         </button>
@@ -635,14 +630,14 @@ const getSourceLabel = (source, isUserOverride) => {
 
 const getSourceBadgeClass = (source, isUserOverride) => {
     if (isUserOverride) {
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+        return "bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200";
     }
 
     switch (source) {
         case "finnhub":
             return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
         case "ai":
-            return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
+            return "bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200";
         case "manual":
             return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200";
         default:

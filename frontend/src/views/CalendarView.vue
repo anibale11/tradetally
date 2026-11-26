@@ -37,19 +37,17 @@
         <button
           @click="toggleRValue"
           class="px-3 py-1.5 text-xs font-medium rounded-md transition-colors"
-          :class="showRValue
-            ? 'bg-primary-600 text-white hover:bg-primary-700'
-            : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'"
+          :class="showRValue ? 'bg-primary-700 text-white hover:bg-primary-800' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'"
         >
           {{ showRValue ? `Show ${pnlTypeLabel} (${currencySymbol})` : 'Show R-Value' }}
         </button>
 
         <!-- Year Navigation -->
-        <button @click="changeYear(-1)" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+        <button @click="changeYear(-1)" class="btn-icon">
           <ChevronLeftIcon class="h-5 w-5" />
         </button>
         <span class="text-lg font-medium text-gray-900 dark:text-white">{{ currentYear }}</span>
-        <button @click="changeYear(1)" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+        <button @click="changeYear(1)" class="btn-icon">
           <ChevronRightIcon class="h-5 w-5" />
         </button>
       </div>
@@ -57,7 +55,7 @@
 
     <!-- Full page spinner only on initial load -->
     <div v-if="initialLoading" class="flex justify-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div class="spinner spinner-lg"></div>
     </div>
 
     <!-- Content with optional refresh indicator -->
@@ -65,7 +63,7 @@
       <!-- Subtle refresh indicator -->
       <div v-if="loading" class="absolute top-0 right-0 z-10">
         <div class="flex items-center space-x-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm border border-gray-200 dark:border-gray-700">
-          <div class="animate-spin rounded-full h-4 w-4 border-2 border-primary-600 border-t-transparent"></div>
+          <div class="spinner spinner-xs"></div>
           <span class="text-xs text-gray-600 dark:text-gray-400">Updating...</span>
         </div>
       </div>
@@ -75,13 +73,13 @@
           <div class="card-body">
             <div class="mb-6 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
               <div class="flex items-center space-x-2">
-                <button @click="changeMonth(-1)" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200" title="Previous month">
+                <button @click="changeMonth(-1)" class="btn-icon" title="Previous month">
                   <ChevronLeftIcon class="h-5 w-5" />
                 </button>
                 <h2 class="heading-section min-w-[180px] text-center">
                   {{ format(expandedMonth, 'MMMM yyyy') }}
                 </h2>
-                <button @click="changeMonth(1)" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200" title="Next month">
+                <button @click="changeMonth(1)" class="btn-icon" title="Next month">
                   <ChevronRightIcon class="h-5 w-5" />
                 </button>
               </div>
@@ -92,9 +90,7 @@
                     :type="showRValue ? undefined : 'button'"
                     data-testid="calendar-pnl-card"
                     class="card card-mobile-safe min-w-[210px] w-full bg-primary-50 text-left dark:bg-primary-900/15"
-                    :class="showRValue
-                      ? 'cursor-default'
-                      : 'cursor-pointer transition-all hover:border-primary-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:hover:border-primary-700 dark:focus-visible:ring-offset-gray-900'"
+                    :class="showRValue ? 'cursor-default' : 'cursor-pointer transition-all hover:border-primary-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:hover:border-primary-700 dark:focus-visible:ring-offset-gray-900'"
                     :aria-label="showRValue ? undefined : `Currently showing ${pnlTypeLabel}. Switch to ${alternatePnlTypeLabel}.`"
                     :title="showRValue ? undefined : `Switch to ${alternatePnlTypeLabel}`"
                     @click="!showRValue && togglePnlType()"
@@ -103,7 +99,7 @@
                       <span class="text-data-secondary block truncate">
                         {{ format(expandedMonth, 'MMMM') }} {{ showRValue ? 'R-Value' : pnlTypeLabel }}
                       </span>
-                      <span class="mt-1 block text-xl sm:text-2xl lg:text-3xl font-semibold whitespace-nowrap" :class="monthlyTotal >= 0 ? 'text-green-600' : 'text-red-600'">
+                      <span class="mt-1 block stat-value whitespace-nowrap" :class="pnlClass(monthlyTotal)">
                         {{ showRValue ? formatRValue(monthlyTotal) : formatCurrency(monthlyTotal) }}
                       </span>
                       <span class="mt-2 block text-xs text-gray-500 dark:text-gray-400">
@@ -116,7 +112,7 @@
                       <dt class="text-data-secondary truncate">
                         Avg Initial Risk
                       </dt>
-                      <dd class="mt-1 text-xl sm:text-2xl lg:text-3xl font-semibold whitespace-nowrap text-gray-900 dark:text-white">
+                      <dd class="mt-1 stat-value whitespace-nowrap text-gray-900 dark:text-white">
                         {{ monthlyRiskTradeCount > 0 ? formatCurrency(monthlyAvgRiskAmount) : 'N/A' }}
                       </dd>
                       <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
@@ -131,7 +127,7 @@
                       <dt class="text-data-secondary truncate">
                         Year To Date
                       </dt>
-                      <dd class="mt-1 text-xl sm:text-2xl lg:text-3xl font-semibold whitespace-nowrap" :class="ytdTotal >= 0 ? 'text-green-600' : 'text-red-600'">
+                      <dd class="mt-1 stat-value whitespace-nowrap" :class="pnlClass(ytdTotal)">
                         {{ formatCurrency(ytdTotal) }}
                       </dd>
                       <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
@@ -146,9 +142,11 @@
               </div>
             </div>
 
-            <!-- Calendar Grid -->
-            <div class="grid grid-cols-8 gap-1 mb-2">
-              <div v-for="day in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']" :key="day"
+            <!-- Calendar Grid. Weekend columns appear only when the month has
+                 weekend-dated activity (forex/crypto), so totals always match
+                 the visible days. -->
+            <div class="grid gap-1 mb-2" :class="expandedMonthShowsWeekends ? 'grid-cols-8' : 'grid-cols-6'">
+              <div v-for="day in expandedMonthDayLabels" :key="day"
                 class="text-center text-xs font-medium text-gray-500 dark:text-gray-400 py-2">
                 {{ day }}
               </div>
@@ -156,7 +154,7 @@
                 {{ showRValue ? 'Week R' : `Week ${pnl_type === 'net' ? 'Net' : 'Gross'} P/L` }}
               </div>
             </div>
-            <div v-for="(week, weekIndex) in expandedMonthWeekdays" :key="weekIndex" class="grid grid-cols-8 gap-1 mb-1">
+            <div v-for="(week, weekIndex) in expandedMonthWeekdays" :key="weekIndex" class="grid gap-1 mb-1" :class="expandedMonthShowsWeekends ? 'grid-cols-8' : 'grid-cols-6'">
               <div v-for="(day, dayIndex) in week.days" :key="dayIndex"
                 class="border border-gray-200 dark:border-gray-700 rounded-lg p-2 sm:p-3 min-h-[70px] sm:min-h-[80px] cursor-pointer hover:brightness-95 transition-all"
                 :class="getDayClass(day)"
@@ -168,7 +166,7 @@
                   </div>
                   <div v-if="day.pnl !== undefined && day.trades > 0" class="mt-1">
                     <p class="text-xs sm:text-sm font-semibold truncate" :class="getDayPnlTextColor(day)">
-                      {{ showRValue ? formatRValue(day.rValue || 0, 1) : formatCurrency(getDayDisplayPnl(day), { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}
+                      {{ showRValue ? formatRValue(day.rValue || 0) : formatCurrency(getDayDisplayPnl(day), { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}
                     </p>
                     <p class="text-xs" :class="getDaySubTextColor(day)">
                       {{ day.trades }} {{ day.trades === 1 ? 'trade' : 'trades' }}
@@ -178,8 +176,8 @@
               </div>
               <!-- Week P/L or R-Value Column -->
               <div class="flex items-center justify-center border border-gray-200 dark:border-gray-700 rounded-lg p-2 sm:p-3 bg-gray-50 dark:bg-gray-800">
-                <p class="text-xs sm:text-sm font-semibold" :class="getWeekTotal(week) >= 0 ? 'text-green-600' : 'text-red-600'">
-                  {{ showRValue ? formatRValue(week.weekRValue || 0, 1) : formatCurrency(getWeekTotal(week), { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}
+                <p class="text-xs sm:text-sm font-semibold" :class="pnlClass(getWeekTotal(week))">
+                  {{ showRValue ? formatRValue(week.weekRValue || 0) : formatCurrency(getWeekTotal(week), { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}
                 </p>
               </div>
             </div>
@@ -192,10 +190,10 @@
         <div v-for="month in yearlyCalendar" :key="month.key" class="card">
           <div class="card-body p-4">
             <div class="flex justify-between items-center mb-3">
-              <h3 class="font-medium text-gray-900 dark:text-white">
+              <h3 class="heading-card">
                 {{ format(month.date, 'MMMM') }}
               </h3>
-              <button @click="expandMonth(month.date)" class="text-primary-600 hover:text-primary-700 text-sm">
+              <button @click="expandMonth(month.date)" class="btn-link">
                 Open
               </button>
             </div>
@@ -220,26 +218,24 @@
     </div>
 
     <!-- Day Trades Modal -->
-    <div v-if="selectedDay" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div
-        class="relative mx-auto p-5 border shadow-lg rounded-md bg-white dark:bg-gray-800 transition-all duration-300"
-        :class="isModalExpanded
-          ? 'top-4 w-full max-w-6xl h-[calc(100vh-2rem)]'
-          : 'top-20 w-full max-w-2xl'">
+    <div v-if="selectedDay" class="modal-overlay overflow-y-auto">
+      <div role="dialog" aria-modal="true"
+        class="modal-panel mx-auto p-6 duration-300 w-full p-6"
+        :class="isModalExpanded ? 'top-4 w-full max-w-6xl h-[calc(100vh-2rem)]' : 'top-20 w-full max-w-2xl'">
         <div class="h-full flex flex-col">
           <div class="flex justify-between items-center mb-4">
-            <h3 class="heading-card">
+            <h3 class="modal-title">
               Trades for {{ format(selectedDay.date, 'MMMM d, yyyy') }}
             </h3>
             <div class="flex items-center space-x-2">
               <button
                 @click="isModalExpanded = !isModalExpanded"
-                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                class="btn-ghost btn-sm"
                 :title="isModalExpanded ? 'Collapse' : 'Expand'">
                 <ArrowsPointingInIcon v-if="isModalExpanded" class="h-5 w-5" />
                 <ArrowsPointingOutIcon v-else class="h-5 w-5" />
               </button>
-              <button @click="selectedDay = null; isModalExpanded = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+              <button @click="selectedDay = null; isModalExpanded = false" class="btn-ghost btn-sm">
                 <XMarkIcon class="h-6 w-6" />
               </button>
             </div>
@@ -252,8 +248,8 @@
               <div class="flex justify-between items-start">
                 <div>
                   <div class="flex items-center space-x-2 flex-wrap gap-y-1">
-                    <h4 class="font-medium text-gray-900 dark:text-white">{{ contrib.symbol }}</h4>
-                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
+                    <h4 class="heading-card">{{ contrib.symbol }}</h4>
+                    <span class="badge"
                       :class="[
                         contrib.side === 'long'
                           ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
@@ -261,10 +257,10 @@
                       ]">
                       {{ contrib.side }}
                     </span>
-                    <span v-if="contrib.is_partial" class="px-2 inline-flex text-xs leading-5 font-medium rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                    <span v-if="contrib.is_partial" class="badge-neutral">
                       {{ (contrib.exit_count || 1) > 1 ? `Partial exits (${contrib.exit_count})` : 'Partial exit' }}
                     </span>
-                    <span v-else class="px-2 inline-flex text-xs leading-5 font-medium rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                    <span v-else class="badge-neutral">
                       Trade
                     </span>
                   </div>
@@ -273,7 +269,7 @@
                   </p>
                 </div>
                 <div class="text-right">
-                  <p class="font-semibold" :class="getContributionDisplayPnl(contrib) >= 0 ? 'text-green-600' : 'text-red-600'">
+                  <p class="font-semibold" :class="pnlClass(getContributionDisplayPnl(contrib))">
                     {{ showRValue && contrib.r_value != null ? formatRValue(contrib.r_value) : formatCurrency(getContributionDisplayPnl(contrib)) }}
                   </p>
                   <p v-if="showRValue && contrib.r_value == null && !contrib.is_partial" class="text-xs text-gray-400">
@@ -293,7 +289,7 @@
           <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
             <div class="flex justify-between items-center">
               <span class="font-medium text-gray-900 dark:text-white">{{ showRValue ? 'Total R for day:' : `Total ${pnlTypeLabel} for day:` }}</span>
-              <span class="font-bold text-lg" :class="selectedDayTotal >= 0 ? 'text-green-600' : 'text-red-600'">
+              <span class="font-bold text-lg" :class="pnlClass(selectedDayTotal)">
                 {{ showRValue ? formatRValue(selectedDayTotalRValue) : formatCurrency(selectedDayTotal) }}
               </span>
             </div>
@@ -309,6 +305,7 @@
 </template>
 
 <script setup>
+import { pnlClass } from '@/utils/metricTone'
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import OnboardingCard from '@/components/onboarding/OnboardingCard.vue'
@@ -320,6 +317,7 @@ import { ChevronLeftIcon, ChevronRightIcon, XMarkIcon, ArrowsPointingOutIcon, Ar
 import api from '@/services/api'
 import { useGlobalAccountFilter } from '@/composables/useGlobalAccountFilter'
 import { useCurrencyFormatter } from '@/composables/useCurrencyFormatter'
+import { formatR } from '@/utils/rFormat'
 
 const { formatCurrency, currencySymbol } = useCurrencyFormatter()
 
@@ -422,6 +420,43 @@ const yearlyCalendar = computed(() => {
   })
 })
 
+const expandedMonthDays = computed(() => {
+  if (!expandedMonth.value) return []
+  const monthStart = startOfMonth(expandedMonth.value)
+  const monthEnd = endOfMonth(expandedMonth.value)
+  return generateMonthDays(monthStart, monthEnd)
+})
+
+const expandedMonthWeeks = computed(() => {
+  if (!expandedMonth.value) return []
+  const days = expandedMonthDays.value
+  const weeks = []
+  
+  for (let i = 0; i < days.length; i += 7) {
+    const weekDays = days.slice(i, i + 7)
+    const weekPnl = weekDays.reduce((sum, day) => {
+      if (day.pnl !== undefined) {
+        return sum + day.pnl
+      }
+      return sum
+    }, 0)
+    const week_gross_pnl = weekDays.reduce((sum, day) => {
+      if (day.gross_pnl !== undefined) {
+        return sum + day.gross_pnl
+      }
+      return sum
+    }, 0)
+    
+    weeks.push({
+      days: weekDays,
+      weekPnl,
+      week_gross_pnl
+    })
+  }
+  
+  return weeks
+})
+
 const expandedMonthWeekdays = computed(() => {
   if (!expandedMonth.value) return []
   const monthStart = startOfMonth(expandedMonth.value)
@@ -433,20 +468,38 @@ const expandedMonthWeekdays = computed(() => {
 
   for (const date of allDays) {
     const dayOfWeek = getDay(date) // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    const weekLength = expandedMonthShowsWeekends.value ? 7 : 5
 
-    // If it's Sunday and we already have days, start a new week
-    if (dayOfWeek === 0 && currentWeek.days.length > 0) {
-      // Pad to 7 days if needed (for partial weeks)
-      while (currentWeek.days.length < 7) {
+    // Skip weekends unless this month has weekend-dated trades
+    if (!expandedMonthShowsWeekends.value && (dayOfWeek === 0 || dayOfWeek === 6)) {
+      // If we hit Sunday and have accumulated weekdays, finish the week
+      if (dayOfWeek === 0 && currentWeek.days.length > 0) {
+        // Pad to 5 days if needed (for partial weeks)
+        while (currentWeek.days.length < 5) {
+          currentWeek.days.push({ date: null })
+        }
+        weeks.push(currentWeek)
+        currentWeek = { days: [], weekPnl: 0, week_gross_pnl: 0, weekRValue: 0 }
+      }
+      continue
+    }
+
+    // Weekend-inclusive weeks run Mon..Sun; Sunday closes the week after it is added.
+
+    // If it's Monday and we already have days, start a new week
+    if (dayOfWeek === 1 && currentWeek.days.length > 0) {
+      // Pad to the week length if needed (for partial weeks)
+      while (currentWeek.days.length < weekLength) {
         currentWeek.days.push({ date: null })
       }
       weeks.push(currentWeek)
       currentWeek = { days: [], weekPnl: 0, week_gross_pnl: 0, weekRValue: 0 }
     }
 
-    // Add padding for the first week if it doesn't start on Sunday
-    if (weeks.length === 0 && currentWeek.days.length === 0 && dayOfWeek > 0) {
-      for (let i = 0; i < dayOfWeek; i++) {
+    // Add padding for the first week if it doesn't start on Monday
+    if (weeks.length === 0 && currentWeek.days.length === 0 && dayOfWeek !== 1) {
+      const offset = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+      for (let i = 0; i < offset; i++) {
         currentWeek.days.push({ date: null })
       }
     }
@@ -467,11 +520,17 @@ const expandedMonthWeekdays = computed(() => {
       currentWeek.week_gross_pnl += dayData.gross_pnl
       currentWeek.weekRValue += dayData.rValue || 0
     }
+
+    if (expandedMonthShowsWeekends.value && dayOfWeek === 0) {
+      weeks.push(currentWeek)
+      currentWeek = { days: [], weekPnl: 0, week_gross_pnl: 0, weekRValue: 0 }
+    }
   }
 
   // Add any remaining days as the last week
   if (currentWeek.days.length > 0) {
-    while (currentWeek.days.length < 7) {
+    const weekLength = expandedMonthShowsWeekends.value ? 7 : 5
+    while (currentWeek.days.length < weekLength) {
       currentWeek.days.push({ date: null })
     }
     weeks.push(currentWeek)
@@ -479,6 +538,24 @@ const expandedMonthWeekdays = computed(() => {
 
   return weeks
 })
+
+// Forex and crypto close on Saturdays/Sundays. Hiding those days would make the
+// month total disagree with the visible cells, so show them when they have trades.
+const expandedMonthShowsWeekends = computed(() => {
+  if (!expandedMonth.value) return false
+  const monthStart = startOfMonth(expandedMonth.value)
+  const monthEnd = endOfMonth(expandedMonth.value)
+  return eachDayOfInterval({ start: monthStart, end: monthEnd }).some(date => {
+    const dow = getDay(date)
+    return (dow === 0 || dow === 6) && getCalendarDataForDate(date).trades > 0
+  })
+})
+
+const expandedMonthDayLabels = computed(() =>
+  expandedMonthShowsWeekends.value
+    ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
+)
 
 const selectedDayContributions = computed(() => dayContributions.value)
 
@@ -656,7 +733,7 @@ function getDayTextColor(day) {
 }
 
 function getDayPnlTextColor(day) {
-  if (!day.date || day.pnl === undefined) return getDayDisplayPnl(day) >= 0 ? 'text-green-600' : 'text-red-600'
+  if (!day.date || day.pnl === undefined) return pnlClass(getDayDisplayPnl(day))
   // White bold text on colored backgrounds
   return 'text-white font-bold'
 }
@@ -753,10 +830,8 @@ function changeMonth(direction) {
 }
 
 
-function formatRValue(num, decimals = 2) {
-  const value = parseFloat(num) || 0
-  const sign = value >= 0 ? '+' : ''
-  return `${sign}${value.toFixed(decimals)}R`
+function formatRValue(num) {
+  return formatR(parseFloat(num) || 0)
 }
 
 function getWeekTotal(week) {

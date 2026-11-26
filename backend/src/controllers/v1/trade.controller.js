@@ -3,6 +3,7 @@ const { fxUsd } = require('../../utils/tradeFx');
 const { convertForDisplay } = require('../../utils/displayCurrency');
 const Trade = require('../../models/Trade');
 const TradeQueries = require('../../services/tradeQueries');
+const TierService = require('../../services/tierService');
 const tradeController = require('../trade.controller');
 const analyticsController = require('../analytics.controller');
 const { sendV1Error, sendV1ErrorFromLegacy, sendV1NotImplemented, sendV1Paginated } = require('../../utils/apiResponse');
@@ -206,8 +207,18 @@ const tradeV1Controller = {
         return sendV1ErrorFromLegacy(res, legacyResult, 'Failed to fetch trade');
       }
 
+      const trade = legacyResult.body?.trade || null;
+      if (trade && Array.isArray(trade.charts)) {
+        trade.charts = trade.charts.map(chart => ({
+          ...chart,
+          chart_url: chart.chart_url ?? chart.chartUrl,
+          chart_title: chart.chart_title ?? chart.chartTitle ?? null,
+          uploaded_at: chart.uploaded_at ?? chart.uploadedAt
+        }));
+      }
+
       return res.status(legacyResult.statusCode || 200).json({
-        trade: legacyResult.body?.trade || null
+        trade
       });
     } catch (error) {
       next(error);
@@ -267,6 +278,18 @@ const tradeV1Controller = {
       const trades = Array.isArray(req.body?.trades) ? req.body.trades : [];
       const invalid = rejectInvalidBulkArray(res, trades, 'trades');
       if (invalid) return invalid;
+
+      // Free tier shares the CSV import batch cap (tierLimits
+      // maxTradesPerImport); Pro and self-hosted installs are unlimited up to
+      // BULK_LIMIT. Rejected whole, like a CSV import over the cap.
+      const importCheck = await TierService.canImportTrades(req.user.id, trades.length);
+      if (!importCheck.allowed) {
+        return sendV1Error(res, 403, 'TIER_LIMIT_EXCEEDED', importCheck.message, {
+          currentTier: importCheck.tier,
+          requiredTier: 'pro',
+          maxTradesPerImport: importCheck.max
+        });
+      }
 
       const results = [];
       let created = 0;

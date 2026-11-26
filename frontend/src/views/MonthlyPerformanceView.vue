@@ -68,7 +68,7 @@
                         </button>
                         <div
                             v-if="openDropdown === 'strategies'"
-                            class="absolute z-20 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none"
+                            class="dropdown-menu absolute z-20 mt-1 w-full max-h-60 overflow-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
                         >
                             <div class="p-1">
                                 <label
@@ -78,7 +78,7 @@
                                         type="checkbox"
                                         :checked="selectedStrategies.length === 0"
                                         @change="selectedStrategies = []"
-                                        class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded flex-shrink-0"
+                                        class="checkbox"
                                     />
                                     <span
                                         class="ml-3 text-sm text-gray-900 dark:text-white"
@@ -102,7 +102,7 @@
                                             type="checkbox"
                                             :value="strategy"
                                             v-model="selectedStrategies"
-                                            class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded flex-shrink-0"
+                                            class="checkbox"
                                         />
                                         <span
                                             class="ml-3 text-sm text-gray-900 dark:text-white"
@@ -128,7 +128,7 @@
                     <button
                         type="button"
                         @click="clearFilters"
-                        class="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+                        class="btn-link"
                     >
                         Clear filters
                     </button>
@@ -139,11 +139,11 @@
         <!-- Full page spinner only on initial load -->
         <div v-if="initialLoading" class="flex justify-center py-12">
             <div
-                class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"
+                class="spinner spinner-lg"
             ></div>
         </div>
 
-        <div v-else-if="error" class="card p-8 text-center">
+        <div v-else-if="error" class="card card-body text-center">
             <p class="text-danger mb-4">{{ error }}</p>
             <button @click="loadMonthlyData" class="btn-primary">Retry</button>
         </div>
@@ -156,7 +156,7 @@
                     class="flex items-center space-x-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm border border-gray-200 dark:border-gray-700"
                 >
                     <div
-                        class="animate-spin rounded-full h-4 w-4 border-2 border-primary-600 border-t-transparent"
+                        class="spinner spinner-xs"
                     ></div>
                     <span class="text-xs text-gray-600 dark:text-gray-400"
                         >Updating...</span
@@ -167,7 +167,7 @@
             <div class="card">
                 <div class="card-body">
                     <h2
-                        class="text-xl font-semibold text-gray-900 dark:text-white mb-6"
+                        class="heading-section mb-6"
                     >
                         {{ selectedYear }} Year Summary
                     </h2>
@@ -178,7 +178,7 @@
                             class="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg"
                         >
                             <div
-                                class="text-2xl font-bold text-gray-900 dark:text-white"
+                                class="stat-value text-gray-900 dark:text-white"
                             >
                                 {{ yearTotals.trades.total.toLocaleString() }}
                             </div>
@@ -193,12 +193,8 @@
                             class="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg"
                         >
                             <div
-                                class="text-2xl font-bold"
-                                :class="
-                                    yearTotals.metrics.winRate >= 50
-                                        ? 'text-success'
-                                        : 'text-danger'
-                                "
+                                class="stat-value"
+                                :class="yearTotals.metrics.winRate >= 50 ? 'text-success' : 'text-danger'"
                             >
                                 {{
                                     formatPercentage(yearTotals.metrics.winRate)
@@ -221,7 +217,7 @@
                             class="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg"
                         >
                             <div
-                                class="text-2xl font-bold"
+                                class="stat-value"
                                 :class="getPnLClass(yearTotals.pnl.total)"
                             >
                                 {{ formatCurrency(yearTotals.pnl.total) }}
@@ -237,19 +233,12 @@
                             class="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg"
                         >
                             <div
-                                class="text-2xl font-bold"
-                                :class="
-                                    getRValueClass(
-                                        yearTotals.metrics.totalRValue,
-                                    )
-                                "
+                                class="stat-value"
+                                :class="getRValueClass( yearTotals.metrics.totalRValue, )"
                             >
                                 {{
-                                    formatNumber(
-                                        yearTotals.metrics.totalRValue,
-                                        2,
-                                    )
-                                }}R
+                                    formatR(yearTotals.metrics.totalRValue)
+                                }}
                             </div>
                             <div
                                 class="text-xs text-gray-600 dark:text-gray-400 mt-1"
@@ -261,7 +250,7 @@
                         <div
                             class="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg"
                         >
-                            <div class="text-2xl font-bold text-success">
+                            <div class="stat-value text-success">
                                 {{ formatCurrency(yearTotals.pnl.best) }}
                             </div>
                             <div
@@ -274,7 +263,7 @@
                         <div
                             class="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg"
                         >
-                            <div class="text-2xl font-bold text-danger">
+                            <div class="stat-value text-danger">
                                 {{ formatCurrency(yearTotals.pnl.worst) }}
                             </div>
                             <div
@@ -292,18 +281,14 @@
                 <div class="card-body">
                     <div class="flex items-center justify-between mb-6">
                         <h2
-                            class="text-xl font-semibold text-gray-900 dark:text-white"
+                            class="heading-section"
                         >
                             Month-by-Month Breakdown
                         </h2>
                         <button
                             @click="toggleRValue"
                             class="px-3 py-1.5 text-xs font-medium rounded-md transition-colors"
-                            :class="
-                                showRValue
-                                    ? 'bg-primary-600 text-white hover:bg-primary-700'
-                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-                            "
+                            :class="showRValue ? 'bg-primary-700 text-white hover:bg-primary-800' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'"
                             :title="showRValue ? 'Showing R-multiples (dollar columns hidden)' : 'Show R-multiples and hide dollar columns'"
                         >
                             {{ showRValue ? "Showing R" : "Show R" }}
@@ -313,74 +298,74 @@
                         <table
                             class="min-w-full divide-y divide-gray-200 dark:divide-gray-700"
                         >
-                            <thead class="bg-gray-50 dark:bg-gray-700">
+                            <thead class="table-head">
                                 <tr>
                                     <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                        class="text-left table-th px-4 py-2"
                                     >
                                         Month
                                     </th>
                                     <th
-                                        class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                        class="text-center table-th px-4 py-2"
                                     >
                                         Trades
                                     </th>
                                     <th
-                                        class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                        class="text-center table-th px-4 py-2"
                                     >
                                         Wins
                                     </th>
                                     <th
-                                        class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                        class="text-center table-th px-4 py-2"
                                     >
                                         Losses
                                     </th>
                                     <th
-                                        class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                        class="text-center table-th px-4 py-2"
                                     >
                                         Breakeven
                                     </th>
                                     <th
-                                        class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                        class="text-center table-th px-4 py-2"
                                     >
                                         Win Rate
                                     </th>
                                     <th
                                         v-if="!showRValue"
-                                        class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                        class="text-right table-th px-4 py-2"
                                     >
                                         Total P&L
                                     </th>
                                     <th
                                         v-if="!showRValue"
-                                        class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                        class="text-right table-th px-4 py-2"
                                     >
                                         Avg P&L
                                     </th>
                                     <th
                                         v-if="!showRValue"
-                                        class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                        class="text-right table-th px-4 py-2"
                                     >
                                         Avg Win
                                     </th>
                                     <th
                                         v-if="!showRValue"
-                                        class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                        class="text-right table-th px-4 py-2"
                                     >
                                         Avg Loss
                                     </th>
                                     <th
-                                        class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                        class="text-center table-th px-4 py-2"
                                     >
                                         Avg R
                                     </th>
                                     <th
-                                        class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                        class="text-center table-th px-4 py-2"
                                     >
                                         Total R
                                     </th>
                                     <th
-                                        class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                        class="text-center table-th px-4 py-2"
                                     >
                                         Days
                                     </th>
@@ -392,30 +377,26 @@
                                 <tr
                                     v-for="month in monthlyData"
                                     :key="month.month"
-                                    :class="
-                                        month.trades.total === 0
-                                            ? 'opacity-40'
-                                            : 'hover:bg-gray-50 dark:hover:bg-gray-700'
-                                    "
+                                    :class="month.trades.total === 0 ? 'opacity-40' : 'hover:bg-gray-50 dark:hover:bg-gray-700'"
                                 >
-                                    <td class="px-6 py-4 whitespace-nowrap">
+                                    <td class="whitespace-nowrap px-4 py-3">
                                         <span
-                                            class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200"
+                                            class="badge bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200"
                                         >
                                             {{ month.monthName }}
                                         </span>
                                     </td>
                                     <td
-                                        class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium text-gray-900 dark:text-white"
+                                        class="whitespace-nowrap text-center text-sm font-medium text-gray-900 dark:text-white px-4 py-3"
                                     >
                                         {{ month.trades.total || "-" }}
                                     </td>
                                     <td
-                                        class="px-6 py-4 whitespace-nowrap text-center"
+                                        class="whitespace-nowrap text-center px-4 py-3"
                                     >
                                         <span
                                             v-if="month.trades.wins > 0"
-                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                            class="badge-success"
                                         >
                                             {{ month.trades.wins }}
                                         </span>
@@ -424,11 +405,11 @@
                                         >
                                     </td>
                                     <td
-                                        class="px-6 py-4 whitespace-nowrap text-center"
+                                        class="whitespace-nowrap text-center px-4 py-3"
                                     >
                                         <span
                                             v-if="month.trades.losses > 0"
-                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                                            class="badge-danger"
                                         >
                                             {{ month.trades.losses }}
                                         </span>
@@ -437,11 +418,11 @@
                                         >
                                     </td>
                                     <td
-                                        class="px-6 py-4 whitespace-nowrap text-center"
+                                        class="whitespace-nowrap text-center px-4 py-3"
                                     >
                                         <span
                                             v-if="month.trades.breakeven > 0"
-                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200"
+                                            class="badge-neutral"
                                         >
                                             {{ month.trades.breakeven }}
                                         </span>
@@ -450,19 +431,15 @@
                                         >
                                     </td>
                                     <td
-                                        class="px-6 py-4 whitespace-nowrap text-center"
+                                        class="whitespace-nowrap text-center px-4 py-3"
                                     >
                                         <div
                                             v-if="month.trades.total > 0"
                                             class="flex flex-col items-center"
                                         >
                                             <span
-                                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold"
-                                                :class="
-                                                    getWinRateBadgeClass(
-                                                        month.metrics.winRate,
-                                                    )
-                                                "
+                                                class="badge"
+                                                :class="getWinRateBadgeClass( month.metrics.winRate, )"
                                             >
                                                 {{
                                                     formatPercentage(
@@ -472,7 +449,7 @@
                                             </span>
                                             <span
                                                 v-if="month.trades.breakeven > 0"
-                                                class="mt-0.5 text-[10px] text-gray-500 dark:text-gray-400"
+                                                class="mt-0.5 text-xs text-gray-500 dark:text-gray-400"
                                             >
                                                 {{
                                                     formatPercentage(
@@ -489,12 +466,8 @@
                                     </td>
                                     <td
                                         v-if="!showRValue"
-                                        class="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold"
-                                        :class="
-                                            month.trades.total > 0
-                                                ? getPnLClass(month.pnl.total)
-                                                : 'text-gray-400'
-                                        "
+                                        class="whitespace-nowrap text-right text-sm font-semibold px-4 py-3"
+                                        :class="month.trades.total > 0 ? getPnLClass(month.pnl.total) : 'text-gray-400'"
                                     >
                                         {{
                                             month.trades.total > 0
@@ -506,12 +479,8 @@
                                     </td>
                                     <td
                                         v-if="!showRValue"
-                                        class="px-6 py-4 whitespace-nowrap text-right text-sm"
-                                        :class="
-                                            month.trades.total > 0
-                                                ? getPnLClass(month.pnl.average)
-                                                : 'text-gray-400'
-                                        "
+                                        class="whitespace-nowrap text-right text-sm px-4 py-3"
+                                        :class="month.trades.total > 0 ? getPnLClass(month.pnl.average) : 'text-gray-400'"
                                     >
                                         {{
                                             month.trades.total > 0
@@ -523,7 +492,7 @@
                                     </td>
                                     <td
                                         v-if="!showRValue"
-                                        class="px-6 py-4 whitespace-nowrap text-right text-sm text-success"
+                                        class="whitespace-nowrap text-right text-sm text-success px-4 py-3"
                                     >
                                         {{
                                             month.trades.wins > 0
@@ -535,7 +504,7 @@
                                     </td>
                                     <td
                                         v-if="!showRValue"
-                                        class="px-6 py-4 whitespace-nowrap text-right text-sm text-danger"
+                                        class="whitespace-nowrap text-right text-sm text-danger px-4 py-3"
                                     >
                                         {{
                                             month.trades.losses > 0
@@ -546,43 +515,31 @@
                                         }}
                                     </td>
                                     <td
-                                        class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium text-primary-600"
+                                        class="whitespace-nowrap text-center text-sm font-medium text-primary-700 px-4 py-3"
                                     >
                                         {{
                                             month.metrics.avgRValue !== 0
-                                                ? formatNumber(
-                                                      month.metrics.avgRValue,
-                                                      2,
-                                                  ) + "R"
+                                                ? formatR(month.metrics.avgRValue)
                                                 : "-"
                                         }}
                                     </td>
                                     <td
-                                        class="px-6 py-4 whitespace-nowrap text-center text-sm font-semibold"
-                                        :class="
-                                            month.trades.total > 0
-                                                ? getRValueClass(
-                                                      month.metrics.totalRValue,
-                                                  )
-                                                : 'text-gray-400'
-                                        "
+                                        class="whitespace-nowrap text-center text-sm font-semibold px-4 py-3"
+                                        :class="month.trades.total > 0 ? getRValueClass( month.metrics.totalRValue, ) : 'text-gray-400'"
                                     >
                                         {{
                                             month.trades.total > 0 &&
                                             month.metrics.totalRValue !== 0
-                                                ? formatNumber(
-                                                      month.metrics.totalRValue,
-                                                      2,
-                                                  ) + "R"
+                                                ? formatR(month.metrics.totalRValue)
                                                 : "-"
                                         }}
                                     </td>
                                     <td
-                                        class="px-6 py-4 whitespace-nowrap text-center"
+                                        class="whitespace-nowrap text-center px-4 py-3"
                                     >
                                         <span
                                             v-if="month.metrics.tradingDays > 0"
-                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                                            class="badge-primary"
                                         >
                                             {{ month.metrics.tradingDays }}
                                         </span>
@@ -609,11 +566,7 @@
                             <button
                                 @click="toggleRValue"
                                 class="px-3 py-1.5 text-xs font-medium rounded-md transition-colors"
-                                :class="
-                                    showRValue
-                                        ? 'bg-primary-600 text-white hover:bg-primary-700'
-                                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-                                "
+                                :class="showRValue ? 'bg-primary-700 text-white hover:bg-primary-800' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'"
                             >
                                 {{
                                     showRValue
@@ -634,7 +587,7 @@
                 <div class="card">
                     <div class="card-body">
                         <h3
-                            class="text-lg font-semibold text-gray-900 dark:text-white mb-4"
+                            class="heading-card mb-4"
                         >
                             Win Rate by Month
                         </h3>
@@ -658,7 +611,8 @@ import { useUiPreferencesStore } from "@/stores/uiPreferences";
 import { Chart } from "@/lib/chartSetup";
 import { useGlobalAccountFilter } from "@/composables/useGlobalAccountFilter";
 import { useCurrencyFormatter } from "@/composables/useCurrencyFormatter";
-import { formatPercent as formatPercentBase } from "@/utils/formatters";
+import { formatDecimal, formatPercent as formatPercentBase } from "@/utils/formatters";
+import { formatR } from "@/utils/rFormat";
 import api from "@/services/api";
 import BaseSelect from "@/components/common/BaseSelect.vue";
 import TagManagement from "@/components/trades/TagManagement.vue";
@@ -939,7 +893,7 @@ const createPnLChart = () => {
                     callbacks: {
                         label: (context) =>
                             showRValue.value
-                                ? `R-Value: ${context.raw.toFixed(2)}R`
+                                ? `R-Value: ${formatR(context.raw)}`
                                 : `P&L: ${formatCurrency(context.raw)}`,
                     },
                 },
@@ -950,7 +904,7 @@ const createPnLChart = () => {
                     ticks: {
                         callback: (value) =>
                             showRValue.value
-                                ? `${value.toFixed(1)}R`
+                                ? `${formatDecimal(value, { digits: 1 })}R`
                                 : formatCurrency(value, { compact: true }),
                     },
                 },
@@ -990,8 +944,8 @@ const createWinRateChart = () => {
                 {
                     label: "Win Rate %",
                     data,
-                    borderColor: "rgb(59, 130, 246)",
-                    backgroundColor: "rgba(59, 130, 246, 0.1)",
+                    borderColor: "rgb(240, 129, 42)", // primary-500
+                    backgroundColor: "rgba(240, 129, 42, 0.1)",
                     borderWidth: 2,
                     tension: 0.3,
                     fill: true,
@@ -1010,7 +964,7 @@ const createWinRateChart = () => {
                 tooltip: {
                     callbacks: {
                         label: (context) =>
-                            `Win Rate: ${context.raw.toFixed(1)}%`,
+                            `Win Rate: ${formatPercentBase(context.raw)}`,
                     },
                 },
             },
@@ -1031,11 +985,6 @@ const createWinRateChart = () => {
 
 // Formatting helpers
 const formatPercentage = (value) => formatPercentBase(value, { digits: 1 });
-
-const formatNumber = (value, decimals = 2) => {
-    if (value === null || value === undefined) return "-";
-    return value.toFixed(decimals);
-};
 
 const getPnLClass = (value) => {
     if (value > 0) return "text-success";

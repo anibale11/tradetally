@@ -76,10 +76,10 @@
                         <!-- Main Stats -->
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                             <div
-                                class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4"
+                                class="callout-warning"
                             >
                                 <h4
-                                    class="text-sm font-medium text-yellow-800 dark:text-yellow-300"
+                                    class="heading-sub text-yellow-800 dark:text-yellow-300"
                                 >
                                     Overconfidence Events
                                 </h4>
@@ -99,10 +99,10 @@
                             </div>
 
                             <div
-                                class="bg-red-50 dark:bg-red-900/20 rounded-lg p-4"
+                                class="callout-danger"
                             >
                                 <h4
-                                    class="text-sm font-medium text-red-800 dark:text-red-300"
+                                    class="heading-sub text-red-800 dark:text-red-300"
                                 >
                                     Avg Position Increase
                                 </h4>
@@ -110,10 +110,8 @@
                                     class="text-2xl font-bold text-red-900 dark:text-red-200"
                                 >
                                     {{
-                                        overconfidenceData.analysis.statistics?.avgPositionIncrease?.toFixed(
-                                            1,
-                                        ) || 0
-                                    }}%
+                                        formatPercent(overconfidenceData.analysis.statistics?.avgPositionIncrease ?? 0)
+                                    }}
                                 </p>
                                 <p
                                     class="text-xs text-red-700 dark:text-red-400"
@@ -123,15 +121,15 @@
                             </div>
 
                             <div
-                                class="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4"
+                                class="callout-warning"
                             >
                                 <h4
-                                    class="text-sm font-medium text-orange-800 dark:text-orange-300"
+                                    class="heading-sub text-yellow-800 dark:text-yellow-300"
                                 >
                                     Performance Impact
                                 </h4>
                                 <p
-                                    class="text-2xl font-bold text-orange-900 dark:text-orange-200"
+                                    class="text-2xl font-bold text-yellow-900 dark:text-yellow-200"
                                 >
                                     <span
                                         v-if="
@@ -141,53 +139,39 @@
                                         "
                                         class="text-red-600 dark:text-red-400"
                                     >
-                                        -${{
-                                            Math.abs(
-                                                overconfidenceData.analysis
-                                                    .statistics
-                                                    ?.performanceImpact || 0,
-                                            ).toFixed(2)
-                                        }}
+                                        -{{ money(Math.abs( overconfidenceData.analysis.statistics ?.performanceImpact || 0)) }}
                                     </span>
                                     <span
                                         v-else
-                                        class="text-green-600 dark:text-green-400"
+                                        class="text-green-700 dark:text-green-400"
                                     >
-                                        +${{
-                                            Math.abs(
-                                                overconfidenceData.analysis
-                                                    .statistics
-                                                    ?.performanceImpact || 0,
-                                            ).toFixed(2)
-                                        }}
+                                        +{{ money(Math.abs( overconfidenceData.analysis.statistics ?.performanceImpact || 0)) }}
                                     </span>
                                 </p>
                                 <p
-                                    class="text-xs text-orange-700 dark:text-orange-400"
+                                    class="text-xs text-yellow-700 dark:text-yellow-400"
                                 >
                                     Net P&L impact
                                 </p>
                             </div>
 
                             <div
-                                class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4"
+                                class="callout-info"
                             >
                                 <h4
-                                    class="text-sm font-medium text-purple-800 dark:text-purple-300"
+                                    class="heading-sub text-primary-800 dark:text-primary-300"
                                 >
                                     Success Rate
                                 </h4>
                                 <p
-                                    class="text-2xl font-bold text-purple-900 dark:text-purple-200"
+                                    class="text-2xl font-bold text-primary-900 dark:text-primary-200"
                                 >
                                     {{
-                                        overconfidenceData.analysis.statistics?.successRate?.toFixed(
-                                            1,
-                                        ) || 0
-                                    }}%
+                                        formatPercent(overconfidenceData.analysis.statistics?.successRate ?? 0)
+                                    }}
                                 </p>
                                 <p
-                                    class="text-xs text-purple-700 dark:text-purple-400"
+                                    class="text-xs text-primary-700 dark:text-primary-400"
                                 >
                                     Of oversized trades
                                 </p>
@@ -197,22 +181,22 @@
                         <!-- Win Streak Analysis -->
                         <div
                             v-if="overconfidenceData.analysis.winStreakAnalysis"
-                            class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-6"
+                            class="callout-info mb-6"
                         >
                             <h4
-                                class="text-lg font-medium text-blue-800 dark:text-blue-300 mb-3"
+                                class="heading-sub text-primary-800 dark:text-primary-300 mb-3"
                             >
                                 Win Streak Patterns
                             </h4>
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div>
                                     <p
-                                        class="text-sm text-blue-700 dark:text-blue-300"
+                                        class="text-sm text-primary-700 dark:text-primary-300"
                                     >
                                         Longest Win Streak
                                     </p>
                                     <p
-                                        class="text-xl font-bold text-blue-900 dark:text-blue-100"
+                                        class="text-xl font-bold text-primary-900 dark:text-primary-100"
                                     >
                                         {{
                                             overconfidenceData.analysis
@@ -224,35 +208,31 @@
                                 </div>
                                 <div>
                                     <p
-                                        class="text-sm text-blue-700 dark:text-blue-300"
+                                        class="text-sm text-primary-700 dark:text-primary-300"
                                     >
                                         Avg Streak Length
                                     </p>
                                     <p
-                                        class="text-xl font-bold text-blue-900 dark:text-blue-100"
+                                        class="text-xl font-bold text-primary-900 dark:text-primary-100"
                                     >
                                         {{
-                                            overconfidenceData.analysis.winStreakAnalysis.avgStreakLength?.toFixed(
-                                                1,
-                                            ) || 0
+                                            formatDecimal(overconfidenceData.analysis.winStreakAnalysis.avgStreakLength ?? 0, { digits: 1 })
                                         }}
                                         trades
                                     </p>
                                 </div>
                                 <div>
                                     <p
-                                        class="text-sm text-blue-700 dark:text-blue-300"
+                                        class="text-sm text-primary-700 dark:text-primary-300"
                                     >
                                         Position Size Growth
                                     </p>
                                     <p
-                                        class="text-xl font-bold text-blue-900 dark:text-blue-100"
+                                        class="text-xl font-bold text-primary-900 dark:text-primary-100"
                                     >
                                         {{
-                                            overconfidenceData.analysis.winStreakAnalysis.avgPositionGrowth?.toFixed(
-                                                1,
-                                            ) || 0
-                                        }}%
+                                            formatPercent(overconfidenceData.analysis.winStreakAnalysis.avgPositionGrowth ?? 0)
+                                        }}
                                     </p>
                                     <p
                                         class="mt-1 text-xs text-primary-700 dark:text-primary-300"
@@ -272,7 +252,7 @@
                             class="space-y-4"
                         >
                             <h4
-                                class="text-lg font-medium text-gray-700 dark:text-gray-300"
+                                class="heading-card"
                             >
                                 Recent Overconfidence Events
                             </h4>
@@ -283,7 +263,7 @@
                                     5,
                                 )"
                                 :key="event.id"
-                                class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+                                class="card p-4"
                             >
                                 <div
                                     class="flex justify-between items-start mb-3"
@@ -295,7 +275,7 @@
                                             <MdiIcon
                                                 :icon="mdiFire"
                                                 :size="18"
-                                                class="mr-1.5 text-red-600"
+                                                class="mr-1.5 text-red-600 dark:text-red-400"
                                             />
                                             {{ event.winStreakLength }}
                                             Consecutive Wins → Overconfidence
@@ -319,7 +299,7 @@
                                     </div>
                                     <div class="text-right">
                                         <span
-                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                                            class="badge"
                                             :class="{
                                                 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300':
                                                     event.severity === 'high',
@@ -337,15 +317,15 @@
 
                                 <!-- Position Size Analysis -->
                                 <div
-                                    class="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3 mb-4"
+                                    class="callout-warning mb-4"
                                 >
                                     <h6
-                                        class="text-sm font-medium text-orange-800 dark:text-orange-300 mb-2"
+                                        class="text-sm font-medium text-yellow-800 dark:text-yellow-300 mb-2"
                                     >
                                         Position Risk Escalation
                                     </h6>
                                     <p
-                                        class="mb-2 text-xs text-orange-700 dark:text-orange-400"
+                                        class="mb-2 text-xs text-yellow-700 dark:text-yellow-400"
                                     >
                                         Based on
                                         {{
@@ -357,35 +337,25 @@
                                     <div class="grid grid-cols-2 gap-3 text-xs">
                                         <div>
                                             <span
-                                                class="text-orange-700 dark:text-orange-400"
+                                                class="text-yellow-700 dark:text-yellow-400"
                                                 >Baseline Size:</span
                                             >
                                             <span class="font-medium ml-1"
-                                                >${{
-                                                    (
-                                                        event.baselinePositionSize ||
-                                                        0
-                                                    ).toLocaleString()
-                                                }}</span
+                                                >{{ money(( event.baselinePositionSize || 0 ), { maximumFractionDigits: 0, minimumFractionDigits: 0 }) }}</span
                                             >
                                         </div>
                                         <div>
                                             <span
-                                                class="text-orange-700 dark:text-orange-400"
+                                                class="text-yellow-700 dark:text-yellow-400"
                                                 >Peak Size:</span
                                             >
                                             <span class="font-medium ml-1"
-                                                >${{
-                                                    (
-                                                        event.peakPositionSize ||
-                                                        0
-                                                    ).toLocaleString()
-                                                }}</span
+                                                >{{ money(( event.peakPositionSize || 0 ), { maximumFractionDigits: 0, minimumFractionDigits: 0 }) }}</span
                                             >
                                         </div>
                                     </div>
                                     <div
-                                        class="mt-2 text-xs text-orange-700 dark:text-orange-400 flex items-start"
+                                        class="mt-2 text-xs text-yellow-700 dark:text-yellow-400 flex items-start"
                                     >
                                         <MdiIcon
                                             :icon="mdiTrendingUp"
@@ -396,22 +366,11 @@
                                             >Position increased by
                                             <span class="font-bold"
                                                 >{{
-                                                    event.positionSizeIncrease?.toFixed(
-                                                        1,
-                                                    ) || 0
-                                                }}%</span
+                                                    formatPercent(event.positionSizeIncrease ?? 0)
+                                                }}</span
                                             >
-                                            (from ${{
-                                                (
-                                                    event.baselinePositionSize ||
-                                                    0
-                                                ).toLocaleString()
-                                            }}
-                                            baseline to ${{
-                                                (
-                                                    event.peakPositionSize || 0
-                                                ).toLocaleString()
-                                            }}
+                                            (from {{ money(( event.baselinePositionSize || 0 ), { maximumFractionDigits: 0, minimumFractionDigits: 0 }) }}
+                                            baseline to {{ money(( event.peakPositionSize || 0 ), { maximumFractionDigits: 0, minimumFractionDigits: 0 }) }}
                                             peak)</span
                                         >
                                     </div>
@@ -429,7 +388,7 @@
                                         <p
                                             class="font-medium"
                                             :class="{
-                                                'text-green-600 dark:text-green-400':
+                                                'text-green-700 dark:text-green-400':
                                                     parseFloat(
                                                         event.streakPnl || 0,
                                                     ) > 0,
@@ -443,17 +402,7 @@
                                                     ) === 0,
                                             }"
                                         >
-                                            {{
-                                                parseFloat(
-                                                    event.streakPnl || 0,
-                                                ) >= 0
-                                                    ? "+"
-                                                    : ""
-                                            }}${{
-                                                parseFloat(
-                                                    event.streakPnl || 0,
-                                                ).toFixed(2)
-                                            }}
+                                            {{ moneySigned(parseFloat( event.streakPnl || 0)) }}
                                         </p>
                                     </div>
                                     <div>
@@ -465,7 +414,7 @@
                                         <p
                                             class="font-medium"
                                             :class="{
-                                                'text-green-600 dark:text-green-400':
+                                                'text-green-700 dark:text-green-400':
                                                     parseFloat(
                                                         event.subsequentTradeResult ||
                                                             0,
@@ -482,19 +431,7 @@
                                                     ) === 0,
                                             }"
                                         >
-                                            {{
-                                                parseFloat(
-                                                    event.subsequentTradeResult ||
-                                                        0,
-                                                ) >= 0
-                                                    ? "+"
-                                                    : ""
-                                            }}${{
-                                                parseFloat(
-                                                    event.subsequentTradeResult ||
-                                                        0,
-                                                ).toFixed(2)
-                                            }}
+                                            {{ moneySigned(parseFloat( event.subsequentTradeResult || 0)) }}
                                         </p>
                                     </div>
                                     <div>
@@ -506,7 +443,7 @@
                                         <p
                                             class="font-medium"
                                             :class="{
-                                                'text-green-600 dark:text-green-400':
+                                                'text-green-700 dark:text-green-400':
                                                     parseFloat(
                                                         event.totalImpact || 0,
                                                     ) > 0,
@@ -520,17 +457,7 @@
                                                     ) === 0,
                                             }"
                                         >
-                                            {{
-                                                parseFloat(
-                                                    event.totalImpact || 0,
-                                                ) >= 0
-                                                    ? "+"
-                                                    : ""
-                                            }}${{
-                                                parseFloat(
-                                                    event.totalImpact || 0,
-                                                ).toFixed(2)
-                                            }}
+                                            {{ moneySigned(parseFloat( event.totalImpact || 0)) }}
                                         </p>
                                     </div>
                                 </div>
@@ -539,23 +466,7 @@
                                 <div
                                     v-if="event.outcomeTradeDetails"
                                     class="mt-4 p-4 rounded-lg border-2"
-                                    :class="{
-                                        'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800':
-                                            parseFloat(
-                                                event.outcomeTradeDetails.pnl ||
-                                                    0,
-                                            ) < 0,
-                                        'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800':
-                                            parseFloat(
-                                                event.outcomeTradeDetails.pnl ||
-                                                    0,
-                                            ) > 0,
-                                        'bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-800':
-                                            parseFloat(
-                                                event.outcomeTradeDetails.pnl ||
-                                                    0,
-                                            ) === 0,
-                                    }"
+                                    :class="{ 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800': parseFloat( event.outcomeTradeDetails.pnl || 0, ) < 0, 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800': parseFloat( event.outcomeTradeDetails.pnl || 0, ) > 0, 'bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-800': parseFloat( event.outcomeTradeDetails.pnl || 0, ) === 0, }"
                                 >
                                     <div class="flex items-center mb-3">
                                         <MdiIcon
@@ -570,13 +481,13 @@
                                             :size="20"
                                             class="mr-2"
                                             :class="{
-                                                'text-red-600':
+                                                'text-red-600 dark:text-red-400':
                                                     parseFloat(
                                                         event
                                                             .outcomeTradeDetails
                                                             .pnl || 0,
                                                     ) < 0,
-                                                'text-green-600':
+                                                'text-green-700 dark:text-green-400':
                                                     parseFloat(
                                                         event
                                                             .outcomeTradeDetails
@@ -673,7 +584,7 @@
                                                                     .outcomeTradeDetails
                                                                     .pnl || 0,
                                                             ) < 0,
-                                                        'text-green-600 dark:text-green-400':
+                                                        'text-green-700 dark:text-green-400':
                                                             parseFloat(
                                                                 event
                                                                     .outcomeTradeDetails
@@ -687,21 +598,7 @@
                                                             ) === 0,
                                                     }"
                                                 >
-                                                    {{
-                                                        parseFloat(
-                                                            event
-                                                                .outcomeTradeDetails
-                                                                .pnl || 0,
-                                                        ) >= 0
-                                                            ? "+"
-                                                            : ""
-                                                    }}${{
-                                                        parseFloat(
-                                                            event
-                                                                .outcomeTradeDetails
-                                                                .pnl || 0,
-                                                        ).toFixed(2)
-                                                    }}
+                                                    {{ moneySigned(parseFloat( event.outcomeTradeDetails.pnl || 0)) }}
                                                 </p>
                                                 <p
                                                     class="text-xs text-gray-500 dark:text-gray-400"
@@ -721,14 +618,7 @@
                                                     Entry Price
                                                 </p>
                                                 <p class="font-medium">
-                                                    ${{
-                                                        parseFloat(
-                                                            event
-                                                                .outcomeTradeDetails
-                                                                .entry_price ||
-                                                                0,
-                                                        ).toFixed(2)
-                                                    }}
+                                                    {{ price(parseFloat( event.outcomeTradeDetails.entry_price || 0)) }}
                                                 </p>
                                             </div>
                                             <div>
@@ -738,14 +628,7 @@
                                                     Exit Price
                                                 </p>
                                                 <p class="font-medium">
-                                                    ${{
-                                                        parseFloat(
-                                                            event
-                                                                .outcomeTradeDetails
-                                                                .exit_price ||
-                                                                0,
-                                                        ).toFixed(2)
-                                                    }}
+                                                    {{ price(parseFloat( event.outcomeTradeDetails.exit_price || 0)) }}
                                                 </p>
                                             </div>
                                             <div>
@@ -755,16 +638,7 @@
                                                     Position Size
                                                 </p>
                                                 <p class="font-medium">
-                                                    ${{
-                                                        (
-                                                            parseFloat(
-                                                                event
-                                                                    .outcomeTradeDetails
-                                                                    .position_size ||
-                                                                    0,
-                                                            )
-                                                        ).toLocaleString()
-                                                    }}
+                                                    {{ money(( parseFloat( event.outcomeTradeDetails.position_size || 0) ), { maximumFractionDigits: 0, minimumFractionDigits: 0 }) }}
                                                 </p>
                                             </div>
                                             <div>
@@ -774,21 +648,7 @@
                                                     Fees
                                                 </p>
                                                 <p class="font-medium">
-                                                    ${{
-                                                        (
-                                                            parseFloat(
-                                                                event
-                                                                    .outcomeTradeDetails
-                                                                    .commission ||
-                                                                    0,
-                                                            ) +
-                                                            parseFloat(
-                                                                event
-                                                                    .outcomeTradeDetails
-                                                                    .fees || 0,
-                                                            )
-                                                        ).toFixed(2)
-                                                    }}
+                                                    {{ money(( parseFloat( event.outcomeTradeDetails.commission || 0) + parseFloat( event.outcomeTradeDetails.fees || 0) )) }}
                                                 </p>
                                             </div>
                                         </div>
@@ -839,10 +699,8 @@
                                                 "
                                                 >a
                                                 {{
-                                                    event.positionSizeIncrease.toFixed(
-                                                        1,
-                                                    )
-                                                }}% larger position size</span
+                                                    formatPercent(event.positionSizeIncrease)
+                                                }} larger position size</span
                                             >
                                             <span v-else
                                                 >risky trading decisions</span
@@ -850,15 +708,7 @@
                                             that resulted in this losing trade,
                                             giving back
                                             <strong
-                                                >${{
-                                                    Math.abs(
-                                                        parseFloat(
-                                                            event
-                                                                .outcomeTradeDetails
-                                                                .pnl || 0,
-                                                        ),
-                                                    ).toFixed(2)
-                                                }}</strong
+                                                >{{ money(Math.abs( parseFloat( event.outcomeTradeDetails.pnl || 0))) }}</strong
                                             >
                                             of the streak's profits.
                                         </p>
@@ -881,10 +731,8 @@
                                                 "
                                                 >the
                                                 {{
-                                                    event.positionSizeIncrease.toFixed(
-                                                        1,
-                                                    )
-                                                }}% larger position size</span
+                                                    formatPercent(event.positionSizeIncrease)
+                                                }} larger position size</span
                                             >
                                             <span v-else
                                                 >the elevated confidence</span
@@ -909,23 +757,7 @@
                                             event.outcomeAnalysis.verdict
                                         "
                                         class="mt-4 p-3 rounded-lg border-2"
-                                        :class="{
-                                            'bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700':
-                                                event.outcomeAnalysis.verdict
-                                                    .verdict ===
-                                                'true_overconfidence',
-                                            'bg-orange-100 dark:bg-orange-900/30 border-orange-300 dark:border-orange-700':
-                                                event.outcomeAnalysis.verdict
-                                                    .verdict ===
-                                                'partial_overconfidence',
-                                            'bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700':
-                                                event.outcomeAnalysis.verdict
-                                                    .verdict ===
-                                                'prudent_trade',
-                                            'bg-gray-100 dark:bg-gray-900/30 border-gray-300 dark:border-gray-700':
-                                                event.outcomeAnalysis.verdict
-                                                    .verdict === 'bad_luck',
-                                        }"
+                                        :class="{ 'bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700': event.outcomeAnalysis.verdict .verdict === 'true_overconfidence', 'bg-yellow-100 dark:bg-yellow-900/30 border-yellow-300 dark:border-yellow-700': event.outcomeAnalysis.verdict .verdict === 'partial_overconfidence', 'bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700': event.outcomeAnalysis.verdict .verdict === 'prudent_trade', 'bg-gray-100 dark:bg-gray-900/30 border-gray-300 dark:border-gray-700': event.outcomeAnalysis.verdict .verdict === 'bad_luck', }"
                                     >
                                         <div
                                             class="flex items-center justify-between mb-2"
@@ -937,7 +769,7 @@
                                                         event.outcomeAnalysis
                                                             .verdict.verdict ===
                                                         'true_overconfidence',
-                                                    'text-orange-900 dark:text-orange-200':
+                                                    'text-yellow-900 dark:text-yellow-200':
                                                         event.outcomeAnalysis
                                                             .verdict.verdict ===
                                                         'partial_overconfidence',
@@ -975,7 +807,7 @@
                                                         event.outcomeAnalysis
                                                             .verdict.verdict ===
                                                         'true_overconfidence',
-                                                    'bg-orange-200 dark:bg-orange-800 text-orange-900 dark:text-orange-100':
+                                                    'bg-yellow-200 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100':
                                                         event.outcomeAnalysis
                                                             .verdict.verdict ===
                                                         'partial_overconfidence',
@@ -1008,7 +840,7 @@
                                                     event.outcomeAnalysis
                                                         .verdict.verdict ===
                                                     'true_overconfidence',
-                                                'text-orange-800 dark:text-orange-200':
+                                                'text-yellow-800 dark:text-yellow-200':
                                                     event.outcomeAnalysis
                                                         .verdict.verdict ===
                                                     'partial_overconfidence',
@@ -1053,7 +885,7 @@
                                                     class="flex items-start"
                                                 >
                                                     <span
-                                                        class="text-red-600 mr-1.5"
+                                                        class="text-red-600 dark:text-red-400 mr-1.5"
                                                         >•</span
                                                     >
                                                     <span
@@ -1089,7 +921,7 @@
                                                     class="flex items-start"
                                                 >
                                                     <CheckIcon
-                                                        class="h-4 w-4 text-green-600 mr-1.5 mt-0.5 shrink-0"
+                                                        class="h-4 w-4 text-green-700 dark:text-green-400 mr-1.5 mt-0.5 shrink-0"
                                                     />
                                                     <span
                                                         class="text-green-800 dark:text-green-300"
@@ -1127,7 +959,7 @@
                                                                 .outcomeAnalysis
                                                                 .stopLossAnalysis
                                                                 .recommendedStopLoss
-                                                                ? `$${event.outcomeAnalysis.stopLossAnalysis.recommendedStopLoss.toFixed(2)}`
+                                                                ? price(event.outcomeAnalysis.stopLossAnalysis.recommendedStopLoss)
                                                                 : "N/A"
                                                         }}
                                                     </p>
@@ -1141,13 +973,13 @@
                                                     <p
                                                         class="font-medium capitalize"
                                                         :class="{
-                                                            'text-green-600':
+                                                            'text-green-700 dark:text-green-400':
                                                                 event
                                                                     .outcomeAnalysis
                                                                     .stopLossAnalysis
                                                                     .adherenceRating ===
                                                                 'good',
-                                                            'text-red-600':
+                                                            'text-red-600 dark:text-red-400':
                                                                 event
                                                                     .outcomeAnalysis
                                                                     .stopLossAnalysis
@@ -1179,11 +1011,7 @@
                                                 class="text-xs text-red-700 dark:text-red-300 mt-2"
                                             >
                                                 Additional loss from not
-                                                respecting stop: ${{
-                                                    event.outcomeAnalysis.stopLossAnalysis.additionalLoss.toFixed(
-                                                        2,
-                                                    )
-                                                }}
+                                                respecting stop: {{ money(event.outcomeAnalysis.stopLossAnalysis.additionalLoss) }}
                                             </p>
                                         </div>
                                     </div>
@@ -1209,7 +1037,7 @@
                                             :key="rec"
                                             class="flex items-start"
                                         >
-                                            <span class="text-blue-500 mr-1"
+                                            <span class="text-primary-700 mr-1 dark:text-primary-400"
                                                 >•</span
                                             >
                                             {{ rec }}
@@ -1253,7 +1081,7 @@
                                                     event.id,
                                                 )
                                             "
-                                            class="text-xs px-2 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded hover:bg-primary-200 dark:hover:bg-primary-900/50 transition-colors flex items-center space-x-1"
+                                            class="btn-tint btn-sm space-x-1"
                                         >
                                             <span>{{
                                                 expandedOverconfidenceEvents.has(
@@ -1264,12 +1092,7 @@
                                             }}</span>
                                             <svg
                                                 class="w-3 h-3 transition-transform"
-                                                :class="{
-                                                    'rotate-180':
-                                                        expandedOverconfidenceEvents.has(
-                                                            event.id,
-                                                        ),
-                                                }"
+                                                :class="{ 'rotate-180': expandedOverconfidenceEvents.has( event.id, ), }"
                                                 fill="none"
                                                 stroke="currentColor"
                                                 viewBox="0 0 24 24"
@@ -1309,18 +1132,7 @@
                                                 ) in event.streakTradeDetails"
                                                 :key="trade.id"
                                                 class="flex items-center justify-between p-2 rounded-lg border cursor-pointer transition-colors"
-                                                :class="{
-                                                    'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-700 hover:bg-green-100 dark:hover:bg-green-900/20':
-                                                        parseFloat(trade.pnl) >
-                                                        0,
-                                                    'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-700 hover:bg-red-100 dark:hover:bg-red-900/20':
-                                                        parseFloat(trade.pnl) <
-                                                        0,
-                                                    'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600':
-                                                        parseFloat(
-                                                            trade.pnl,
-                                                        ) === 0,
-                                                }"
+                                                :class="{ 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-700 hover:bg-green-100 dark:hover:bg-green-900/20': parseFloat(trade.pnl) > 0, 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-700 hover:bg-red-100 dark:hover:bg-red-900/20': parseFloat(trade.pnl) < 0, 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600': parseFloat( trade.pnl, ) === 0, }"
                                                 @click="$emit('open-trade', trade.id)"
                                             >
                                                 <div
@@ -1330,9 +1142,9 @@
                                                         class="flex items-center space-x-1"
                                                     >
                                                         <span
-                                                            class="text-xs font-medium px-1.5 py-0.5 rounded"
+                                                            class="badge"
                                                             :class="{
-                                                                'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300':
+                                                                'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300':
                                                                     index === 0,
                                                                 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300':
                                                                     index > 0 &&
@@ -1379,13 +1191,7 @@
                                                         >
                                                             <span
                                                                 class="font-medium"
-                                                                >${{
-                                                                    (
-                                                                        parseFloat(
-                                                                            trade.position_size,
-                                                                        ) || 0
-                                                                    ).toLocaleString()
-                                                                }}</span
+                                                                >{{ money(( parseFloat( trade.position_size) || 0 ), { maximumFractionDigits: 0, minimumFractionDigits: 0 }) }}</span
                                                             >
                                                             <span
                                                                 v-if="
@@ -1428,7 +1234,7 @@
                                                                             ]
                                                                                 .position_size,
                                                                         ),
-                                                                    'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400':
+                                                                    'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400':
                                                                         parseFloat(
                                                                             trade.position_size,
                                                                         ) <
@@ -1457,7 +1263,7 @@
                                                                         ? "+"
                                                                         : ""
                                                                 }}{{
-                                                                    (
+                                                                    formatPercent(
                                                                         ((parseFloat(
                                                                             trade.position_size,
                                                                         ) -
@@ -1476,12 +1282,9 @@
                                                                                         1
                                                                                 ]
                                                                                     .position_size,
-                                                                            )) *
-                                                                        100
-                                                                    ).toFixed(
-                                                                        0,
+                                                                            )) * 100
                                                                     )
-                                                                }}%
+                                                                }}
                                                             </span>
                                                         </div>
                                                     </div>
@@ -1494,7 +1297,7 @@
                                                         <div
                                                             class="font-medium"
                                                             :class="{
-                                                                'text-green-600 dark:text-green-400':
+                                                                'text-green-700 dark:text-green-400':
                                                                     parseFloat(
                                                                         trade.pnl,
                                                                     ) > 0,
@@ -1508,22 +1311,11 @@
                                                                     ) === 0,
                                                             }"
                                                         >
-                                                            {{
-                                                                parseFloat(
-                                                                    trade.pnl,
-                                                                ) >= 0
-                                                                    ? "+"
-                                                                    : ""
-                                                            }}${{
-                                                                parseFloat(
-                                                                    trade.pnl ||
-                                                                        0,
-                                                                ).toFixed(2)
-                                                            }}
+                                                            {{ moneySigned(parseFloat( trade.pnl || 0)) }}
                                                         </div>
                                                     </div>
                                                     <div
-                                                        class="text-blue-500 hover:text-blue-600"
+                                                        class="text-primary-700 hover:text-primary-800 dark:text-primary-400"
                                                     >
                                                         <svg
                                                             class="w-4 h-4"
@@ -1567,6 +1359,8 @@ import { computed } from "vue";
 import { CheckIcon } from "@heroicons/vue/24/outline";
 import MdiIcon from "@/components/MdiIcon.vue";
 import { formatRiskBasisLabel } from "@/utils/behavioralFormatters";
+import { useCurrencyFormatter } from '@/composables/useCurrencyFormatter'
+import { formatDecimal, formatPercent } from '@/utils/formatters'
 import {
     mdiTrendingUp,
     mdiClose,
@@ -1575,6 +1369,13 @@ import {
     mdiFire,
     mdiTrophy,
 } from "@mdi/js";
+
+const { formatCurrency: _fmtCurrency, formatSignedCurrency: _fmtSigned } = useCurrencyFormatter()
+// Money follows the user's display currency (the API converts it). Quote
+// prices stay in the instrument's currency, as they do in trade views.
+const money = (v, o = {}) => _fmtCurrency(Number(v) || 0, o)
+const price = (v, o = {}) => _fmtCurrency(Number(v) || 0, { currency: 'USD', ...o })
+const moneySigned = (v, o = {}) => _fmtSigned(Number(v) || 0, o)
 
 const props = defineProps({
     overconfidenceData: { type: Object, default: null },

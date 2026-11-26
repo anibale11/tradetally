@@ -6,14 +6,14 @@
         <button
           v-if="mode !== 'setup'"
           @click="exitSession"
-          class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          class="btn-ghost btn-sm"
           title="Back to session setup"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
           </svg>
         </button>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+        <h1 class="heading-page">
           Backtest Sandbox
           <span v-if="sessionData" class="text-gray-500 dark:text-gray-400 font-medium">
             {{ sessionData.symbol }}
@@ -24,13 +24,13 @@
       <div class="flex items-center space-x-2">
         <span
           v-if="mode === 'review'"
-          class="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 font-medium"
+          class="badge-neutral"
         >
           Reviewing saved session
         </span>
         <span
           v-if="quotaChip"
-          class="text-xs px-2 py-1 rounded-full bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200"
+          class="badge-primary"
         >
           {{ quotaChip }}
         </span>
@@ -39,7 +39,7 @@
 
     <!-- Initial loading -->
     <div v-if="initialLoading" class="flex justify-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div class="spinner spinner-lg"></div>
     </div>
 
     <!-- Free quota exhausted -->
@@ -53,7 +53,7 @@
     <template v-else-if="mode === 'setup'">
       <div class="card mb-6">
         <div class="card-body">
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">New Session</h2>
+          <h2 class="heading-card mb-1">New Session</h2>
           <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
             Pick a symbol and a past trading day, then trade it bar-by-bar with simulated orders.
             Fills execute at the close of the current 1-minute bar.
@@ -66,9 +66,7 @@
                   type="button"
                   @click="form.instrument = 'stock'"
                   class="h-full px-3 py-0 text-sm font-medium"
-                  :class="form.instrument === 'stock'
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'"
+                  :class="form.instrument === 'stock' ? 'bg-primary-700 text-white' : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'"
                 >
                   Stocks
                 </button>
@@ -77,9 +75,7 @@
                   @click="futuresAvailable && (form.instrument = 'future')"
                   :disabled="!futuresAvailable"
                   class="h-full px-3 py-0 text-sm font-medium border-l border-gray-300 dark:border-gray-600"
-                  :class="form.instrument === 'future'
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed'"
+                  :class="form.instrument === 'future' ? 'bg-primary-700 text-white' : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed'"
                   :title="futuresAvailable ? '' : 'Requires a Databento API key on the server (DATABENTO_API_KEY)'"
                 >
                   Futures
@@ -148,7 +144,7 @@
 
       <div class="card">
         <div class="card-body">
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Saved Sessions</h2>
+          <h2 class="heading-card mb-4">Saved Sessions</h2>
           <div v-if="sessions.length === 0" class="text-center py-8">
             <p class="text-gray-500 dark:text-gray-400 text-sm">
               No saved sessions yet. Load a symbol and day above to run your first backtest.
@@ -156,24 +152,24 @@
           </div>
           <div v-else class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead>
+              <thead class="table-head">
                 <tr>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Symbol</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Session</th>
-                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">P&amp;L</th>
-                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trades</th>
-                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Win Rate</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Saved</th>
-                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                  <th class="text-left table-th px-4 py-2">Symbol</th>
+                  <th class="text-left table-th px-4 py-2">Session</th>
+                  <th class="text-right table-th px-4 py-2">P&amp;L</th>
+                  <th class="text-right table-th px-4 py-2">Trades</th>
+                  <th class="text-right table-th px-4 py-2">Win Rate</th>
+                  <th class="text-left table-th px-4 py-2">Saved</th>
+                  <th class="text-right table-th px-4 py-2">Actions</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                 <tr v-for="session in sessions" :key="session.id">
-                  <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
+                  <td class="text-sm font-medium text-gray-900 dark:text-white px-4 py-3">
                     {{ session.symbol }}
                     <span
                       v-if="session.instrument_type === 'future'"
-                      class="ml-1 text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 font-medium"
+                      class="badge-neutral ml-1"
                     >
                       FUT
                     </span>
@@ -184,18 +180,18 @@
                       CRYPTO
                     </span>
                   </td>
-                  <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ formatSessionDate(session.session_date) }}</td>
-                  <td class="px-4 py-3 text-sm text-right tabular-nums" :class="pnlClass(session.total_pnl)">
+                  <td class="text-sm text-gray-700 dark:text-gray-300 px-4 py-3">{{ formatSessionDate(session.session_date) }}</td>
+                  <td class="text-sm text-right tabular-nums px-4 py-3" :class="pnlClass(session.total_pnl)">
                     {{ formatSignedCurrency(session.total_pnl) }}
                   </td>
-                  <td class="px-4 py-3 text-sm text-right tabular-nums text-gray-700 dark:text-gray-300">
+                  <td class="text-sm text-right tabular-nums text-gray-700 dark:text-gray-300 px-4 py-3">
                     {{ session.round_trips }}
                     <span class="text-gray-500 dark:text-gray-400">({{ session.wins }}W / {{ session.losses }}L)</span>
                   </td>
-                  <td class="px-4 py-3 text-sm text-right tabular-nums text-gray-700 dark:text-gray-300">{{ winRateLabel(session) }}</td>
-                  <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ formatSavedAt(session.created_at) }}</td>
-                  <td class="px-4 py-3 text-sm text-right whitespace-nowrap">
-                    <button @click="reviewSession(session)" class="btn-secondary text-xs px-2.5 py-1.5 mr-2">
+                  <td class="text-sm text-right tabular-nums text-gray-700 dark:text-gray-300 px-4 py-3">{{ winRateLabel(session) }}</td>
+                  <td class="text-sm text-gray-500 dark:text-gray-400 px-4 py-3">{{ formatSavedAt(session.created_at) }}</td>
+                  <td class="text-sm text-right whitespace-nowrap px-4 py-3">
+                    <button @click="reviewSession(session)" class="btn-secondary mr-2 btn-sm">
                       Review
                     </button>
                     <button
@@ -227,15 +223,13 @@
       <div class="card mb-4">
         <div class="card-body">
           <div class="flex flex-wrap items-center justify-end gap-1.5 mb-3">
-            <span class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 mr-1">Indicators</span>
+            <span class="text-label mr-1">Indicators</span>
             <button
               v-for="option in indicatorOptions"
               :key="option.key"
               @click="indicators[option.key] = !indicators[option.key]"
-              class="px-2 py-1 text-xs rounded-md font-medium"
-              :class="indicators[option.key]
-                ? 'bg-primary-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'"
+              class="segment"
+              :class="indicators[option.key] ? 'segment-active' : ''"
             >
               {{ option.label }}
             </button>
@@ -287,7 +281,7 @@
             </div>
             <span
               v-if="isFuturesSession"
-              class="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 mb-2.5"
+              class="badge bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 mb-2.5"
             >
               {{ sessionData.symbol }} &middot; ${{ sessionData.multiplier }}/pt
             </span>
@@ -295,7 +289,7 @@
               <button
                 @click="placeOrder('buy')"
                 :disabled="!canTrade"
-                class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                class="btn-primary"
                 title="Buy (B)"
               >
                 Buy
@@ -303,7 +297,7 @@
               <button
                 @click="placeOrder('sell')"
                 :disabled="!canTrade"
-                class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                class="btn-danger"
                 title="Sell / Short (S)"
               >
                 Sell
@@ -311,14 +305,14 @@
               <button
                 @click="flattenPosition"
                 :disabled="!canTrade || stats.position === 0"
-                class="btn-secondary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                class="btn-secondary"
                 title="Flatten (F)"
               >
                 Flatten
               </button>
             </div>
             <div class="ml-auto text-right">
-              <p class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">Current price</p>
+              <p class="text-label">Current price</p>
               <p class="font-semibold text-gray-900 dark:text-white tabular-nums">
                 {{ currentBar ? formatCurrency(currentBar.close) : '--' }}
               </p>
@@ -347,7 +341,7 @@
       <!-- Save (sandbox) / summary (review) -->
       <div v-if="mode === 'sandbox'" class="card">
         <div class="card-body">
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">Save Session</h2>
+          <h2 class="heading-card mb-1">Save Session</h2>
           <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
             {{ fills.length === 0
               ? 'Place at least one order to save this session.'
@@ -364,7 +358,7 @@
             <button
               @click="saveSession"
               :disabled="fills.length === 0 || saving"
-              class="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              class="btn-primary"
             >
               <span v-if="saving">Saving...</span>
               <span v-else>{{ stats.position !== 0 ? 'Flatten & Save' : 'Save Session' }}</span>
@@ -374,7 +368,7 @@
             </p>
           </div>
           <p v-if="saveError" class="text-sm text-red-600 dark:text-red-400 mt-3">{{ saveError }}</p>
-          <p v-if="saveSuccess" class="text-sm text-green-600 dark:text-green-400 mt-3">
+          <p v-if="saveSuccess" class="text-sm text-green-700 dark:text-green-400 mt-3">
             Session saved. Use the back arrow to start another run or review past sessions.
           </p>
         </div>
@@ -382,31 +376,31 @@
 
       <div v-else-if="reviewedSession" class="card">
         <div class="card-body">
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Session Result</h2>
+          <h2 class="heading-card mb-4">Session Result</h2>
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div>
-              <dt class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">Total P&amp;L</dt>
+              <dt class="text-label">Total P&amp;L</dt>
               <dd class="font-semibold tabular-nums" :class="pnlClass(reviewedSession.total_pnl)">
                 {{ formatSignedCurrency(reviewedSession.total_pnl) }}
               </dd>
             </div>
             <div>
-              <dt class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">Round Trips</dt>
+              <dt class="text-label">Round Trips</dt>
               <dd class="font-medium text-gray-900 dark:text-white tabular-nums">{{ reviewedSession.round_trips }}</dd>
             </div>
             <div>
-              <dt class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">Wins / Losses</dt>
+              <dt class="text-label">Wins / Losses</dt>
               <dd class="font-medium text-gray-900 dark:text-white tabular-nums">
                 {{ reviewedSession.wins }}W / {{ reviewedSession.losses }}L
               </dd>
             </div>
             <div>
-              <dt class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">Fills</dt>
+              <dt class="text-label">Fills</dt>
               <dd class="font-medium text-gray-900 dark:text-white tabular-nums">{{ fills.length }}</dd>
             </div>
           </div>
           <div v-if="reviewedSession.notes" class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <p class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Notes</p>
+            <p class="text-label mb-1">Notes</p>
             <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ reviewedSession.notes }}</p>
           </div>
         </div>
@@ -531,7 +525,7 @@ function formatSignedCurrency(value) {
 
 function pnlClass(value) {
   const num = Number(value) || 0
-  if (num > 0) return 'text-green-600 dark:text-green-400'
+  if (num > 0) return 'text-green-700 dark:text-green-400'
   if (num < 0) return 'text-red-600 dark:text-red-400'
   return 'text-gray-900 dark:text-white'
 }

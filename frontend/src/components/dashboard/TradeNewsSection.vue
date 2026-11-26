@@ -2,15 +2,14 @@
   <div class="card">
     <div class="card-body">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Latest News</h3>
+        <h3 class="heading-card">Latest News</h3>
         <button
           @click="refreshNews"
           :disabled="loading"
-          class="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          class="btn-secondary btn-sm"
         >
-          <svg
+          <span v-if="loading" class="spinner spinner-xs spinner-current mr-2"></span><svg v-else
             class="w-4 h-4 mr-1.5"
-            :class="{ 'animate-spin': loading }"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -27,7 +26,7 @@
       </div>
 
       <div v-if="loading && !newsItems.length" class="flex justify-center py-8">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+        <div class="spinner spinner-md"></div>
       </div>
 
       <div v-else-if="error" class="text-center py-8">
@@ -39,7 +38,7 @@
         </div>
         <button
           @click="fetchNews"
-          class="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+          class="btn-link"
         >
           Try again
         </button>
@@ -52,8 +51,8 @@
       <div v-else class="space-y-4">
         <div v-for="(newsGroup, symbol) in groupedNews" :key="symbol">
           <div class="mb-2">
-            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
-              <span class="bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded text-xs mr-2">{{ symbol }}</span>
+            <h4 class="heading-sub flex items-center">
+              <span class="badge-neutral mr-2">{{ symbol }}</span>
               <span class="text-xs text-gray-500 dark:text-gray-400">{{ newsGroup.length }} article{{ newsGroup.length !== 1 ? 's' : '' }}</span>
             </h4>
           </div>
@@ -71,7 +70,7 @@
                       :href="item.url"
                       target="_blank"
                       rel="noopener noreferrer"
-                      class="hover:text-primary-600 dark:hover:text-primary-400"
+                      class="hover:text-primary-800 dark:hover:text-primary-400"
                     >
                       {{ item.headline }}
                     </a>
@@ -91,7 +90,7 @@
           <button
             v-if="newsGroup.length > 3"
             @click="toggleExpanded(symbol)"
-            class="mt-2 text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium"
+            class="mt-2 text-sm text-primary-700 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 font-medium"
           >
             {{ expandedSymbols[symbol] ? 'Show less' : `Show ${newsGroup.length - 3} more` }}
           </button>

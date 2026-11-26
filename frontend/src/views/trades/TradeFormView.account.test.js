@@ -2,18 +2,20 @@ import { shallowMount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import contracts from '../../../../tests/fixtures/trading-calculation-contracts.json'
 
 const mocks = vi.hoisted(() => ({
   route: { params: {}, query: {} },
-  fetchTrade: vi.fn()
+  fetchTrade: vi.fn(),
+  updateTrade: vi.fn().mockResolvedValue({})
 }))
 
 vi.mock('vue-router', () => ({
   useRoute: () => mocks.route,
-  useRouter: () => ({ push: vi.fn(), back: vi.fn() })
+  useRouter: () => ({ push: vi.fn(), back: vi.fn(), replace: vi.fn() })
 }))
 vi.mock('@/stores/trades', () => ({
-  useTradesStore: () => ({ fetchTrade: mocks.fetchTrade })
+  useTradesStore: () => ({ fetchTrade: mocks.fetchTrade, updateTrade: mocks.updateTrade, fetchTrades: vi.fn(), fetchAnalytics: vi.fn() })
 }))
 vi.mock('@/stores/auth', () => ({
   useAuthStore: () => ({ user: { timezone: 'UTC' } })
@@ -48,7 +50,10 @@ describe('manual trade account assignment', () => {
   afterEach(() => wrapper?.unmount())
 
   async function mountForm() {
-    wrapper = shallowMount(TradeFormView, { attachTo: document.body })
+    wrapper = shallowMount(TradeFormView, {
+      attachTo: document.body,
+      global: { stubs: { ImageUpload: { template: '<div />', data: () => ({ selectedFiles: [] }) } } }
+    })
     await flushPromises()
   }
 
@@ -97,4 +102,46 @@ describe('manual trade account assignment', () => {
     expect(mocks.fetchTrade).toHaveBeenCalledWith('trade-1', { raw: true })
     expect(accountSelect().props('modelValue')).toBe(account_identifier)
   })
+
+  it('preserves futures excursion dollars when editing a multi-contract trade (issue 415)', async () => {
+    const fixture = contracts.futures_excursion_edit
+    mocks.route.params = { id: 'trade-1' }
+    mocks.fetchTrade.mockResolvedValue({ ...fixture.trade, id: 'trade-1', executions: [] })
+    await mountForm()
+    expect(Number(wrapper.get('#mfe').element.value)).toBe(fixture.expected_points)
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+    expect(mocks.updateTrade).toHaveBeenCalledWith('trade-1', expect.objectContaining({
+      mae: 0, mfe: fixture.trade.mfe, postExitMae: 0, postExitMfe: fixture.trade.post_exit_mfe
+    }))
+  })
+  it.each(contracts.excursion_unit_cases)('supports entry and unit switching for $id (issue 427)', async fixture => {
+    mocks.route.params = { id: 'trade-1' }
+    mocks.fetchTrade.mockResolvedValue({
+      ...fixture.trade, id: 'trade-1', mae: 0, mfe: fixture.dollars,
+      post_exit_mae: null, post_exit_mfe: fixture.dollars,
+      entry_time: '2026-10-15T14:00:00Z', exit_time: '2026-10-15T15:00:00Z', executions: []
+    })
+    await mountForm()
+    for (const [unit, expected] of [['r', fixture.r], ['points', fixture.points], ['dollars', fixture.dollars], ['r', fixture.r]]) {
+      await wrapper.get('#excursion_unit').setValue(unit)
+      expect(Number(wrapper.get('#mfe').element.value)).toBeCloseTo(expected, 8)
+      expect(Number(wrapper.get('#postExitMfe').element.value)).toBeCloseTo(expected, 8)
+      expect(wrapper.get('#postExitMae').element.value).toBe('')
+    }
+    await wrapper.get('#mfe').setValue(fixture.r + 1)
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+    const risk = fixture.trade.quantity * (fixture.trade.point_value || fixture.trade.contract_size || 1) * Math.abs(fixture.trade.entry_price - fixture.trade.stop_loss)
+    expect(mocks.updateTrade).toHaveBeenLastCalledWith('trade-1', expect.objectContaining({
+      mae: 0, mfe: fixture.dollars + risk, postExitMae: null, postExitMfe: fixture.dollars
+    }))
+  })
+
+  it('disables R entry until a stop defines positive risk', async () => {
+    mocks.route.params = { id: 'trade-1' }
+    await mountForm()
+    expect(wrapper.get('#excursion_unit option[value="r"]').element.disabled).toBe(true)
+  })
+
 })

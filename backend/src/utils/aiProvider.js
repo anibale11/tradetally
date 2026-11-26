@@ -23,7 +23,10 @@ class AIProvider {
    * Generate a response from the configured AI provider
    * @param {string} prompt - The prompt to send
    * @param {Object} settings - Provider settings { provider, apiKey, apiUrl, modelName }
-   * @param {Object} options - Generation options { maxTokens, temperature }
+   * @param {Object} options - Generation options { maxTokens, temperature, system, images }
+   *   `system` is sent as a true system message on providers that support one
+   *   (OpenAI-compatible, Claude, Gemini) so instructions stay separate from
+   *   user-supplied data; other providers get it prepended to the prompt.
    * @returns {Promise<string>} Generated text response
    */
   static async generateResponse(prompt, settings, options = {}) {
@@ -72,7 +75,7 @@ class AIProvider {
 
       case 'codex_cli':
       case 'claude_cli':
-        return AICliProvider.generateResponse(prompt, { provider, modelName });
+        return AICliProvider.generateResponse(this.withInlineSystem(prompt, options), { provider, modelName });
 
       case 'lmstudio':
       case 'ollama':
@@ -90,6 +93,14 @@ class AIProvider {
   }
 
   /**
+   * For providers without a system role: prepend the system text to the prompt.
+   */
+  static withInlineSystem(prompt, options = {}) {
+    const system = typeof options.system === 'string' ? options.system.trim() : '';
+    return system ? `${system}\n\n${prompt}` : prompt;
+  }
+
+  /**
    * Generate using Gemini API
    */
   static async generateGemini(prompt, apiKey, modelName = null, options = {}) {
@@ -98,7 +109,11 @@ class AIProvider {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: await resolveGeminiModel(apiKey, modelName) });
+    const system = typeof options.system === 'string' ? options.system.trim() : '';
+    const model = genAI.getGenerativeModel({
+      model: await resolveGeminiModel(apiKey, modelName),
+      ...(system && { systemInstruction: system })
+    });
 
     try {
       const result = await model.generateContent({
@@ -111,7 +126,7 @@ class AIProvider {
       const response = await result.response;
       return response.text();
     } catch (error) {
-      console.error('[AI_PROVIDER] Gemini error:', error.message);
+      console.error('[AI_PROVIDER] Gemini error:', options.sensitive ? 'Sensitive request failed' : error.message);
       throw new Error(`Gemini API error: ${error.message}`);
     }
   }
@@ -149,6 +164,7 @@ class AIProvider {
           // Anthropic requires a value even when other providers can delegate
           // the output ceiling to the model.
           max_tokens: resolveMaxTokens(options, 4096) || 8192,
+          ...(typeof options.system === 'string' && options.system.trim() && { system: options.system.trim() }),
           messages: [{ role: 'user', content: options.images?.length
             ? [...options.images.flatMap((image, index) => [{ type: 'text', text: `Image ${index + 1}: ${image.file_name || 'Screenshot'}` }, { type: 'image', source: { type: 'base64', media_type: image.mime_type, data: image.data } }]), { type: 'text', text: prompt }]
             : prompt }]
@@ -163,7 +179,7 @@ class AIProvider {
       const data = await response.json();
       return data.content[0].text;
     } catch (error) {
-      console.error('[AI_PROVIDER] Claude error:', error.message);
+      console.error('[AI_PROVIDER] Claude error:', options.sensitive ? 'Sensitive request failed' : error.message);
       throw new Error(`Claude API error: ${error.message}`);
     }
   }
@@ -237,7 +253,8 @@ class AIProvider {
         messages: [
           {
             role: 'system',
-            content: 'You are a professional trading performance analyst helping traders improve their performance.'
+            content: (typeof options.system === 'string' && options.system.trim())
+              || 'You are a professional trading performance analyst helping traders improve their performance.'
           },
           {
             role: 'user',
@@ -269,7 +286,7 @@ class AIProvider {
 
       const data = await response.json();
 
-      console.log('[AI_PROVIDER] Response structure:', JSON.stringify(data, null, 2).substring(0, 1000));
+      if (!options.sensitive) console.log('[AI_PROVIDER] Response structure:', JSON.stringify(data, null, 2).substring(0, 1000));
 
       if (!data.choices || data.choices.length === 0) {
         throw new Error('No response generated');
@@ -285,13 +302,13 @@ class AIProvider {
       const finalContent = content || data.output_text || data.output;
 
       if (!finalContent) {
-        console.error('[AI_PROVIDER] Empty content. Full response:', JSON.stringify(data).substring(0, 2000));
+        if (!options.sensitive) console.error('[AI_PROVIDER] Empty content. Full response:', JSON.stringify(data).substring(0, 2000));
         throw new Error('AI returned empty response');
       }
 
       return finalContent;
     } catch (error) {
-      console.error('[AI_PROVIDER] OpenAI-compatible API error:', error.message);
+      console.error('[AI_PROVIDER] OpenAI-compatible API error:', options.sensitive ? 'Sensitive request failed' : error.message);
 
       // Provide helpful error for connection issues
       if (error.code === 'ECONNREFUSED') {

@@ -25,10 +25,11 @@ export default {
           700: '#bd4f13',
           800: '#973f17',
           900: '#7a3616',
+          950: '#431c0b',
         },
-        success: '#10b981',
-        danger: '#ef4444',
-        warning: '#f59e0b',
+        success: '#15803d', // green-700, the win green used in text and charts
+        danger: '#dc2626',  // red-600
+        warning: '#ca8a04', // yellow-600
       }
     },
   },

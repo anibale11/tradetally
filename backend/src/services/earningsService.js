@@ -40,13 +40,71 @@ class EarningsService {
   }
 
   /**
-   * Fetch earnings from Finnhub and update cache
+   * Enumerate YYYY-MM-DD strings from `from` to `to` inclusive (UTC).
+   */
+  static enumerateDays(from, to) {
+    const days = [];
+    const end = new Date(`${to}T00:00:00Z`).getTime();
+    for (let t = new Date(`${from}T00:00:00Z`).getTime(); t <= end; t += 24 * 60 * 60 * 1000) {
+      days.push(new Date(t).toISOString().split('T')[0]);
+    }
+    return days;
+  }
+
+  /**
+   * Fetch the full calendar for a date window.
+   *
+   * Finnhub caps a single calendar response (observed at 1,500 rows, latest
+   * dates first), so one request for a two-week window silently drops the
+   * nearest days during earnings season. Against Finnhub we fetch one day at
+   * a time and merge. Other providers (FMP) have no such cap and tighter
+   * daily quotas, so they keep the single request.
+   */
+  static async fetchWindow(from, to) {
+    if (!finnhub.isFinnhub) {
+      return (await finnhub.getEarningsCalendar(from, to)) || [];
+    }
+
+    // One bad day must not throw away the rest of the window: the whole set
+    // is re-fetched on the next cache miss, so a flaky provider would turn
+    // every request into a full fan-out. Keep what succeeded and only fail
+    // when nothing came back.
+    const merged = new Map();
+    const failures = [];
+    for (const day of this.enumerateDays(from, to)) {
+      let rows;
+      try {
+        rows = (await finnhub.getEarningsCalendar(day, day)) || [];
+      } catch (error) {
+        failures.push(`${day}: ${error.message}`);
+        continue;
+      }
+      for (const row of rows) {
+        const key = `${String(row.symbol || '').toUpperCase()}|${row.date}`;
+        if (!merged.has(key)) merged.set(key, row);
+      }
+    }
+    if (failures.length > 0) {
+      if (merged.size === 0) {
+        throw new Error(`Earnings calendar fetch failed for every day in ${from}..${to} (${failures[0]})`);
+      }
+      console.warn(`[EARNINGS] ${failures.length} day(s) failed while fetching ${from}..${to}; keeping ${merged.size} rows. First: ${failures[0]}`);
+    }
+
+    return [...merged.values()].sort((a, b) =>
+      String(a.date).localeCompare(String(b.date)) ||
+      String(a.symbol || '').localeCompare(String(b.symbol || ''))
+    );
+  }
+
+  /**
+   * Fetch earnings from the market data provider and update cache
    */
   static async fetchAndCache() {
     const { from, to } = this.getDateRange();
 
     try {
-      const allEarnings = await finnhub.getEarningsCalendar(from, to);
+      const allEarnings = await this.fetchWindow(from, to);
 
       // Upsert into cache
       await db.query(

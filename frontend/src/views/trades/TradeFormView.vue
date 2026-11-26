@@ -10,7 +10,7 @@
     </div>
 
     <!-- Behavioral Alert -->
-    <div v-if="behavioralAlert" class="mb-6 card border-l-4 border-l-red-500 bg-red-50 dark:bg-red-900/10">
+    <div v-if="behavioralAlert" class="mb-6 card border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/10">
       <div class="card-body">
         <div class="flex items-start">
           <div class="flex-shrink-0">
@@ -19,7 +19,7 @@
             </svg>
           </div>
           <div class="ml-3 flex-1">
-            <h3 class="text-lg font-medium text-red-800 dark:text-red-400">Revenge Trading Alert</h3>
+            <h3 class="heading-card text-red-800 dark:text-red-400">Revenge Trading Alert</h3>
             <p class="text-red-700 dark:text-red-300 mt-1">{{ behavioralAlert.message }}</p>
             <div v-if="behavioralAlert.recommendation" class="mt-2">
               <p class="text-sm text-red-600 dark:text-red-400">
@@ -36,7 +36,7 @@
                 </button>
                 <button
                   @click="acknowledgeBehavioralAlert"
-                  class="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                  class="btn-secondary btn-sm"
                 >
                   Continue anyway
                 </button>
@@ -48,14 +48,14 @@
     </div>
 
     <!-- Trade Blocking Warning -->
-    <div v-if="tradeBlocked" class="mb-6 card border-l-4 border-l-red-600 bg-red-100 dark:bg-red-900/20">
+    <div v-if="tradeBlocked" class="mb-6 card border-red-300 dark:border-red-700 bg-red-100 dark:bg-red-900/20">
       <div class="card-body text-center">
         <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/20 mb-4">
           <svg class="h-6 w-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728" />
           </svg>
         </div>
-        <h3 class="text-lg font-medium text-red-800 dark:text-red-400 mb-2">Trading Temporarily Blocked</h3>
+        <h3 class="heading-card text-red-800 dark:text-red-400 mb-2">Trading Temporarily Blocked</h3>
         <p class="text-red-700 dark:text-red-300 mb-4">
           Based on your recent trading patterns, we recommend taking a break to avoid emotional decision-making.
         </p>
@@ -69,7 +69,7 @@
       <div class="card-body space-y-6">
         <!-- Trade Info Section -->
         <div class="border-b border-gray-200 dark:border-gray-700 pb-6">
-          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Trade Information</h2>
+          <h2 class="heading-card mb-4">Trade Information</h2>
 
           <div class="grid grid-cols-1 gap-6 sm:grid-cols-4">
             <div>
@@ -95,7 +95,7 @@
               <label for="instrumentType" class="label">Instrument Type *</label>
               <BaseSelect
                 v-model="form.instrumentType"
-                :options="[{ value: 'stock', label: 'Stock' }, { value: 'option', label: 'Option' }, { value: 'future', label: 'Future' }, { value: 'crypto', label: 'Crypto' }, { value: 'forex', label: 'Forex' }]"
+                :options="[{ value: 'stock', label: 'Stock' }, { value: 'option', label: 'Option' }, { value: 'future', label: 'Future' }, { value: 'crypto', label: 'Crypto' }, { value: 'forex', label: 'Forex' }, { value: 'cfd', label: 'CFD / Metal' }]"
               />
             </div>
 
@@ -194,7 +194,7 @@
               <button
                 type="button"
                 @click="addTakeProfitTarget"
-                class="inline-flex items-center text-xs text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300"
+                class="btn-link"
               >
                 <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -217,7 +217,7 @@
           </div>
 
           <!-- Info message when fields are hidden -->
-          <div v-if="hasGroupedExecutions" class="mt-6 p-4 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg">
+          <div v-if="hasGroupedExecutions" class="callout-info mt-6">
             <p class="text-sm text-primary-800 dark:text-primary-200">
               <span class="font-medium">Note:</span> Side, Stop Loss, and Take Profit are configured per execution below since this trade contains grouped complete trades.
             </p>
@@ -228,7 +228,7 @@
         <div class="border-b border-gray-200 dark:border-gray-700 pb-6">
           <div class="flex items-center justify-between mb-4">
             <div>
-              <h2 class="text-lg font-medium text-gray-900 dark:text-white">Executions</h2>
+              <h2 class="heading-card">Executions</h2>
               <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
                 Add individual fills or complete trades (grouped)
               </p>
@@ -237,14 +237,14 @@
               <button
                 type="button"
                 @click="addExecution"
-                class="px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700 text-sm font-medium"
+                class="btn-primary"
               >
                 + Add Fill
               </button>
               <button
                 type="button"
                 @click="addGroupedExecution"
-                class="px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700 text-sm font-medium"
+                class="btn-primary"
               >
                 + Add Complete Trade
               </button>
@@ -253,9 +253,7 @@
 
           <!-- Live P&L Preview -->
           <div v-if="computedPnlPreview.hasValidData" class="mb-4 p-4 rounded-lg border"
-               :class="computedPnlPreview.value >= 0
-                 ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
-                 : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'">
+               :class="computedPnlPreview.value >= 0 ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'">
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Estimated P&L</p>
@@ -264,11 +262,9 @@
                 </p>
               </div>
               <div class="text-right">
-                <p class="text-2xl font-bold"
-                   :class="computedPnlPreview.value >= 0
-                     ? 'text-green-600 dark:text-green-400'
-                     : 'text-red-600 dark:text-red-400'">
-                  {{ computedPnlPreview.value >= 0 ? '+' : '' }}${{ computedPnlPreview.value.toFixed(2) }}
+                <p class="stat-value"
+                   :class="pnlClass(computedPnlPreview.value)">
+                  {{ formatSignedCurrency(computedPnlPreview.value, { currency: form.originalCurrency || 'USD' }) }}
                 </p>
               </div>
             </div>
@@ -281,7 +277,7 @@
               class="border border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-800"
             >
               <div class="flex items-center justify-between mb-3">
-                <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <h3 class="heading-sub">
                   Execution {{ index + 1 }}
                 </h3>
                 <button
@@ -496,7 +492,7 @@
                     <button
                       type="button"
                       @click="addExecutionTakeProfitTarget(index)"
-                      class="inline-flex items-center text-xs text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300"
+                      class="btn-link"
                     >
                       <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -589,7 +585,7 @@
 
           <div v-else class="text-center py-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
             <p class="text-gray-500 dark:text-gray-400 mb-2">No executions added yet</p>
-            <p class="text-sm text-gray-400 dark:text-gray-500">Click "Add Execution" to add your first fill</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Click "Add Execution" to add your first fill</p>
           </div>
         </div>
 
@@ -600,7 +596,7 @@
             @click="showAdditionalFields = !showAdditionalFields"
             class="flex items-center justify-between w-full text-left mb-4"
           >
-            <h2 class="text-lg font-medium text-gray-900 dark:text-white">Additional Fields</h2>
+            <h2 class="heading-card">Additional Fields</h2>
             <svg
               class="h-5 w-5 text-gray-500 dark:text-gray-400 transition-transform duration-200"
               :class="{ 'rotate-180': showAdditionalFields }"
@@ -613,6 +609,21 @@
           </button>
 
           <div v-show="showAdditionalFields" class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+
+          <div class="sm:col-span-2">
+            <label for="excursion_unit" class="label">MAE/MFE units</label>
+            <select id="excursion_unit" :value="active_excursion_unit" class="input sm:w-auto" @change="changeExcursionUnit">
+              <option value="dollars">{{ form.originalCurrency || 'USD' }}</option>
+              <option value="points" :disabled="!can_enter_points">Points</option>
+              <option value="r" :disabled="!can_enter_r">R multiples</option>
+            </select>
+            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              Points measure price movement per share or contract. R divides the excursion by risk to the current stop. Values are saved in the trade's currency.
+            </p>
+            <p v-if="!can_enter_r" class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              To use R, set an entry price, positive quantity, and a stop below entry for longs or above entry for shorts.
+            </p>
+          </div>
 
           <div>
             <label for="mae" class="label">MAE (Max Adverse Excursion) {{ excursionUnitSuffix }}</label>
@@ -665,10 +676,6 @@
               :title="excursionInputTitle('Maximum favorable excursion from entry through the configured after-trade window')"
             />
           </div>
-
-          <p v-if="form.instrumentType === 'future'" class="sm:col-span-2 text-xs text-gray-500 dark:text-gray-400">
-            Futures excursion values are entered in points and saved as dollars using quantity × point value.
-          </p>
 
           <div>
             <label for="postExitWindowOverrideMinutes" class="label">After-Trade Window Override (minutes)</label>
@@ -776,7 +783,7 @@
                 <span class="text-sm text-gray-500 dark:text-gray-400">10</span>
               </div>
               <div class="mt-2 text-center">
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-300">
+                <span class="badge bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-300">
                   Confidence: {{ form.confidence }}/10
                 </span>
               </div>
@@ -796,7 +803,7 @@
             @click="showMoreOptions = !showMoreOptions"
             class="flex items-center justify-between w-full text-left mb-4"
           >
-            <h2 class="text-lg font-medium text-gray-900 dark:text-white">More Options</h2>
+            <h2 class="heading-card">More Options</h2>
             <svg
               class="h-5 w-5 text-gray-500 dark:text-gray-400 transition-transform duration-200"
               :class="{ 'rotate-180': showMoreOptions }"
@@ -812,7 +819,7 @@
         <!-- Options-specific fields -->
         <div v-if="form.instrumentType === 'option'" class="grid grid-cols-1 gap-6 sm:grid-cols-2 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
           <div class="sm:col-span-2 flex items-center justify-between">
-            <h3 class="text-md font-medium text-gray-900 dark:text-white">Option Details</h3>
+            <h3 class="heading-card">Option Details</h3>
             <div class="flex items-center gap-2">
               <div class="w-44">
                 <BaseSelect
@@ -828,7 +835,7 @@
               <button
                 type="button"
                 @click="showSaveOptionsTemplateModal = true"
-                class="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+                class="btn-link"
               >
                 Save
               </button>
@@ -905,7 +912,7 @@
         <!-- Futures-specific fields -->
         <div v-if="form.instrumentType === 'future'" class="grid grid-cols-1 gap-6 sm:grid-cols-2 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
           <div class="sm:col-span-2 flex items-center justify-between">
-            <h3 class="text-md font-medium text-gray-900 dark:text-white">Futures Details</h3>
+            <h3 class="heading-card">Futures Details</h3>
             <div class="flex items-center gap-2">
               <div class="w-44">
                 <BaseSelect
@@ -921,7 +928,7 @@
               <button
                 type="button"
                 @click="showSaveFuturesTemplateModal = true"
-                class="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+                class="btn-link"
               >
                 Save
               </button>
@@ -1009,7 +1016,7 @@
           <button
             type="button"
             @click="showStrategy = !showStrategy"
-            class="flex items-center justify-between w-full px-4 py-3 text-left bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800"
+            class="menu-item justify-between"
           >
             <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Strategy</span>
             <svg
@@ -1056,7 +1063,7 @@
           <button
             type="button"
             @click="showSetup = !showSetup"
-            class="flex items-center justify-between w-full px-4 py-3 text-left bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800"
+            class="menu-item justify-between"
           >
             <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Setup</span>
             <svg
@@ -1123,7 +1130,7 @@
           <button
             type="button"
             @click="showTags = !showTags"
-            class="flex items-center justify-between w-full px-4 py-3 text-left bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800"
+            class="menu-item justify-between"
           >
             <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Tags</span>
             <svg
@@ -1146,7 +1153,7 @@
           <button
             type="button"
             @click="showNotes = !showNotes"
-            class="flex items-center justify-between w-full px-4 py-3 text-left bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800"
+            class="menu-item justify-between"
           >
             <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Notes</span>
             <svg
@@ -1186,78 +1193,18 @@
           <button
             type="button"
             @click="showCharts = !showCharts"
-            class="flex items-center justify-between w-full px-4 py-3 text-left bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800"
+            class="menu-item justify-between"
           >
             <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Charts & Images</span>
             <svg
               class="h-4 w-4 text-gray-500 dark:text-gray-400 transition-transform duration-200"
-              :class="{ 'rotate-180': showCharts }"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          <div v-show="showCharts" class="p-4 space-y-6">
-            <!-- Display existing charts (edit mode only) -->
-            <TradeCharts
-              v-if="isEdit && trade && trade.charts && trade.charts.length > 0"
-              :trade-id="route.params.id"
-              :charts="trade.charts"
-              :can-delete="true"
-              @deleted="handleChartDeleted"
-            />
-
-            <!-- Add new charts -->
-            <ChartUpload
-              ref="chartUploadRef"
-              :trade-id="isEdit ? route.params.id : null"
-              @added="handleChartAdded"
-            />
-
-            <!-- Image Upload Section -->
-            <ImageUpload
-              ref="imageUploadRef"
-              :trade-id="isEdit ? route.params.id : null"
-              @uploaded="handleImageUploaded"
-            />
-          </div>
-        </div>
-  
-        <div class="flex items-center">
-          <input
-            id="isPublic"
-            v-model="form.isPublic"
-            type="checkbox"
-            class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-          />
-          <label for="isPublic" class="ml-2 block text-sm text-gray-900 dark:text-white">
-            Make this trade public
-          </label>
-        </div>
-      </div>
-        </div>
-
-      <div v-if="error" ref="errorRef" class="rounded-md bg-red-50 dark:bg-red-900/20 p-4">
-          <p class="text-sm font-medium text-red-800 dark:text-red-400">{{ error }}</p>
-          <ul v-if="validationErrors.length" class="mt-2 text-sm text-red-700 dark:text-red-400 list-disc list-inside space-y-1">
-            <li v-for="(ve, i) in validationErrors" :key="i">{{ ve }}</li>
-          </ul>
-        </div>
-
-        <p
-          v-if="!form.account_identifier?.trim()"
-          role="status"
-          class="text-sm text-gray-600 dark:text-gray-400"
-        >
-          This trade will be saved without an account. It will appear under All Accounts and Unsorted, but not in an individual account's trades or P&amp;L.
-          <button type="button" class="text-primary-600 hover:text-primary-700 dark:text-primary-400 underline" @click="showAccountField">
+              :class="{ 'rotate-180': showCharts }" fill="none" stroke="currentColor" viewBox="0 0 24 24" > <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /> </svg> </button> <div v-show="showCharts" class="p-4 space-y-6"> <!-- Display existing charts (edit mode only) --> <TradeCharts v-if="isEdit && trade && trade.charts && trade.charts.length > 0" :trade-id="route.params.id" :charts="trade.charts" :can-delete="true" @deleted="handleChartDeleted" /> <!-- Add new charts --> <ChartUpload ref="chartUploadRef" :trade-id="isEdit ? route.params.id : null" @added="handleChartAdded" /> <!-- Image Upload Section --> <ImageUpload ref="imageUploadRef" :trade-id="isEdit ? route.params.id : null" @uploaded="handleImageUploaded" /> </div> </div> <div class="flex items-center"> <input id="isPublic" v-model="form.isPublic" type="checkbox" class="checkbox" /> <label for="isPublic" class="ml-2 block text-sm text-gray-900 dark:text-white"> Make this trade public </label> </div> </div> </div> <div v-if="error" ref="errorRef" class="callout-danger"> <p class="text-sm font-medium text-red-600 dark:text-red-400">{{ error }}</p> <ul v-if="validationErrors.length" class="mt-2 text-sm text-red-600 dark:text-red-400 list-disc list-inside space-y-1"> <li v-for="(ve, i) in validationErrors" :key="i">{{ ve }}</li> </ul> </div> <p v-if="!form.account_identifier?.trim()" role="status" class="text-sm text-gray-600 dark:text-gray-400" > This trade will be saved without an account. It will appear under All Accounts and Unsorted, but not in an individual account's trades or P&amp;L.
+          <button type="button" class="btn-link" @click="showAccountField">
             Select an account
           </button>
         </p>
 
-        <div class="flex justify-end space-x-3">
+        <div class="modal-footer">
           <button type="button" @click="handleCancel" class="btn-secondary">
             Cancel
           </button>
@@ -1266,10 +1213,7 @@
             :disabled="loading"
             class="btn-primary inline-flex items-center"
           >
-            <svg v-if="loading" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
+            <span v-if="loading" class="spinner spinner-xs spinner-light mr-2 -ml-1"></span>
             <span v-if="loading">{{ isEdit ? 'Updating...' : 'Saving trade...' }}</span>
             <span v-else>{{ isEdit ? 'Update Trade' : 'Create Trade' }}</span>
           </button>
@@ -1279,18 +1223,18 @@
 
     <!-- Public Profile Modal -->
     <div v-if="showPublicProfileModal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" @click="closePublicProfileModal"></div>
+      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center ">
+        <div class="modal-backdrop" aria-hidden="true" @click="closePublicProfileModal"></div>
         <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-        <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+        <div class="modal-panel w-full p-6 max-w-lg">
           <div class="sm:flex sm:items-start">
             <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-primary-100 dark:bg-primary-900/20 sm:mx-0 sm:h-10 sm:w-10">
-              <svg class="h-6 w-6 text-primary-600 dark:text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg class="h-6 w-6 text-primary-700 dark:text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
             </div>
             <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-              <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title">
+              <h3 class="modal-title" id="modal-title">
                 Enable Public Profile?
               </h3>
               <div class="mt-2">
@@ -1307,14 +1251,14 @@
             <button
               type="button"
               @click="enablePublicProfile"
-              class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:ml-3 sm:w-auto sm:text-sm"
+              class="btn-primary w-full sm:ml-3 sm:w-auto"
             >
               Yes, make my profile public
             </button>
             <button
               type="button"
               @click="closePublicProfileModal"
-              class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-700 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:w-auto sm:text-sm"
+              class="btn-secondary mt-3 w-full sm:mt-0 sm:w-auto"
             >
               Cancel
             </button>
@@ -1325,12 +1269,12 @@
 
     <!-- Save Futures Template Modal -->
     <div v-if="showSaveFuturesTemplateModal" class="fixed z-50 inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" @click="showSaveFuturesTemplateModal = false"></div>
+      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center ">
+        <div class="modal-backdrop" aria-hidden="true" @click="showSaveFuturesTemplateModal = false"></div>
         <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-        <div class="relative inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+        <div class="modal-panel w-full p-6 max-w-lg">
           <div>
-            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title">
+            <h3 class="modal-title" id="modal-title">
               Save Futures Template
             </h3>
             <div class="mt-4">
@@ -1353,14 +1297,14 @@
               type="button"
               :disabled="!newFuturesTemplateName.trim() || savingTemplate"
               @click="saveFuturesTemplate"
-              class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:w-auto sm:text-sm disabled:opacity-50"
+              class="btn-primary w-full sm:w-auto"
             >
               {{ savingTemplate ? 'Saving...' : 'Save Template' }}
             </button>
             <button
               type="button"
               @click="showSaveFuturesTemplateModal = false"
-              class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-700 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm"
+              class="btn-secondary mt-3 w-full sm:mt-0 sm:w-auto"
             >
               Cancel
             </button>
@@ -1371,12 +1315,12 @@
 
     <!-- Save Options Template Modal -->
     <div v-if="showSaveOptionsTemplateModal" class="fixed z-50 inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" @click="showSaveOptionsTemplateModal = false"></div>
+      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center ">
+        <div class="modal-backdrop" aria-hidden="true" @click="showSaveOptionsTemplateModal = false"></div>
         <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-        <div class="relative inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+        <div class="modal-panel w-full p-6 max-w-lg">
           <div>
-            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title">
+            <h3 class="modal-title" id="modal-title">
               Save Options Template
             </h3>
             <div class="mt-4">
@@ -1399,14 +1343,14 @@
               type="button"
               :disabled="!newOptionsTemplateName.trim() || savingTemplate"
               @click="saveOptionsTemplate"
-              class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:w-auto sm:text-sm disabled:opacity-50"
+              class="btn-primary w-full sm:w-auto"
             >
               {{ savingTemplate ? 'Saving...' : 'Save Template' }}
             </button>
             <button
               type="button"
               @click="showSaveOptionsTemplateModal = false"
-              class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-700 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm"
+              class="btn-secondary mt-3 w-full sm:mt-0 sm:w-auto"
             >
               Cancel
             </button>
@@ -1417,12 +1361,12 @@
 
     <!-- Manage Futures Templates Modal -->
     <div v-if="showManageFuturesTemplatesModal" class="fixed z-50 inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" @click="showManageFuturesTemplatesModal = false"></div>
+      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center ">
+        <div class="modal-backdrop" aria-hidden="true" @click="showManageFuturesTemplatesModal = false"></div>
         <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-        <div class="relative inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+        <div class="modal-panel w-full p-6 max-w-lg">
           <div>
-            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
+            <h3 class="modal-title mb-4">
               Manage Futures Templates
             </h3>
             <div class="space-y-2 max-h-64 overflow-y-auto">
@@ -1455,7 +1399,7 @@
             <button
               type="button"
               @click="showManageFuturesTemplatesModal = false"
-              class="w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-700 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none sm:text-sm"
+              class="btn-secondary w-full"
             >
               Close
             </button>
@@ -1466,12 +1410,12 @@
 
     <!-- Manage Options Templates Modal -->
     <div v-if="showManageOptionsTemplatesModal" class="fixed z-50 inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" @click="showManageOptionsTemplatesModal = false"></div>
+      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center ">
+        <div class="modal-backdrop" aria-hidden="true" @click="showManageOptionsTemplatesModal = false"></div>
         <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-        <div class="relative inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+        <div class="modal-panel w-full p-6 max-w-lg">
           <div>
-            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
+            <h3 class="modal-title mb-4">
               Manage Options Templates
             </h3>
             <div class="space-y-2 max-h-64 overflow-y-auto">
@@ -1504,7 +1448,7 @@
             <button
               type="button"
               @click="showManageOptionsTemplatesModal = false"
-              class="w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-700 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none sm:text-sm"
+              class="btn-secondary w-full"
             >
               Close
             </button>
@@ -1516,6 +1460,8 @@
 </template>
 
 <script setup>
+import { getExcursionScale, normalizeExcursionDollars, getExcursionFormSource } from '@/utils/excursionUnits'
+import { pnlClass } from '@/utils/metricTone'
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTradesStore } from '@/stores/trades'
@@ -1537,8 +1483,10 @@ import BaseSelect from '@/components/common/BaseSelect.vue'
 import { useHiddenDropdownItems } from '@/composables/useHiddenDropdownItems'
 import { useStrategyOrder } from '@/composables/useStrategyOrder'
 import { useSetupOrder } from '@/composables/useSetupOrder'
-import { CURRENCY_OPTIONS } from '@/composables/useCurrencyFormatter'
+import { CURRENCY_OPTIONS, useCurrencyFormatter } from '@/composables/useCurrencyFormatter'
 import { parseNullableNumber } from '@/utils/numbers'
+
+const { formatSignedCurrency } = useCurrencyFormatter()
 
 // Load section preferences from localStorage
 const defaultSectionPrefs = {
@@ -1672,62 +1620,50 @@ const previousIsPublicValue = ref(false)
 
 const isEdit = computed(() => !!route.params.id)
 
-const isFutureForm = computed(() => form.value.instrumentType === 'future')
-const excursionUnitSuffix = computed(() => isFutureForm.value ? '(points)' : '($)')
+const excursion_unit = ref(null)
+const active_excursion_unit = computed(() => excursion_unit.value || (form.value.instrumentType === 'future' ? 'points' : 'dollars'))
+const excursionUnitSuffix = computed(() => ({ dollars: `(${form.value.originalCurrency || 'USD'})`, points: '(points)', r: '(R)' })[active_excursion_unit.value])
+const excursion_form_source = computed(() => getExcursionFormSource(form.value))
+const excursion_scale = computed(() => getExcursionScale(excursion_form_source.value, active_excursion_unit.value))
+const can_enter_points = computed(() => getExcursionScale(excursion_form_source.value, 'points') != null)
+const can_enter_r = computed(() => getExcursionScale(excursion_form_source.value, 'r') != null)
 
-function getExcursionStorageMultiplier(source = form.value) {
-  if ((source.instrumentType || source.instrument_type) !== 'future') return 1
-  const quantity = Math.abs(Number(source.quantity) || 0)
-  const pointValue = Number(source.pointValue ?? source.point_value) || 0
-  return quantity > 0 && pointValue > 0 ? quantity * pointValue : 1
-}
-
-function capturedMoveDollars(source) {
-  const entry = Number(source.entryPrice ?? source.entry_price)
-  const exit = Number(source.exitPrice ?? source.exit_price)
-  const quantity = Math.abs(Number(source.quantity) || 0)
-  if (!Number.isFinite(entry) || !Number.isFinite(exit) || quantity <= 0) return null
-
-  const side = source.side
-  const move = side === 'short' ? entry - exit : exit - entry
-  return Math.max(0, move * quantity * getExcursionStorageMultiplier(source))
-}
-
-function hasLegacyFuturesExcursionUnits(source) {
-  if ((source.instrumentType || source.instrument_type) !== 'future') return false
-  const scale = getExcursionStorageMultiplier(source)
-  if (scale <= 1) return false
-
-  const captured = capturedMoveDollars(source)
-  if (!captured || captured <= 0) return false
-
-  const candidates = [source.mfe, source.postExitMfe ?? source.post_exit_mfe]
-    .map(Number)
-    .filter(value => Number.isFinite(value) && value > 0)
-
-  return candidates.some(value => value < captured - 0.005 && value * scale >= captured - 0.005)
+function changeExcursionUnit(event) {
+  const next_unit = event.target.value
+  const previous_scale = excursion_scale.value
+  const next_scale = getExcursionScale(excursion_form_source.value, next_unit)
+  const has_values = ['mae', 'mfe', 'postExitMae', 'postExitMfe'].some(field => form.value[field] != null && form.value[field] !== '')
+  if (next_scale == null || (previous_scale == null && has_values)) {
+    event.target.value = active_excursion_unit.value
+    return
+  }
+  for (const field of ['mae', 'mfe', 'postExitMae', 'postExitMfe']) {
+    const value = form.value[field]
+    if (value !== null && value !== undefined && value !== '') {
+      form.value[field] = Number(value) * previous_scale / next_scale
+    }
+  }
+  excursion_unit.value = next_unit
 }
 
 function dollarsToExcursionInput(value, source = form.value) {
-  if (value === null || value === undefined || value === '') return null
-  const numeric = Number(value)
-  if (!Number.isFinite(numeric)) return null
-  if (hasLegacyFuturesExcursionUnits(source)) return numeric
-  return (source.instrumentType || source.instrument_type) === 'future'
-    ? numeric / getExcursionStorageMultiplier(source)
-    : numeric
+  const dollars = normalizeExcursionDollars(value, source)
+  const scale = getExcursionScale(source, active_excursion_unit.value)
+  return dollars != null && scale != null ? dollars / scale : null
 }
 
-function excursionInputToDollars(value) {
+function excursionInputToDollars(value, source) {
   if (value === null || value === undefined || value === '') return null
   const numeric = Number(value)
-  if (!Number.isFinite(numeric)) return null
-  return isFutureForm.value ? numeric * getExcursionStorageMultiplier() : numeric
+  const scale = getExcursionScale(source, active_excursion_unit.value)
+  if (!Number.isFinite(numeric) || scale == null) {
+    throw new Error('MAE/MFE conversion requires positive quantity and an instrument multiplier. R also requires a stop loss defining positive risk.')
+  }
+  return numeric * scale
 }
 
 function excursionInputTitle(baseText) {
-  if (!isFutureForm.value) return `${baseText}. Enter dollars.`
-  return `${baseText}. Enter futures points; TradeTally saves the dollar value using quantity × point value.`
+  return `${baseText}. Enter ${active_excursion_unit.value === 'r' ? 'R multiples of the current stop risk' : active_excursion_unit.value}.`
 }
 
 // Check if we have grouped executions (complete trades with entry/exit)
@@ -1745,7 +1681,8 @@ const hasGroupedExecutions = computed(() => {
 const computedPnlPreview = computed(() => {
   const instrumentType = form.value.instrumentType || 'stock'
   const side = form.value.side
-  const pointValue = instrumentType === 'future' ? (parseFloat(form.value.pointValue) || 1) : 1
+  const pointValue = instrumentType === 'future' ? parseFloat(form.value.pointValue) : 1
+  if (instrumentType === 'future' && (!Number.isFinite(pointValue) || pointValue <= 0)) return null
   const contractSize = instrumentType === 'option' ? (parseFloat(form.value.contractSize) || 100) : 1
   const multiplier = instrumentType === 'future' ? pointValue : (instrumentType === 'option' ? contractSize : 1)
 
@@ -2051,7 +1988,9 @@ async function loadTrade() {
     // Create local reference for easier access
     const tradeData = trade.value
 
+    excursion_unit.value = tradeData.instrument_type === 'future' ? 'points' : 'dollars'
     const excursionSource = {
+      ...tradeData,
       instrument_type: tradeData.instrument_type || 'stock',
       side: tradeData.side,
       entry_price: tradeData.entry_price,
@@ -2616,6 +2555,10 @@ async function handleSubmit(opts = {}) {
     const finalEntryTime = hasExecutions ? calculatedEntryTime : toUTC(calculatedEntryTime)
     const finalExitTime = hasExecutions ? calculatedExitTime : (calculatedExitTime ? toUTC(calculatedExitTime) : null)
 
+    const excursion_source = {
+      ...form.value, entry_price: calculatedEntryPrice, quantity: calculatedQuantity,
+      side: derivedSide
+    }
     const tradeData = {
       symbol: form.value.symbol,
       side: derivedSide,
@@ -2628,10 +2571,10 @@ async function handleSubmit(opts = {}) {
       quantity: calculatedQuantity,
       commission: calculatedCommission,
       fees: calculatedFees,
-      mae: excursionInputToDollars(form.value.mae),
-      mfe: excursionInputToDollars(form.value.mfe),
-      postExitMae: excursionInputToDollars(form.value.postExitMae),
-      postExitMfe: excursionInputToDollars(form.value.postExitMfe),
+      mae: excursionInputToDollars(form.value.mae, excursion_source),
+      mfe: excursionInputToDollars(form.value.mfe, excursion_source),
+      postExitMae: excursionInputToDollars(form.value.postExitMae, excursion_source),
+      postExitMfe: excursionInputToDollars(form.value.postExitMfe, excursion_source),
       postExitWindowOverrideMinutes: form.value.postExitWindowOverrideMinutes ? parseInt(form.value.postExitWindowOverrideMinutes, 10) : null,
       confidence: parseInt(form.value.confidence) || 5,
       broker: form.value.broker || '',
@@ -2702,6 +2645,8 @@ async function handleSubmit(opts = {}) {
 
     if (isEdit.value) {
       await tradesStore.updateTrade(route.params.id, tradeData)
+      await tradesStore.fetchTrades()
+      await tradesStore.fetchAnalytics()
 
       // Add new values to lists if not already present
       if (tradeData.strategy && !strategiesList.value.includes(tradeData.strategy)) {
@@ -2756,6 +2701,8 @@ async function handleSubmit(opts = {}) {
         })
       }
       const newTrade = await tradesStore.createTrade(tradeData)
+      await tradesStore.fetchTrades()
+      await tradesStore.fetchAnalytics()
 
       // Add new values to lists if not already present
       if (tradeData.strategy && !strategiesList.value.includes(tradeData.strategy)) {
@@ -2858,7 +2805,7 @@ async function handleChartAdded(chart) {
     }
     trade.value.charts.push(chart)
   }
-  showSuccess('Chart Added', 'TradingView chart added successfully')
+  showSuccess('Chart Added', 'Chart link added successfully')
 }
 
 async function handleChartDeleted(chartId) {

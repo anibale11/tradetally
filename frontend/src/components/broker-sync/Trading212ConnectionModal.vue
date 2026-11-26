@@ -1,14 +1,14 @@
 <template>
   <div class="fixed inset-0 z-50 overflow-y-auto">
     <div class="flex min-h-full items-center justify-center p-4">
-      <div class="fixed inset-0 bg-black/50 transition-opacity" @click="emit('close')"></div>
+      <div class="modal-backdrop" @click="emit('close')"></div>
 
-      <div class="relative w-full max-w-lg rounded-xl bg-white shadow-xl dark:bg-gray-800">
+      <div role="dialog" aria-modal="true" class="modal-panel w-full max-w-lg">
         <div class="flex items-center justify-between border-b border-gray-200 p-6 dark:border-gray-700">
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Connect Trading 212</h3>
+          <h3 class="modal-title">Connect Trading 212</h3>
           <button
             type="button"
-            class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+            class="btn-ghost btn-sm"
             aria-label="Close"
             @click="emit('close')"
           >
@@ -19,8 +19,8 @@
         </div>
 
         <div class="p-6">
-          <div class="mb-6 rounded-lg bg-primary-50 p-4 dark:bg-primary-900/20">
-            <h4 class="mb-2 text-sm font-medium text-primary-800 dark:text-primary-300">Setup instructions</h4>
+          <div class="callout-info mb-6">
+            <h4 class="heading-sub mb-2 text-primary-800 dark:text-primary-300">Setup instructions</h4>
             <ol class="list-inside list-decimal space-y-2 text-sm text-primary-700 dark:text-primary-400">
               <li>Open Trading 212 and go to your account settings.</li>
               <li>Create an API key pair for the account you want to sync.</li>
@@ -31,13 +31,13 @@
               href="https://docs.trading212.com/api"
               target="_blank"
               rel="noopener noreferrer"
-              class="mt-3 inline-block text-xs font-medium text-primary-600 underline dark:text-primary-400"
+              class="mt-3 inline-block text-xs font-medium text-primary-700 underline dark:text-primary-400"
             >
               View Trading 212 API documentation
             </a>
           </div>
 
-          <div v-if="props.error" class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
+          <div v-if="props.error" class="callout-danger mb-6">
             <p class="text-sm text-red-700 dark:text-red-300">{{ props.error }}</p>
           </div>
 
@@ -99,19 +99,13 @@
               </div>
               <button
                 type="button"
-                :class="[
-                  form.auto_sync_enabled ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-600',
-                  'relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2'
-                ]"
+                :class="[ form.auto_sync_enabled ? 'switch-on' : '', 'switch' ]"
                 role="switch"
                 :aria-checked="form.auto_sync_enabled"
                 @click="form.auto_sync_enabled = !form.auto_sync_enabled"
               >
                 <span
-                  :class="[
-                    form.auto_sync_enabled ? 'translate-x-5' : 'translate-x-0',
-                    'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow transition'
-                  ]"
+                  :class="[ form.auto_sync_enabled ? 'translate-x-5' : 'translate-x-0', 'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow transition' ]"
                 />
               </button>
             </div>
@@ -128,12 +122,7 @@
                   v-for="preset in syncRangePresets"
                   :key="preset.id"
                   type="button"
-                  :class="[
-                    'rounded-full border px-3 py-1 text-sm transition-colors',
-                    activePreset === preset.id
-                      ? 'border-primary-600 bg-primary-600 text-white'
-                      : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600'
-                  ]"
+                  :class="[ 'rounded-full border px-3 py-1 text-sm transition-colors', activePreset === preset.id ? 'border-primary-600 bg-primary-700 text-white' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600' ]"
                   @click="applySyncRangePreset(preset.id)"
                 >
                   {{ preset.label }}
@@ -161,7 +150,7 @@
           <button type="button" class="btn-secondary" @click="emit('close')">Cancel</button>
           <button type="button" class="btn-primary" :disabled="props.loading || !isValid" @click="handleSubmit">
             <span v-if="props.loading" class="flex items-center">
-              <span class="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></span>
+              <span class="spinner spinner-xs spinner-light mr-2"></span>
               Connecting...
             </span>
             <span v-else>Connect</span>

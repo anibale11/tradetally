@@ -20,12 +20,7 @@
                     ]"
                     :key="tab.id"
                     @click="activeTab = tab.id"
-                    :class="[
-                        'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm',
-                        activeTab === tab.id
-                            ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300',
-                    ]"
+                    :class="[ 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm', activeTab === tab.id ? 'tab-active' : 'tab-inactive', ]"
                 >
                     {{ tab.label }}
                 </button>
@@ -36,7 +31,7 @@
             <!-- Profile Picture -->
             <div v-if="activeTab === 'profile'" class="card">
                 <div class="card-body">
-                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                    <h3 class="heading-card mb-2">
                         Profile Picture
                     </h3>
                     <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">
@@ -53,7 +48,7 @@
                                     alt="Profile picture preview"
                                     class="h-full w-full object-cover"
                                 />
-                                <span v-else class="text-2xl font-bold tracking-wider text-white drop-shadow-sm">
+                                <span v-else class="stat-value tracking-wider text-white drop-shadow-sm">
                                     {{ avatarInitials }}
                                 </span>
                             </div>
@@ -124,7 +119,7 @@
             <div v-if="activeTab === 'profile'" class="card">
                 <div class="card-body">
                     <h3
-                        class="text-lg font-medium text-gray-900 dark:text-white mb-6"
+                        class="heading-card mb-6"
                     >
                         Profile Information
                     </h3>
@@ -168,11 +163,7 @@
                                     v-model="profileForm.email"
                                     type="email"
                                     :disabled="!twoFactorStatus.enabled"
-                                    :class="
-                                        twoFactorStatus.enabled
-                                            ? 'input'
-                                            : 'input bg-gray-50 dark:bg-gray-700'
-                                    "
+                                    :class="twoFactorStatus.enabled ? 'input' : 'input bg-gray-50 dark:bg-gray-700'"
                                 />
                                 <p
                                     class="mt-1 text-sm text-gray-500 dark:text-gray-400"
@@ -223,7 +214,7 @@
                             </div>
                         </div>
 
-                        <div class="flex justify-end">
+                        <div class="modal-footer">
                             <button
                                 type="submit"
                                 :disabled="profileLoading"
@@ -238,122 +229,9 @@
             </div>
 
             <!-- Two-Factor Authentication -->
-            <div v-if="activeTab === 'security'" class="card">
+            <div v-if="activeTab === 'security'" class="card"> <div class="card-body"> <h3 class="heading-card mb-6" > Two-Factor Authentication </h3> <p class="text-sm text-gray-600 dark:text-gray-400 mb-6"> Add an extra layer of security to your account with two-factor authentication. </p> <div v-if="twoFactorStatus.enabled" class="space-y-4"> <!-- 2FA is enabled --> <div class="callout-success" > <div class="flex items-center"> <svg class="w-5 h-5 text-green-700 dark:text-green-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" > <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" ></path> </svg> <div> <h4 class="heading-sub text-green-700 dark:text-green-300" > 2FA is enabled </h4> <p class="text-sm text-green-700 dark:text-green-400 mt-1" > Your account is protected with two-factor authentication. {{ twoFactorStatus.backupCodesRemaining }} backup codes remaining. </p> </div> </div> </div> <div class="flex space-x-3"> <button @click="disable2FA" :disabled="twoFactorLoading" class="btn-danger" > <span v-if="twoFactorLoading" >Disabling...</span > <span v-else>Disable 2FA</span> </button> </div> </div> <div v-else class="space-y-4"> <!-- 2FA is not enabled --> <div class="callout-warning" > <div class="flex items-center"> <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" > <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" ></path> </svg> <div> <h4 class="heading-sub text-yellow-800 dark:text-yellow-300" > 2FA is not enabled </h4> <p class="text-sm text-yellow-700 dark:text-yellow-400 mt-1" > Enhance your account security by enabling two-factor authentication. </p> </div> </div> </div> <button @click="setup2FA" :disabled="twoFactorLoading" class="btn-primary" > <span v-if="twoFactorLoading">Setting up...</span> <span v-else>Enable 2FA</span> </button> </div> </div> </div> <!-- Passkeys --> <div v-if="activeTab ==='security'" class="card">
                 <div class="card-body">
-                    <h3
-                        class="text-lg font-medium text-gray-900 dark:text-white mb-6"
-                    >
-                        Two-Factor Authentication
-                    </h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">
-                        Add an extra layer of security to your account with
-                        two-factor authentication.
-                    </p>
-
-                    <div v-if="twoFactorStatus.enabled" class="space-y-4">
-                        <!-- 2FA is enabled -->
-                        <div
-                            class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4"
-                        >
-                            <div class="flex items-center">
-                                <svg
-                                    class="w-5 h-5 text-green-600 dark:text-green-400 mr-3"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                    ></path>
-                                </svg>
-                                <div>
-                                    <h4
-                                        class="text-sm font-medium text-green-800 dark:text-green-300"
-                                    >
-                                        2FA is enabled
-                                    </h4>
-                                    <p
-                                        class="text-sm text-green-700 dark:text-green-400 mt-1"
-                                    >
-                                        Your account is protected with
-                                        two-factor authentication.
-                                        {{
-                                            twoFactorStatus.backupCodesRemaining
-                                        }}
-                                        backup codes remaining.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="flex space-x-3">
-                            <button
-                                @click="disable2FA"
-                                :disabled="twoFactorLoading"
-                                class="btn-danger"
-                            >
-                                <span v-if="twoFactorLoading"
-                                    >Disabling...</span
-                                >
-                                <span v-else>Disable 2FA</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div v-else class="space-y-4">
-                        <!-- 2FA is not enabled -->
-                        <div
-                            class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4"
-                        >
-                            <div class="flex items-center">
-                                <svg
-                                    class="w-5 h-5 text-yellow-600 dark:text-yellow-400 mr-3"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                                    ></path>
-                                </svg>
-                                <div>
-                                    <h4
-                                        class="text-sm font-medium text-yellow-800 dark:text-yellow-300"
-                                    >
-                                        2FA is not enabled
-                                    </h4>
-                                    <p
-                                        class="text-sm text-yellow-700 dark:text-yellow-400 mt-1"
-                                    >
-                                        Enhance your account security by
-                                        enabling two-factor authentication.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <button
-                            @click="setup2FA"
-                            :disabled="twoFactorLoading"
-                            class="btn-primary"
-                        >
-                            <span v-if="twoFactorLoading">Setting up...</span>
-                            <span v-else>Enable 2FA</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Passkeys -->
-            <div v-if="activeTab === 'security'" class="card">
-                <div class="card-body">
-                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-6">
+                    <h3 class="heading-card mb-6">
                         Passkeys
                     </h3>
                     <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">
@@ -362,7 +240,7 @@
 
                     <!-- Loading -->
                     <div v-if="passkeysLoading && passkeys.length === 0" class="flex justify-center py-4">
-                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                        <div class="spinner spinner-md"></div>
                     </div>
 
                     <!-- Passkey list -->
@@ -417,7 +295,7 @@
             <div v-if="activeTab === 'profile' && billingStatus.billing_available" class="card">
                 <div class="card-body">
                     <h3
-                        class="text-lg font-medium text-gray-900 dark:text-white mb-6"
+                        class="heading-card mb-6"
                     >
                         Subscription
                     </h3>
@@ -425,7 +303,7 @@
                     <!-- Loading State -->
                     <div v-if="subscriptionLoading" class="text-center py-8">
                         <div
-                            class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"
+                            class="spinner spinner-md inline-block"
                         ></div>
                         <p class="mt-4 text-gray-600 dark:text-gray-400">
                             Loading subscription details...
@@ -440,7 +318,7 @@
                         <div class="flex items-center justify-between">
                             <div>
                                 <h4
-                                    class="text-sm font-medium text-gray-900 dark:text-white"
+                                    class="heading-sub"
                                 >
                                     Current Plan
                                 </h4>
@@ -454,12 +332,8 @@
                                 </p>
                             </div>
                             <span
-                                :class="
-                                    getSubscriptionStatusClass(
-                                        subscription.subscription.status,
-                                    )
-                                "
-                                class="px-3 py-1 rounded-full text-sm font-medium"
+                                :class="getSubscriptionStatusClass( subscription.subscription.status, )"
+                                class="badge"
                             >
                                 {{
                                     formatSubscriptionStatus(
@@ -521,30 +395,30 @@
                             v-if="
                                 subscription.trial && subscription.trial.active
                             "
-                            class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4"
+                            class="callout-info"
                         >
                             <div class="flex items-center justify-between">
                                 <div>
                                     <h4
-                                        class="text-sm font-medium text-blue-900 dark:text-blue-100"
+                                        class="heading-sub text-primary-900 dark:text-primary-100"
                                     >
                                         Pro Trial Active
                                     </h4>
                                     <p
-                                        class="text-sm text-blue-700 dark:text-blue-300 mt-1"
+                                        class="text-sm text-primary-700 dark:text-primary-300 mt-1"
                                     >
                                         {{ subscription.trial.days_remaining }}
                                         days remaining in your free trial
                                     </p>
                                 </div>
                                 <span
-                                    class="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100"
+                                    class="badge bg-primary-100 text-primary-800 dark:bg-primary-800 dark:text-primary-100"
                                 >
                                     TRIAL
                                 </span>
                             </div>
                             <div
-                                class="mt-3 text-xs text-blue-600 dark:text-blue-400"
+                                class="mt-3 text-xs text-primary-700 dark:text-primary-400"
                             >
                                 Trial expires:
                                 {{ formatDate(subscription.trial.expires_at) }}
@@ -557,7 +431,7 @@
                             class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4"
                         >
                             <h4
-                                class="text-sm font-medium text-gray-900 dark:text-white"
+                                class="heading-sub"
                             >
                                 {{
                                     subscription.tier === "pro"
@@ -610,7 +484,7 @@
             <div v-if="activeTab === 'security'" class="card">
                 <div class="card-body">
                     <h3
-                        class="text-lg font-medium text-gray-900 dark:text-white mb-6"
+                        class="heading-card mb-6"
                     >
                         API Keys
                     </h3>
@@ -622,7 +496,7 @@
 
                     <div
                         v-if="billingStatus.billing_available && !canManageApiKeys"
-                        class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200"
+                        class="callout-warning"
                     >
                         API keys are available with a Pro subscription.
                         Upgrade to create personal integrations and external
@@ -640,13 +514,13 @@
                                 <div class="flex-1">
                                     <div class="flex items-center space-x-3">
                                         <h4
-                                            class="text-sm font-medium text-gray-900 dark:text-white"
+                                            class="heading-sub"
                                         >
                                             {{ apiKey.name }}
                                         </h4>
                                         <span
                                             v-if="!apiKey.isActive"
-                                            class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
+                                            class="badge-warning"
                                         >
                                             Inactive
                                         </span>
@@ -656,7 +530,7 @@
                                                 new Date(apiKey.expiresAt) <
                                                     new Date()
                                             "
-                                            class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400"
+                                            class="badge-warning"
                                         >
                                             Expired
                                         </span>
@@ -700,7 +574,7 @@
                                     <button
                                         @click="toggleApiKey(apiKey)"
                                         :disabled="apiKeysLoading"
-                                        class="btn-secondary text-xs py-1 px-2"
+                                        class="btn-secondary btn-sm"
                                     >
                                         {{
                                             apiKey.isActive
@@ -711,7 +585,7 @@
                                     <button
                                         @click="deleteApiKey(apiKey)"
                                         :disabled="apiKeysLoading"
-                                        class="btn-danger text-xs py-1 px-2"
+                                        class="btn-danger btn-sm"
                                     >
                                         Delete
                                     </button>
@@ -751,7 +625,7 @@
             <div v-if="activeTab === 'trading'" class="card">
                 <div class="card-body">
                     <h3
-                        class="text-lg font-medium text-gray-900 dark:text-white mb-6"
+                        class="heading-card mb-6"
                     >
                         Trading Profile
                     </h3>
@@ -767,7 +641,7 @@
                         <!-- General Trading Information -->
                         <section>
                             <div class="bg-gray-100 dark:bg-gray-800/60 px-4 py-2.5 rounded-md mb-4">
-                                <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-900 dark:text-gray-100">
+                                <h4 class="text-label">
                                     General Information
                                 </h4>
                             </div>
@@ -816,7 +690,7 @@
 
                         <section>
                             <div class="bg-gray-100 dark:bg-gray-800/60 px-4 py-2.5 rounded-md mb-4">
-                                <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-900 dark:text-gray-100">
+                                <h4 class="text-label">
                                     After-Trade Excursion Tracking
                                 </h4>
                             </div>
@@ -854,7 +728,7 @@
                         <!-- Trading Preferences -->
                         <section>
                             <div class="bg-gray-100 dark:bg-gray-800/60 px-4 py-2.5 rounded-md mb-4">
-                                <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-900 dark:text-gray-100">
+                                <h4 class="text-label">
                                     Trading Preferences
                                 </h4>
                             </div>
@@ -870,12 +744,7 @@
                                             :key="strategy"
                                             type="button"
                                             @click="toggleChip(tradingProfileForm.tradingStrategies, strategy)"
-                                            :class="[
-                                                'inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 dark:focus:ring-offset-gray-900',
-                                                tradingProfileForm.tradingStrategies.includes(strategy)
-                                                    ? 'bg-primary-600 border-primary-600 text-white hover:bg-primary-700'
-                                                    : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500'
-                                            ]"
+                                            :class="[ 'inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 dark:focus:ring-offset-gray-900', tradingProfileForm.tradingStrategies.includes(strategy) ? 'bg-primary-700 border-primary-600 text-white hover:bg-primary-800' : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500' ]"
                                         >
                                             {{ strategy }}
                                         </button>
@@ -893,12 +762,7 @@
                                             :key="style"
                                             type="button"
                                             @click="toggleChip(tradingProfileForm.tradingStyles, style)"
-                                            :class="[
-                                                'inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 dark:focus:ring-offset-gray-900',
-                                                tradingProfileForm.tradingStyles.includes(style)
-                                                    ? 'bg-primary-600 border-primary-600 text-white hover:bg-primary-700'
-                                                    : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500'
-                                            ]"
+                                            :class="[ 'inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 dark:focus:ring-offset-gray-900', tradingProfileForm.tradingStyles.includes(style) ? 'bg-primary-700 border-primary-600 text-white hover:bg-primary-800' : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500' ]"
                                         >
                                             {{ style }}
                                         </button>
@@ -916,12 +780,7 @@
                                             :key="market"
                                             type="button"
                                             @click="toggleChip(tradingProfileForm.primaryMarkets, market)"
-                                            :class="[
-                                                'inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 dark:focus:ring-offset-gray-900',
-                                                tradingProfileForm.primaryMarkets.includes(market)
-                                                    ? 'bg-primary-600 border-primary-600 text-white hover:bg-primary-700'
-                                                    : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500'
-                                            ]"
+                                            :class="[ 'inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 dark:focus:ring-offset-gray-900', tradingProfileForm.primaryMarkets.includes(market) ? 'bg-primary-700 border-primary-600 text-white hover:bg-primary-800' : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500' ]"
                                         >
                                             {{ market }}
                                         </button>
@@ -939,12 +798,7 @@
                                             :key="goal"
                                             type="button"
                                             @click="toggleChip(tradingProfileForm.tradingGoals, goal)"
-                                            :class="[
-                                                'inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 dark:focus:ring-offset-gray-900',
-                                                tradingProfileForm.tradingGoals.includes(goal)
-                                                    ? 'bg-primary-600 border-primary-600 text-white hover:bg-primary-700'
-                                                    : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500'
-                                            ]"
+                                            :class="[ 'inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 dark:focus:ring-offset-gray-900', tradingProfileForm.tradingGoals.includes(goal) ? 'bg-primary-700 border-primary-600 text-white hover:bg-primary-800' : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500' ]"
                                         >
                                             {{ goal }}
                                         </button>
@@ -956,7 +810,7 @@
                         <!-- Sector Preferences -->
                         <section>
                             <div class="bg-gray-100 dark:bg-gray-800/60 px-4 py-2.5 rounded-md mb-4">
-                                <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-900 dark:text-gray-100">
+                                <h4 class="text-label">
                                     Sector Preferences
                                 </h4>
                             </div>
@@ -970,12 +824,7 @@
                                         :key="sector"
                                         type="button"
                                         @click="toggleChip(tradingProfileForm.preferredSectors, sector)"
-                                        :class="[
-                                            'inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 dark:focus:ring-offset-gray-900',
-                                            tradingProfileForm.preferredSectors.includes(sector)
-                                                ? 'bg-primary-600 border-primary-600 text-white hover:bg-primary-700'
-                                                : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500'
-                                        ]"
+                                        :class="[ 'inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 dark:focus:ring-offset-gray-900', tradingProfileForm.preferredSectors.includes(sector) ? 'bg-primary-700 border-primary-600 text-white hover:bg-primary-800' : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500' ]"
                                     >
                                         {{ sector }}
                                     </button>
@@ -983,7 +832,81 @@
                             </div>
                         </section>
 
-                        <div class="flex justify-end">
+                        <!-- What the AI should know -->
+                        <section>
+                            <div class="bg-gray-100 dark:bg-gray-800/60 px-4 py-2.5 rounded-md mb-4">
+                                <h4 class="text-label">
+                                    What the AI should know about you
+                                </h4>
+                            </div>
+                            <div class="pl-4 grid grid-cols-1 gap-6 lg:grid-cols-2">
+                                <div>
+                                    <label for="aboutTrading" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        About my trading
+                                    </label>
+                                    <textarea
+                                        id="aboutTrading"
+                                        v-model="tradingProfileForm.aboutTrading"
+                                        rows="6"
+                                        maxlength="2000"
+                                        class="input w-full"
+                                        placeholder="In your own words: what you trade, your rules, and what you are working on right now. Example: I trade SPX 0DTE with a hard $500 daily loss limit and I am working on not adding to losers."
+                                    ></textarea>
+                                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                        Sent with every AI chat, analysis, recommendation, and insight.
+                                        {{ (tradingProfileForm.aboutTrading || '').length }}/2000
+                                    </p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Things the AI should remember
+                                    </label>
+                                    <ul v-if="tradingProfileForm.aiMemoryNotes.length" class="space-y-2 mb-3">
+                                        <li
+                                            v-for="(note, index) in tradingProfileForm.aiMemoryNotes"
+                                            :key="index"
+                                            class="flex items-start gap-2 rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2"
+                                        >
+                                            <span class="flex-1 text-sm text-gray-800 dark:text-gray-200">{{ note }}</span>
+                                            <button
+                                                type="button"
+                                                class="text-xs text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+                                                :title="'Remove note'"
+                                                @click="removeMemoryNote(index)"
+                                            >
+                                                Remove
+                                            </button>
+                                        </li>
+                                    </ul>
+                                    <p v-else class="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                                        Short facts the AI carries into every conversation, such as "I overtrade after green days" or "No new positions in the last 30 minutes of the session".
+                                    </p>
+                                    <div class="flex gap-2">
+                                        <input
+                                            v-model="newMemoryNote"
+                                            type="text"
+                                            maxlength="300"
+                                            class="input flex-1"
+                                            placeholder="Add a note (max 300 characters)"
+                                            @keydown.enter.prevent="addMemoryNote"
+                                        />
+                                        <button
+                                            type="button"
+                                            class="btn-secondary"
+                                            :disabled="!newMemoryNote.trim() || tradingProfileForm.aiMemoryNotes.length >= 20"
+                                            @click="addMemoryNote"
+                                        >
+                                            Add
+                                        </button>
+                                    </div>
+                                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                        {{ tradingProfileForm.aiMemoryNotes.length }}/20 notes. Save with the button below.
+                                    </p>
+                                </div>
+                            </div>
+                        </section>
+
+                        <div class="modal-footer">
                             <button
                                 type="submit"
                                 :disabled="tradingProfileLoading"
@@ -1003,7 +926,7 @@
             <div v-if="activeTab === 'profile'" class="card border-red-200 dark:border-red-800">
                 <div class="card-body">
                     <h3
-                        class="text-lg font-medium text-red-600 dark:text-red-400 mb-4"
+                        class="heading-card text-red-600 dark:text-red-400 mb-4"
                     >
                         Danger Zone
                     </h3>
@@ -1013,7 +936,7 @@
                     </p>
 
                     <div
-                        class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6"
+                        class="callout-danger mb-6"
                     >
                         <div class="flex items-start">
                             <svg
@@ -1031,7 +954,7 @@
                             </svg>
                             <div>
                                 <h4
-                                    class="text-sm font-medium text-red-800 dark:text-red-300"
+                                    class="heading-sub text-red-800 dark:text-red-300"
                                 >
                                     Warning
                                 </h4>
@@ -1060,14 +983,14 @@
         <!-- 2FA Setup Modal -->
         <div
             v-if="show2FASetup"
-            class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+            class="modal-overlay flex items-center justify-center overflow-y-auto p-4"
         >
-            <div
-                class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white dark:bg-gray-800"
+            <div role="dialog" aria-modal="true"
+                class="modal-panel p-6 w-full max-w-md"
             >
                 <div class="mt-3">
                     <h3
-                        class="text-lg font-medium text-gray-900 dark:text-white mb-4"
+                        class="modal-title mb-4"
                     >
                         Set Up Two-Factor Authentication
                     </h3>
@@ -1076,7 +999,7 @@
                         <!-- Step 1: Scan QR Code -->
                         <div>
                             <h4
-                                class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
+                                class="heading-sub mb-3"
                             >
                                 Step 1: Scan QR Code
                             </h4>
@@ -1109,7 +1032,7 @@
                         <!-- Step 2: Enter Verification Code -->
                         <div>
                             <h4
-                                class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
+                                class="heading-sub mb-3"
                             >
                                 Step 2: Enter Verification Code
                             </h4>
@@ -1124,14 +1047,14 @@
                                 type="text"
                                 maxlength="6"
                                 placeholder="000000"
-                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white text-center text-lg tracking-widest"
+                                class="input text-center text-lg tracking-widest"
                             />
                         </div>
 
                         <!-- Backup Codes -->
                         <div>
                             <h4
-                                class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
+                                class="heading-sub mb-3"
                             >
                                 Backup Codes
                             </h4>
@@ -1158,11 +1081,11 @@
                         </div>
 
                         <!-- Action Buttons -->
-                        <div class="flex justify-end space-x-3">
+                        <div class="modal-footer">
                             <button
                                 type="button"
                                 @click="cancel2FASetup"
-                                class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600"
+                                class="btn-secondary"
                             >
                                 Cancel
                             </button>
@@ -1171,7 +1094,7 @@
                                 :disabled="
                                     twoFactorLoading || !verificationCode
                                 "
-                                class="px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                class="btn-primary"
                             >
                                 <span v-if="twoFactorLoading">Enabling...</span>
                                 <span v-else>Enable 2FA</span>
@@ -1185,20 +1108,20 @@
         <!-- Disable 2FA Modal -->
         <div
             v-if="showDisable2FAModal"
-            class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+            class="modal-overlay flex items-center justify-center overflow-y-auto p-4"
         >
-            <div
-                class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white dark:bg-gray-800"
+            <div role="dialog" aria-modal="true"
+                class="modal-panel p-6 w-full max-w-md"
             >
                 <div class="mt-3">
                     <h3
-                        class="text-lg font-medium text-gray-900 dark:text-white mb-4"
+                        class="modal-title mb-4"
                     >
                         Disable Two-Factor Authentication
                     </h3>
 
                     <div
-                        class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6"
+                        class="callout-danger mb-6"
                     >
                         <div class="flex items-center">
                             <svg
@@ -1216,7 +1139,7 @@
                             </svg>
                             <div>
                                 <h4
-                                    class="text-sm font-medium text-red-800 dark:text-red-300"
+                                    class="heading-sub text-red-800 dark:text-red-300"
                                 >
                                     Security Warning
                                 </h4>
@@ -1267,11 +1190,11 @@
                             </p>
                         </div>
 
-                        <div class="flex justify-end space-x-3 pt-4">
+                        <div class="modal-footer">
                             <button
                                 type="button"
                                 @click="cancelDisable2FA"
-                                class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600"
+                                class="btn-secondary"
                             >
                                 Cancel
                             </button>
@@ -1282,7 +1205,7 @@
                                     !disable2FAForm.password ||
                                     !disable2FAForm.token
                                 "
-                                class="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                class="btn-danger"
                             >
                                 <span v-if="twoFactorLoading"
                                     >Disabling...</span
@@ -1298,14 +1221,14 @@
         <!-- Create API Key Modal -->
         <div
             v-if="showCreateApiKeyModal"
-            class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+            class="modal-overlay flex items-center justify-center overflow-y-auto p-4"
         >
-            <div
-                class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800"
+            <div role="dialog" aria-modal="true"
+                class="modal-panel p-6 w-full max-w-md"
             >
                 <div class="mt-3">
                     <h3
-                        class="text-lg font-medium text-gray-900 dark:text-white mb-4"
+                        class="modal-title mb-4"
                     >
                         Create API Key
                     </h3>
@@ -1334,7 +1257,7 @@
                                         v-model="createApiKeyForm.permissions"
                                         type="checkbox"
                                         value="read"
-                                        class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                                        class="checkbox"
                                     />
                                     <label
                                         for="permRead"
@@ -1349,7 +1272,7 @@
                                         v-model="createApiKeyForm.permissions"
                                         type="checkbox"
                                         value="write"
-                                        class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                                        class="checkbox"
                                     />
                                     <label
                                         for="permWrite"
@@ -1367,7 +1290,7 @@
                                         v-model="createApiKeyForm.permissions"
                                         type="checkbox"
                                         value="admin"
-                                        class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                                        class="checkbox"
                                     />
                                     <label
                                         for="permAdmin"
@@ -1396,7 +1319,7 @@
                             />
                         </div>
 
-                        <div class="flex justify-end space-x-3 pt-4">
+                        <div class="modal-footer">
                             <button
                                 type="button"
                                 @click="closeCreateApiKeyModal"
@@ -1426,21 +1349,21 @@
         <!-- API Key Created Modal -->
         <div
             v-if="showApiKeyCreatedModal"
-            class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+            class="modal-overlay flex items-center justify-center overflow-y-auto p-4"
         >
-            <div
-                class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800"
+            <div role="dialog" aria-modal="true"
+                class="modal-panel p-6 w-full max-w-md"
             >
                 <div class="mt-3">
                     <h3
-                        class="text-lg font-medium text-gray-900 dark:text-white mb-4"
+                        class="modal-title mb-4"
                     >
                         API Key Created
                     </h3>
 
                     <div class="space-y-4">
                         <div
-                            class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md p-4"
+                            class="callout-warning"
                         >
                             <p
                                 class="text-sm text-yellow-800 dark:text-yellow-400"
@@ -1457,11 +1380,11 @@
                                 <input
                                     :value="createdApiKey.key"
                                     readonly
-                                    class="input font-mono text-xs flex-1"
+                                    class="input input-sm font-mono flex-1"
                                 />
                                 <button
                                     @click="copyApiKey"
-                                    class="ml-2 btn-secondary text-xs px-3"
+                                    class="ml-2 btn-secondary btn-sm"
                                 >
                                     Copy
                                 </button>
@@ -1498,10 +1421,10 @@
         <!-- Delete Account Modal -->
         <div
             v-if="showDeleteAccountModal"
-            class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+            class="modal-overlay flex items-center justify-center overflow-y-auto p-4"
         >
-            <div
-                class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white dark:bg-gray-800"
+            <div role="dialog" aria-modal="true"
+                class="modal-panel p-6 w-full max-w-md"
             >
                 <div class="mt-3">
                     <div
@@ -1523,7 +1446,7 @@
                     </div>
 
                     <h3
-                        class="text-lg font-medium text-gray-900 dark:text-white text-center mb-2"
+                        class="modal-title text-center mb-2"
                     >
                         Delete Your Account
                     </h3>
@@ -1539,7 +1462,7 @@
                         class="space-y-4"
                     >
                         <div
-                            class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4"
+                            class="callout-danger"
                         >
                             <p class="text-sm text-red-700 dark:text-red-400">
                                 To confirm, please enter your password below.
@@ -1569,11 +1492,11 @@
                             {{ deleteAccountError }}
                         </div>
 
-                        <div class="flex justify-end space-x-3 pt-4">
+                        <div class="modal-footer">
                             <button
                                 type="button"
                                 @click="cancelDeleteAccount"
-                                class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600"
+                                class="btn-secondary"
                             >
                                 Cancel
                             </button>
@@ -1583,7 +1506,7 @@
                                     deleteAccountLoading ||
                                     !deleteAccountForm.password
                                 "
-                                class="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                class="btn-danger"
                             >
                                 <span v-if="deleteAccountLoading"
                                     >Deleting...</span
@@ -1603,9 +1526,11 @@ import { ref, onMounted, onBeforeUnmount, computed, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import { useNotification } from "@/composables/useNotification";
+import { useProAccess } from "@/composables/useProAccess";
 import NotificationPreferences from "@/components/profile/NotificationPreferences.vue";
 import PriceAlertWebhookManager from "@/components/price-alerts/PriceAlertWebhookManager.vue";
 import api from "@/services/api";
+import { formatDecimal } from "@/utils/formatters";
 import { TIMEZONE_OPTIONS } from "@/utils/timezone";
 import BaseSelect from "@/components/common/BaseSelect.vue";
 
@@ -1629,10 +1554,7 @@ const { showSuccess, showError, showDangerConfirmation } = useNotification();
 
 // Webhook destinations (a notification delivery channel) require Pro. On
 // self-hosted instances billing is disabled, so everyone has access.
-const isProUser = computed(() => {
-  if (authStore.user?.billingEnabled === false) return true;
-  return authStore.user?.tier === "pro";
-});
+const { isProUser } = useProAccess();
 
 // Profile form data
 const profileLoading = ref(false);
@@ -1674,9 +1596,12 @@ const twoFactorStatus = ref({
 // Subscription data
 const subscriptionLoading = ref(false);
 const portalLoading = ref(false);
+// billing_available starts as null ("unknown") rather than false: false
+// means self-hosted (everything unlocked), so defaulting to it made
+// canManageApiKeys flash true for free users until /billing/status loaded.
 const billingStatus = ref({
     billing_enabled: false,
-    billing_available: false,
+    billing_available: null,
 });
 const subscription = ref({
     subscription: null,
@@ -1706,6 +1631,7 @@ const createApiKeyForm = ref({
 
 // Trading profile data
 const tradingProfileLoading = ref(false);
+const newMemoryNote = ref("");
 const tradingProfileForm = ref({
     tradingStrategies: [],
     tradingStyles: [],
@@ -1715,6 +1641,8 @@ const tradingProfileForm = ref({
     averagePositionSize: "medium",
     tradingGoals: [],
     preferredSectors: [],
+    aboutTrading: "",
+    aiMemoryNotes: [],
     postExitExcursionWindowMode: "auto",
     postExitExcursionWindowMinutes: null,
 });
@@ -1850,15 +1778,23 @@ const shouldShowUpgradeButton = computed(() => {
 });
 
 const canManageApiKeys = computed(() => {
-    if (!billingStatus.value.billing_available) {
+    // Billing confirmed unavailable (self-hosted): everyone can manage keys
+    if (billingStatus.value.billing_available === false) {
         return true;
     }
 
-    return subscription.value.tier === "pro";
+    // Billing on or still loading: require Pro. The auth store tier is known
+    // before /billing/subscription loads, so Pro users don't see a flash of
+    // the upgrade notice and free users never see the key controls.
+    if (isProUser.value) return true;
+    return (
+        billingStatus.value.billing_available === true &&
+        subscription.value.tier === "pro"
+    );
 });
 
 // Avatar helpers and methods
-// Mirrors UserMenu.vue's initials fallback so the preview circle stays visually
+// Mirrors Sidebar.vue's initials fallback so the preview circle stays visually
 // consistent with the navbar avatar when no image is set.
 const avatarInitials = computed(() => {
     const u = authStore.user;
@@ -1886,8 +1822,8 @@ const avatarDisplayUrl = computed(
 function formatBytes(bytes) {
     if (!bytes && bytes !== 0) return '';
     if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    if (bytes < 1024 * 1024) return `${formatDecimal(bytes / 1024, { digits: 1 })} KB`;
+    return `${formatDecimal(bytes / (1024 * 1024), { digits: 1 })} MB`;
 }
 
 function triggerAvatarFilePicker() {
@@ -2355,7 +2291,7 @@ function getSubscriptionStatusClass(status) {
     const classes = {
         active: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
         trialing:
-            "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+            "bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200",
         past_due:
             "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
         canceled: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
@@ -2376,6 +2312,18 @@ function formatSubscriptionStatus(status) {
         unpaid: "Unpaid",
     };
     return formatted[status] || status;
+}
+
+// AI memory notes (short facts sent with every AI prompt)
+function addMemoryNote() {
+    const note = newMemoryNote.value.replace(/\s+/g, " ").trim();
+    if (!note || tradingProfileForm.value.aiMemoryNotes.length >= 20) return;
+    tradingProfileForm.value.aiMemoryNotes.push(note.slice(0, 300));
+    newMemoryNote.value = "";
+}
+
+function removeMemoryNote(index) {
+    tradingProfileForm.value.aiMemoryNotes.splice(index, 1);
 }
 
 // Trading profile methods
@@ -2406,6 +2354,8 @@ async function fetchTradingProfile() {
             averagePositionSize: profile.averagePositionSize || "medium",
             tradingGoals: profile.tradingGoals || [],
             preferredSectors: profile.preferredSectors || [],
+            aboutTrading: profile.aboutTrading || "",
+            aiMemoryNotes: Array.isArray(profile.aiMemoryNotes) ? profile.aiMemoryNotes : [],
             postExitExcursionWindowMode: profile.postExitExcursionWindowMode || "auto",
             postExitExcursionWindowMinutes: profile.postExitExcursionWindowMinutes || null,
         };

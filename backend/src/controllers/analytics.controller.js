@@ -1,4 +1,5 @@
 const { instructionsForPrompt } = require('../utils/aiAnalysisInstructions');
+const AITraderContext = require('../services/aiTraderContext');
 const { sendAIUnavailable } = require('../utils/aiErrorResponse');
 const db = require('../config/database');
 const crypto = require('crypto');
@@ -7,6 +8,7 @@ const User = require('../models/User');
 const Trade = require('../models/Trade');
 const finnhub = require('../utils/finnhub');
 const cache = require('../utils/cache');
+const WhatIfSimulatorService = require('../services/whatIfSimulatorService');
 const MAEEstimator = require('../utils/maeEstimator');
 const symbolCategories = require('../utils/symbolCategories');
 const { sendV1NotImplemented } = require('../utils/apiResponse');
@@ -47,6 +49,7 @@ const {
 } = require('../utils/breakeven');
 const TradeQueries = require('../services/tradeQueries');
 const AnalyticsCache = require('../services/analyticsCache');
+const InsightRotation = require('../services/insightRotation');
 
 // Helper function to create a short but collision-resistant hash for cache keys
 function createFilterHash(filters) {
@@ -121,6 +124,12 @@ async function sendCachedAnalytics(req, res, name, keyParts, compute) {
 
   return res.json(await convertForDisplay(req, payload));
 }
+
+// Dashboard edge insights look at the most recent window with enough trades
+// to say something, widening from 30 to 90 days before falling back to the
+// whole filtered range.
+const EDGE_WINDOWS_DAYS = [30, 90];
+const EDGE_MIN_WINDOW_TRADES = 8;
 
 // Lightweight keyword-based tone classifier for news headlines. NOT a real
 // sentiment model — it just catches the obvious bull/bear signals so the
@@ -506,6 +515,32 @@ const CSV_EXPORT_COLUMNS = [
   'position_group_id'
 ].join(', ');
 
+// Resolves whether the requesting user is Pro. Self-hosted installs (billing
+// disabled) always resolve to Pro inside TierService.getUserTier.
+async function isProUser(req) {
+  const TierService = require('../services/tierService');
+  return TierService.isProUser(req.user.id);
+}
+
+// Advanced overview metrics (SQN, Kelly %, K-Ratio, MAE/MFE) are Pro-only. Free users
+// still receive the rest of the overview so the free dashboard keeps working.
+// Returns a copy so cached/in-flight payloads shared with Pro requests are
+// never mutated.
+const PRO_OVERVIEW_METRICS = ['sqn', 'kelly_percentage', 'k_ratio', 'avg_mae', 'avg_mfe'];
+function stripProOverviewMetrics(payload) {
+  if (!payload || !payload.overview) return payload;
+  const overview = { ...payload.overview };
+  for (const key of PRO_OVERVIEW_METRICS) overview[key] = null;
+  return { ...payload, overview };
+}
+
+// Day-of-week performance (time_analysis) is Pro-only; free users get an
+// empty series so chart consumers render an empty/locked state.
+function stripProChartData(data) {
+  if (!data || typeof data !== 'object') return data;
+  return { ...data, dayOfWeek: [] };
+}
+
 const analyticsController = {
   async getOverview(req, res, next) {
     try {
@@ -551,13 +586,17 @@ const analyticsController = {
       // Tolerance config is part of the key so changing it yields fresh results.
       const normalizedFiltersForCache = convertQueryToTradeFilters(req.query);
       const filterHashKey = createFilterHash(normalizedFiltersForCache);
-      const cacheKey = `analytics_overview_${req.user.id}_${filterHashKey}_${useMedian ? 'median' : 'avg'}_be${toleranceCacheKey(breakevenConfig)}_grp${groupByPosition ? 'pos' : 'leg'}`;
+      // Tier is part of the key: advanced trade filters are dropped for free
+      // users (TradeQueries._buildWhereClause), so the same query string can
+      // describe different trade populations before and after an upgrade.
+      const isPro = await isProUser(req);
+      const cacheKey = `analytics_overview_${req.user.id}_${filterHashKey}_${useMedian ? 'median' : 'avg'}_be${toleranceCacheKey(breakevenConfig)}_grp${groupByPosition ? 'pos' : 'leg'}_t${isPro ? 'pro' : 'free'}`;
 
       // Check cache first for faster response
       const cachedData = cache.get(cacheKey);
       if (cachedData) {
         console.log(`[CACHE HIT] Analytics overview returned from cache for user ${req.user.id}`);
-        return res.json(await convertForDisplay(req, cachedData));
+        return res.json(await convertForDisplay(req, isPro ? cachedData : stripProOverviewMetrics(cachedData)));
       }
       console.log(`[CACHE MISS] Computing analytics overview for user ${req.user.id}`);
 
@@ -1043,9 +1082,25 @@ const analyticsController = {
         return { overview };
       });
 
-      res.json(await convertForDisplay(req, payload));
+      res.json(await convertForDisplay(req, isPro ? payload : stripProOverviewMetrics(payload)));
     } catch (error) {
       console.error('Analytics overview error:', error);
+      next(error);
+    }
+  },
+
+  /**
+   * What-If Mistake Simulator: per-trade rows plus hindsight patterns and the
+   * inputs for the forward-looking rules (loss limit, trades/day, cutoff,
+   * tags, playbook). The client applies the rules interactively.
+   * GET /api/analytics/what-if
+   */
+  async getWhatIfSimulation(req, res, next) {
+    try {
+      const filters = convertQueryToTradeFilters(req.query);
+      const simulation = await WhatIfSimulatorService.computeSimulation(req.user.id, filters, { includeRuleData: true });
+      res.json(simulation);
+    } catch (error) {
       next(error);
     }
   },
@@ -1425,6 +1480,7 @@ const analyticsController = {
               position_group_id,
               entry_time,
               id,
+              executions, -- POSITION_GROUP_KEY reads it (brokerage order check)
               ${fxUsd('pnl', 't')} as pnl,
               ${fxUsd('pnl', 't')} + COALESCE(${fxUsd('commission', 't')}, 0) + COALESCE(${fxUsd('fees', 't')}, 0) as gross_pnl,
               r_value,
@@ -1954,11 +2010,12 @@ const analyticsController = {
       // Include filter hash in cache key to handle different filter combinations
       const normalizedForCache = convertQueryToTradeFilters(req.query);
       const filterHashKey = createFilterHash(normalizedForCache);
-      const cacheKey = `analytics_chart_data_${req.user.id}_${filterHashKey}`;
+      const isPro = await isProUser(req);
+      const cacheKey = `analytics_chart_data_${req.user.id}_${filterHashKey}_t${isPro ? 'pro' : 'free'}`;
       const cachedData = cache.get(cacheKey);
 
       if (cachedData) {
-        return res.json(await convertForDisplay(req, cachedData, {
+        return res.json(await convertForDisplay(req, isPro ? cachedData : stripProChartData(cachedData), {
           moneyArrayKeys: CHART_MONEY_ARRAYS,
           moneyLabelKeys: CHART_MONEY_LABELS
         }));
@@ -2447,7 +2504,7 @@ const analyticsController = {
         return responseData;
       });
 
-      res.json(await convertForDisplay(req, responseData, {
+      res.json(await convertForDisplay(req, isPro ? responseData : stripProChartData(responseData), {
         moneyArrayKeys: CHART_MONEY_ARRAYS,
         moneyLabelKeys: CHART_MONEY_LABELS
       }));
@@ -2517,7 +2574,7 @@ const analyticsController = {
       const { filterConditions, params: filterParams } = await buildFilterConditions(req.query, req.user.id);
       const params = [req.user.id, ...filterParams];
 
-      return await sendCachedAnalytics(req, res, 'drawdown', {
+      return await sendCachedAnalytics(req, res, 'drawdown_r', {
         query: req.query
       }, async () => {
 
@@ -2525,7 +2582,10 @@ const analyticsController = {
           WITH daily_pnl AS (
             SELECT
               trade_date,
-              COALESCE(SUM(${fxUsd('pnl', 't')}), 0) as daily_pnl
+              COALESCE(SUM(${fxUsd('pnl', 't')}), 0) as daily_pnl,
+              -- Same R basis as total_r_value: trades with a stop loss only.
+              COALESCE(SUM(t.r_value) FILTER (WHERE t.r_value IS NOT NULL AND t.stop_loss IS NOT NULL), 0) as daily_r_value,
+              COUNT(*) FILTER (WHERE t.r_value IS NOT NULL AND t.stop_loss IS NOT NULL) as r_trade_count
             FROM trades t
             WHERE t.user_id = $1 ${filterConditions}
             GROUP BY trade_date
@@ -2535,7 +2595,9 @@ const analyticsController = {
             SELECT
               trade_date,
               daily_pnl,
-              SUM(daily_pnl) OVER (ORDER BY trade_date) as cumulative_pnl
+              r_trade_count,
+              SUM(daily_pnl) OVER (ORDER BY trade_date) as cumulative_pnl,
+              SUM(daily_r_value) OVER (ORDER BY trade_date) as cumulative_r_value
             FROM daily_pnl
           ),
           running_max AS (
@@ -2543,7 +2605,10 @@ const analyticsController = {
               trade_date,
               daily_pnl,
               cumulative_pnl,
-              MAX(cumulative_pnl) OVER (ORDER BY trade_date) as running_max_pnl
+              r_trade_count,
+              cumulative_r_value,
+              MAX(cumulative_pnl) OVER (ORDER BY trade_date) as running_max_pnl,
+              MAX(cumulative_r_value) OVER (ORDER BY trade_date) as running_max_r_value
             FROM cumulative_pnl
           )
           SELECT
@@ -2551,7 +2616,9 @@ const analyticsController = {
             daily_pnl,
             cumulative_pnl,
             running_max_pnl,
-            cumulative_pnl - running_max_pnl as drawdown
+            cumulative_pnl - running_max_pnl as drawdown,
+            r_trade_count,
+            cumulative_r_value - running_max_r_value as r_value_drawdown
           FROM running_max
           ORDER BY trade_date
         `;
@@ -2584,6 +2651,13 @@ const analyticsController = {
   async getRecommendations(req, res, next) {
     try {
       console.log('[AI] Recommendations request started');
+
+      // AI insights (full and dashboard summary) are Pro-only. Self-hosted
+      // installs resolve every user to Pro.
+      if (!(await isProUser(req))) {
+        const { sendProTierRequired } = require('../middleware/tierAuth');
+        return sendProTierRequired(res, 'free', 'AI insights require a Pro subscription');
+      }
 
       // Dashboard summary mode — short, single insight for the AiInsightCard.
       // Cheaper than the full recommendation flow; works even when AI is not
@@ -2805,7 +2879,10 @@ const analyticsController = {
       console.log('[AI] Generating AI recommendations with sector analysis...');
       let recommendations;
       try {
-        recommendations = await aiService.generateResponse(req.user.id, analyticsController.buildRecommendationPrompt(metrics, trades, tradingProfile, sectorData) + instructionsForPrompt(userProfileSettings?.ai_analysis_instructions));
+        const dossierText = await AITraderContext.render(req.user.id, {
+          sections: ['profile', 'observed', 'behavior', 'personality', 'edge', 'playbooks', 'risk']
+        });
+        recommendations = await aiService.generateResponse(req.user.id, analyticsController.buildRecommendationPrompt(metrics, trades, tradingProfile, sectorData, dossierText) + instructionsForPrompt(userProfileSettings?.ai_analysis_instructions));
         if (!recommendations) {
           throw new Error('AI service returned undefined recommendations');
         }
@@ -3250,9 +3327,14 @@ const analyticsController = {
       const ai_analysis_instructions = analysis_settings?.ai_analysis_instructions || '';
       const summaryCacheKey = `ai_insight_summary_${req.user.id}_${filterHashKey}_grp${groupByPosition ? 'pos' : 'leg'}_be${createFilterHash(be)}_instructions${createFilterHash({ ai_analysis_instructions })}`;
 
+      // The cached payload holds every candidate insight; which ones lead is
+      // decided per request so stale observations rotate out on schedule.
+      // Cache warmers pass insightWarmup so they do not count as views.
+      const rotate = payload => InsightRotation.applyToSummary(req.user.id, payload, { record: !req.insightWarmup });
+
       const cached = cache.get(summaryCacheKey);
       if (cached) {
-        return res.json(cached);
+        return res.json(await rotate(cached));
       }
 
       const response = await coalesceInFlight(summaryCacheKey, async () => {
@@ -3321,103 +3403,18 @@ const analyticsController = {
           return response;
         }
 
-        // Compute strongest per-symbol / per-strategy edge.
-        const edgeQuery = `
-          WITH completed AS (
-            SELECT
-              symbol, strategy, ${fxUsd('pnl', 't')} as pnl, ${fxUsd('commission', 't')} as commission, ${fxUsd('fees', 't')} as fees, quantity, tick_size, point_value, underlying_asset,
-              COALESCE(${fxUsd('pnl', 't')}, 0) + COALESCE(${fxUsd('commission', 't')}, 0) + COALESCE(${fxUsd('fees', 't')}, 0) as gross_pnl
-            FROM trades t
-            WHERE t.user_id = $1 ${filterConditions}
-              AND exit_price IS NOT NULL AND pnl IS NOT NULL
-          ),
-          sym AS (
-            SELECT symbol,
-                   COUNT(*) AS n,
-                   COUNT(*) FILTER (WHERE ${be.isNot} AND pnl > 0) AS wins,
-                   COALESCE(SUM(pnl), 0) AS pnl
-            FROM completed
-            GROUP BY symbol
-            HAVING COUNT(*) >= 3
-          ),
-          strat AS (
-            SELECT strategy,
-                   COUNT(*) AS n,
-                   COUNT(*) FILTER (WHERE ${be.isNot} AND pnl > 0) AS wins,
-                   COALESCE(SUM(pnl), 0) AS pnl
-            FROM completed
-            WHERE strategy IS NOT NULL AND strategy <> ''
-            GROUP BY strategy
-            HAVING COUNT(*) >= 3
-          )
-          SELECT 'symbol' AS kind, symbol AS label, n, wins, pnl
-          FROM sym
-          UNION ALL
-          SELECT 'strategy' AS kind, strategy AS label, n, wins, pnl
-          FROM strat
-          ORDER BY pnl DESC
-        `;
-        const edgeResult = await db.query(edgeQuery, params);
-        const edges = edgeResult.rows;
-        const top = edges[0];
-        const worst = edges[edges.length - 1];
-
-        const winRate = totalTrades > 0
-          ? ((parseInt(m.winning_trades) || 0) / totalTrades * 100)
-          : 0;
-        const avgWin = Math.abs(parseFloat(m.avg_win) || 0);
-        const avgLoss = Math.abs(parseFloat(m.avg_loss) || 0);
-
-        // -- Performance edge insight (existing data-driven behavior) --
-        const edgeInsight = (() => {
-          let headline = '';
-          let body = '';
-          let action_url = '/analytics';
-          let action_label = 'View full analytics';
-
-          if (top && parseFloat(top.pnl) > 0) {
-            const winsRate = top.n > 0 ? (parseInt(top.wins) / parseInt(top.n) * 100) : 0;
-            const sign = parseFloat(top.pnl) >= 0 ? '+' : '';
-            headline = top.kind === 'symbol'
-              ? `${top.label} is carrying your edge`
-              : `Your ${top.label} setup is working`;
-            body = `${winsRate.toFixed(0)}% win rate across ${top.n} ${top.kind === 'symbol' ? 'trades on this symbol' : 'attempts of this setup'}, ${sign}$${parseFloat(top.pnl).toFixed(0)} net.`;
-            action_label = top.kind === 'symbol' ? `View ${top.label} trades` : 'View setup breakdown';
-            action_url = top.kind === 'symbol'
-              ? `/trades?symbol=${encodeURIComponent(top.label)}`
-              : '/metrics#strategies';
-          } else if (worst && parseFloat(worst.pnl) < 0) {
-            headline = worst.kind === 'symbol'
-              ? `${worst.label} is dragging on results`
-              : `${worst.label} setup is leaking edge`;
-            body = `${worst.n} trades, $${parseFloat(worst.pnl).toFixed(0)} net. Consider tighter rules or pausing this ${worst.kind === 'symbol' ? 'symbol' : 'setup'}.`;
-            action_label = 'Investigate';
-            action_url = worst.kind === 'symbol'
-              ? `/trades?symbol=${encodeURIComponent(worst.label)}`
-              : '/metrics#strategies';
-          } else if (winRate >= 60) {
-            headline = `${winRate.toFixed(0)}% win rate — your selection is sharp`;
-            body = `Across ${totalTrades} trades, you're winning ${m.winning_trades} of them. Focus on letting winners run: avg win $${avgWin.toFixed(0)} vs avg loss $${avgLoss.toFixed(0)}.`;
-          } else if (avgWin > 0 && avgLoss > 0 && avgWin / avgLoss > 1.5) {
-            headline = `Your wins are ${(avgWin / avgLoss).toFixed(1)}x your losses`;
-            body = `Strong risk-reward across ${totalTrades} trades (${winRate.toFixed(0)}% wins). The losses you take are well-controlled.`;
-          } else if (avgWin > 0 && avgLoss > 0 && avgLoss / avgWin > 1.5) {
-            headline = 'Your losses are bigger than your wins';
-            body = `Avg loss $${avgLoss.toFixed(0)} vs avg win $${avgWin.toFixed(0)} across ${totalTrades} trades. Tighter stops or more disciplined exits would change everything.`;
-          } else {
-            headline = `${totalTrades} trades analyzed`;
-            body = `Win rate ${winRate.toFixed(0)}%. Avg win $${avgWin.toFixed(0)}, avg loss $${avgLoss.toFixed(0)}. Dig into the breakdowns below for setup-level edge.`;
+        // -- Performance edge insights --
+        // Judge edge on recent trades so the card reflects how the user is
+        // trading now, not a setup that carried them months ago. Widen the
+        // window only when the recent sample is too thin to say anything.
+        const edgeWindow = await analyticsController.loadEdgeWindow(params, filterConditions, be);
+        const edgeInsights = analyticsController.buildEdgeInsights({
+          ...edgeWindow,
+          baseline: {
+            n: totalTrades,
+            wins: parseInt(m.winning_trades) || 0
           }
-          return {
-            type: 'edge',
-            priority: 30,
-            headline,
-            body,
-            source: 'computed',
-            action_label,
-            action_url
-          };
-        })();
+        });
 
         // -- Open-position context: earnings + news insights --
         const contextInsights = await analyticsController
@@ -3427,9 +3424,17 @@ const analyticsController = {
             return [];
           });
 
+        // -- Trader-dossier insights: tendencies, streaks, discipline --
+        const dossierInsights = await analyticsController
+          .computeDossierInsights(req.user.id)
+          .catch(err => {
+            console.warn('[AI] dossier insights failed:', err.message);
+            return [];
+          });
+
         // Final insights list, sorted by priority desc (higher = more urgent /
         // more time-sensitive). Caller can render top-N or paginate.
-        let summaries = [...contextInsights, edgeInsight].sort(
+        let summaries = [...contextInsights, ...dossierInsights, ...edgeInsights].sort(
           (a, b) => (b.priority || 0) - (a.priority || 0)
         );
 
@@ -3464,11 +3469,188 @@ const analyticsController = {
         return response;
       });
 
-      return res.json(response);
+      return res.json(await rotate(response));
     } catch (err) {
       console.error('[AI] summary error:', err);
       return res.status(500).json({ error: 'Failed to compute insight summary' });
     }
+  },
+
+  // Recent-window stats for the dashboard edge insights: overall win/loss
+  // shape plus per-symbol and per-strategy results. Returns the narrowest
+  // window in EDGE_WINDOWS_DAYS with enough closed trades, else the whole
+  // filtered range (windowDays: null).
+  async loadEdgeWindow(params, filterConditions, be) {
+    for (const windowDays of [...EDGE_WINDOWS_DAYS, null]) {
+      const windowParams = [...params];
+      let windowClause = '';
+      if (windowDays) {
+        windowParams.push(new Date(Date.now() - windowDays * 24 * 60 * 60 * 1000).toISOString().slice(0, 10));
+        windowClause = `AND COALESCE(t.trade_date, t.exit_time::date) >= $${windowParams.length}::date`;
+      }
+
+      const result = await db.query(`
+        WITH completed AS (
+          SELECT symbol, strategy, ${fxUsd('pnl', 't')} as pnl, ${fxUsd('commission', 't')} as commission, ${fxUsd('fees', 't')} as fees, quantity, tick_size, point_value, underlying_asset
+          FROM trades t
+          WHERE t.user_id = $1 ${filterConditions}
+            AND exit_price IS NOT NULL AND pnl IS NOT NULL
+            ${windowClause}
+        ),
+        sym AS (
+          SELECT symbol, COUNT(*) AS n, COUNT(*) FILTER (WHERE ${be.isNot} AND pnl > 0) AS wins, COALESCE(SUM(pnl), 0) AS pnl
+          FROM completed
+          GROUP BY symbol
+          HAVING COUNT(*) >= 3
+        ),
+        strat AS (
+          SELECT strategy, COUNT(*) AS n, COUNT(*) FILTER (WHERE ${be.isNot} AND pnl > 0) AS wins, COALESCE(SUM(pnl), 0) AS pnl
+          FROM completed
+          WHERE strategy IS NOT NULL AND strategy <> ''
+          GROUP BY strategy
+          HAVING COUNT(*) >= 3
+        )
+        SELECT 'overall' AS kind, NULL AS label, COUNT(*) AS n,
+               COUNT(*) FILTER (WHERE ${be.isNot} AND pnl > 0) AS wins,
+               COALESCE(SUM(pnl), 0) AS pnl,
+               AVG(pnl) FILTER (WHERE ${be.isNot} AND pnl > 0) AS avg_win,
+               AVG(pnl) FILTER (WHERE ${be.isNot} AND pnl < 0) AS avg_loss
+        FROM completed
+        UNION ALL
+        SELECT 'symbol', symbol, n, wins, pnl, NULL, NULL FROM sym
+        UNION ALL
+        SELECT 'strategy', strategy, n, wins, pnl, NULL, NULL FROM strat
+      `, windowParams);
+
+      const rows = result.rows.map(row => ({
+        kind: row.kind,
+        label: row.label,
+        n: parseInt(row.n) || 0,
+        wins: parseInt(row.wins) || 0,
+        pnl: parseFloat(row.pnl) || 0,
+        avg_win: Math.abs(parseFloat(row.avg_win) || 0),
+        avg_loss: Math.abs(parseFloat(row.avg_loss) || 0)
+      }));
+      const overall = rows.find(row => row.kind === 'overall') || { n: 0, wins: 0, pnl: 0, avg_win: 0, avg_loss: 0 };
+      if (windowDays === null || overall.n >= EDGE_MIN_WINDOW_TRADES) {
+        return {
+          windowDays,
+          overall,
+          groups: rows.filter(row => row.kind !== 'overall').sort((a, b) => b.pnl - a.pnl)
+        };
+      }
+    }
+    return null;
+  },
+
+  /**
+   * Candidate edge insights from a recent window: the strongest and weakest
+   * symbol/setup, a win-rate shift against the full range, and the win/loss
+   * size balance. Each carries a stable `key` so the rotation layer can
+   * retire it once it has led the card for a while. Pure, so unit-testable.
+   */
+  buildEdgeInsights(edgeWindow) {
+    if (!edgeWindow || !edgeWindow.overall || edgeWindow.overall.n === 0) return [];
+    const { windowDays, overall, groups = [], baseline } = edgeWindow;
+    const insights = [];
+    const span = windowDays ? `in the last ${windowDays} days` : 'in this range';
+    const keyLabel = label => String(label).toLowerCase().slice(0, 100);
+    const pct = (wins, n) => (n > 0 ? (wins / n) * 100 : 0);
+
+    // The top two winners, so a retired leader has a successor.
+    groups.filter(g => g.pnl > 0).slice(0, 2).forEach((best, rank) => {
+      const isSymbol = best.kind === 'symbol';
+      insights.push({
+        type: 'edge',
+        key: `edge:best:${best.kind}:${keyLabel(best.label)}`,
+        priority: rank === 0 ? 30 : 26,
+        headline: isSymbol ? `${best.label} is carrying your edge` : `Your ${best.label} setup is working`,
+        body: `${pct(best.wins, best.n).toFixed(0)}% win rate across ${best.n} ${isSymbol ? 'trades on this symbol' : 'attempts of this setup'} ${span}, +$${best.pnl.toFixed(0)} net. Keep sizing it as your A setup.`,
+        source: 'computed',
+        action_label: isSymbol ? `View ${best.label} trades` : 'View setup breakdown',
+        action_url: isSymbol ? `/trades?symbol=${encodeURIComponent(best.label)}` : '/metrics#strategies'
+      });
+    });
+
+    const worst = groups.length ? groups[groups.length - 1] : null;
+    if (worst && worst.pnl < 0) {
+      const isSymbol = worst.kind === 'symbol';
+      insights.push({
+        type: 'edge',
+        key: `edge:leak:${worst.kind}:${keyLabel(worst.label)}`,
+        priority: 32,
+        headline: isSymbol ? `${worst.label} is dragging on results` : `${worst.label} setup is leaking edge`,
+        body: `${worst.n} trades ${span}, ${pct(worst.wins, worst.n).toFixed(0)}% winners, -$${Math.abs(worst.pnl).toFixed(0)} net. Tighten the entry rules or pause this ${isSymbol ? 'symbol' : 'setup'} until you can say what is different.`,
+        source: 'computed',
+        action_label: 'Investigate',
+        action_url: isSymbol ? `/trades?symbol=${encodeURIComponent(worst.label)}` : '/metrics#strategies'
+      });
+    }
+
+    // Recent win rate against the full filtered range. Only meaningful when
+    // the window is a real subset with enough trades on both sides.
+    if (windowDays && baseline && overall.n >= EDGE_MIN_WINDOW_TRADES && baseline.n >= overall.n + 10) {
+      const recentRate = pct(overall.wins, overall.n);
+      const baseRate = pct(baseline.wins, baseline.n);
+      const shift = recentRate - baseRate;
+      if (Math.abs(shift) >= 10) {
+        const down = shift < 0;
+        insights.push({
+          type: 'edge',
+          key: `edge:winrate-shift:${down ? 'down' : 'up'}`,
+          priority: down ? 34 : 28,
+          headline: down
+            ? `Win rate down to ${recentRate.toFixed(0)}% ${span}`
+            : `Win rate up to ${recentRate.toFixed(0)}% ${span}`,
+          body: down
+            ? `${overall.wins} of ${overall.n} recent trades won, against ${baseRate.toFixed(0)}% over ${baseline.n} trades overall. Compare your recent losers with your best setups before adding size.`
+            : `${overall.wins} of ${overall.n} recent trades won, against ${baseRate.toFixed(0)}% over ${baseline.n} trades overall. Note what changed so you can keep doing it.`,
+          source: 'computed',
+          action_label: 'Review recent trades',
+          action_url: '/trades'
+        });
+      }
+    }
+
+    const { avg_win: avgWin, avg_loss: avgLoss } = overall;
+    if (avgWin > 0 && avgLoss > 0 && avgLoss / avgWin > 1.5) {
+      insights.push({
+        type: 'edge',
+        key: 'edge:payoff:weak',
+        priority: 33,
+        headline: 'Your losses are bigger than your wins',
+        body: `Avg loss $${avgLoss.toFixed(0)} vs avg win $${avgWin.toFixed(0)} across ${overall.n} trades ${span}. Cap each loss at your average win until the ratio is back above 1.`,
+        source: 'computed',
+        action_label: 'View full analytics',
+        action_url: '/analytics'
+      });
+    } else if (avgWin > 0 && avgLoss > 0 && avgWin / avgLoss > 1.5) {
+      insights.push({
+        type: 'edge',
+        key: 'edge:payoff:strong',
+        priority: 24,
+        headline: `Your wins are ${(avgWin / avgLoss).toFixed(1)}x your losses`,
+        body: `Across ${overall.n} trades ${span} (${pct(overall.wins, overall.n).toFixed(0)}% winners), losses stay controlled. Protect that by keeping stops where they are, not wider.`,
+        source: 'computed',
+        action_label: 'View full analytics',
+        action_url: '/analytics'
+      });
+    }
+
+    if (insights.length === 0) {
+      insights.push({
+        type: 'edge',
+        key: `edge:summary:${windowDays || 'range'}`,
+        priority: 20,
+        headline: `${overall.n} trades ${span}`,
+        body: `Win rate ${pct(overall.wins, overall.n).toFixed(0)}%. Avg win $${avgWin.toFixed(0)}, avg loss $${avgLoss.toFixed(0)}. Tag setups on your trades so the card can tell you which ones are working.`,
+        source: 'computed',
+        action_label: 'View full analytics',
+        action_url: '/analytics'
+      });
+    }
+
+    return insights;
   },
 
   // Build insights from the user's currently-open positions:
@@ -3486,7 +3668,15 @@ const analyticsController = {
       SELECT symbol,
              SUM(quantity)::numeric AS total_qty,
              AVG(${fxUsd('entry_price', '')})::numeric AS avg_entry,
-             COALESCE(MIN(side), 'long') AS side
+             COALESCE(MIN(side), 'long') AS side,
+             MIN(entry_time) AS opened_at,
+             COUNT(*)::integer AS legs,
+             COUNT(*) FILTER (WHERE stop_loss IS NULL)::integer AS legs_without_stop,
+             SUM(ABS(quantity) * ${fxUsd('entry_price', '')} * CASE
+               WHEN instrument_type = 'option' THEN COALESCE(contract_size, 100)
+               WHEN instrument_type = 'future' THEN COALESCE(point_value, 1)
+               ELSE 1
+             END)::numeric AS exposure
       FROM trades
       WHERE user_id = $1
         AND exit_price IS NULL
@@ -3618,6 +3808,29 @@ const analyticsController = {
       }
       return 'Action: have an exit plan before earnings day. Short squeezes from surprise beats can take out wide stops.';
     };
+
+    // === Position management (no market data needed) ===
+    try {
+      const holdResult = await db.query(`
+        SELECT percentile_cont(0.5) WITHIN GROUP (
+                 ORDER BY EXTRACT(EPOCH FROM (exit_time - entry_time)) / 3600
+               ) AS median_hold_hours,
+               COUNT(*)::integer AS samples
+        FROM trades
+        WHERE user_id = $1
+          AND exit_price IS NOT NULL
+          AND exit_time > entry_time
+          AND exit_time >= NOW() - INTERVAL '90 days'
+      `, [userId]);
+      const holdRow = holdResult.rows[0] || {};
+      insights.push(...analyticsController.buildPositionInsights({
+        positions: openRows,
+        medianHoldHours: (parseInt(holdRow.samples) || 0) >= 5 ? parseFloat(holdRow.median_hold_hours) : null,
+        historyBySymbol
+      }));
+    } catch (err) {
+      console.warn('[AI] position insight failed:', err.message);
+    }
 
     // === Earnings alerts ===
     try {
@@ -3770,6 +3983,96 @@ const analyticsController = {
     return insights;
   },
 
+  /**
+   * Management insights for open positions that need no market data: a
+   * position held far past the user's normal hold time, open positions with
+   * no stop on record, and exposure concentrated in one symbol. Aging and
+   * concentration keys include the symbol, so a new problem position gets a
+   * fresh insight. Pure, so unit-testable.
+   */
+  buildPositionInsights({ positions = [], medianHoldHours = null, historyBySymbol = new Map(), now = Date.now() } = {}) {
+    const insights = [];
+    if (!positions.length) return insights;
+    const HOUR_MS = 60 * 60 * 1000;
+    const durationLabel = hours => {
+      if (hours < 1) return `${Math.max(1, Math.round(hours * 60))} minutes`;
+      if (hours < 48) return `${Math.round(hours)} hours`;
+      return `${Math.round(hours / 24)} days`;
+    };
+
+    // Held well past the trader's own norm: for a day trader anything carried
+    // overnight, otherwise three times the median hold.
+    if (medianHoldHours && medianHoldHours > 0) {
+      const thresholdHours = medianHoldHours < 24 ? 24 : medianHoldHours * 3;
+      const aged = positions
+        .map(pos => ({ pos, ageHours: pos.opened_at ? (now - new Date(pos.opened_at).getTime()) / HOUR_MS : 0 }))
+        .filter(({ ageHours }) => ageHours >= thresholdHours)
+        .sort((a, b) => b.ageHours - a.ageHours)
+        .slice(0, 2);
+      for (const { pos, ageHours } of aged) {
+        const sym = String(pos.symbol).toUpperCase();
+        const history = historyBySymbol.get(sym);
+        const dayTrader = medianHoldHours < 24;
+        insights.push({
+          type: 'position',
+          key: `position:aging:${sym.toLowerCase()}`,
+          priority: dayTrader ? 58 : 48,
+          headline: `${sym} has been open ${durationLabel(ageHours)}`,
+          body: `Your median hold over the last 90 days is ${durationLabel(medianHoldHours)}${history && history.tradeCount >= 3 ? `, and you are ${history.wins} for ${history.tradeCount} on ${sym}` : ''}. ${dayTrader ? 'A day trade carried overnight is a different trade: write down the thesis for holding or close it.' : 'Decide whether the original thesis still holds; if it does not, exit instead of waiting.'}`,
+          source: 'context',
+          action_label: `View ${sym} trades`,
+          action_url: `/trades?symbol=${encodeURIComponent(sym)}`
+        });
+      }
+    }
+
+    // Open positions where no leg has a stop recorded.
+    const unprotected = positions
+      .filter(pos => (parseInt(pos.legs) || 0) > 0 && parseInt(pos.legs_without_stop) === parseInt(pos.legs))
+      .map(pos => String(pos.symbol).toUpperCase())
+      .sort();
+    if (unprotected.length) {
+      const shown = unprotected.slice(0, 3).join(', ');
+      const more = unprotected.length > 3 ? ` and ${unprotected.length - 3} more` : '';
+      insights.push({
+        type: 'position',
+        key: 'position:nostop',
+        priority: 44,
+        headline: unprotected.length === 1
+          ? `${unprotected[0]} is open with no stop recorded`
+          : `${unprotected.length} open positions have no stop recorded`,
+        body: `${shown}${more} ${unprotected.length === 1 ? 'has' : 'have'} no stop on record. Set the level where the trade is wrong and log it, so the exit is decided before the market decides it for you.`,
+        source: 'context',
+        action_label: unprotected.length === 1 ? `View ${unprotected[0]} trades` : 'View open trades',
+        action_url: unprotected.length === 1 ? `/trades?symbol=${encodeURIComponent(unprotected[0])}` : '/trades?status=open'
+      });
+    }
+
+    // One symbol dominating open exposure.
+    const exposures = positions
+      .map(pos => ({ sym: String(pos.symbol).toUpperCase(), exposure: Math.abs(parseFloat(pos.exposure) || 0) }))
+      .filter(entry => entry.exposure > 0);
+    const totalExposure = exposures.reduce((sum, entry) => sum + entry.exposure, 0);
+    if (exposures.length >= 3 && totalExposure > 0) {
+      const largest = exposures.reduce((a, b) => (b.exposure > a.exposure ? b : a));
+      const share = (largest.exposure / totalExposure) * 100;
+      if (share >= 50) {
+        insights.push({
+          type: 'position',
+          key: `position:concentration:${largest.sym.toLowerCase()}`,
+          priority: 46,
+          headline: `${largest.sym} is ${share.toFixed(0)}% of your open exposure`,
+          body: `$${largest.exposure.toFixed(0)} of $${totalExposure.toFixed(0)} at cost across ${exposures.length} open positions sits in one symbol. One bad print there moves the whole book; trim it toward your normal position size.`,
+          source: 'context',
+          action_label: `View ${largest.sym} trades`,
+          action_url: `/trades?symbol=${encodeURIComponent(largest.sym)}`
+        });
+      }
+    }
+
+    return insights;
+  },
+
   // Decide whether AI enrichment should run for this user. Two gates:
   //   1) An AI provider must be configured with whatever credential it needs.
   //   2) If billing is enabled on the instance, the user must be on Pro tier.
@@ -3797,16 +4100,175 @@ const analyticsController = {
   // single batched prompt to keep cost/latency bounded regardless of how many
   // insights are in the list. Falls back to the original deterministic
   // body on any parsing/AI failure so the dashboard never goes blank.
+  /**
+   * Deterministic dashboard insights derived from the trader dossier:
+   * behavioral tendencies (revenge trading, overconfidence, drift), the
+   * active streak, and discipline gaps (missing stops, weak setup grades,
+   * low playbook adherence). Pure given a dossier, so it is unit-testable
+   * via buildDossierInsights().
+   */
+  async computeDossierInsights(userId) {
+    const dossier = await AITraderContext.build(userId, {
+      sections: ['observed', 'behavior', 'personality', 'playbooks']
+    });
+    return analyticsController.buildDossierInsights(dossier);
+  },
+
+  buildDossierInsights(dossier) {
+    if (!dossier) return [];
+    const insights = [];
+    const money = value => `$${Math.abs(Number(value) || 0).toFixed(0)}`;
+    const behavior = dossier.behavior;
+    const observed = dossier.observed;
+    const playbooks = dossier.playbooks;
+    const personality = dossier.personality;
+
+    // Active losing streak: the most time-sensitive thing to say.
+    const streak = behavior?.active_streak;
+    if (streak && streak.type === 'loss' && streak.length >= 3) {
+      insights.push({
+        type: 'streak',
+        key: `streak:loss:${streak.length}`,
+        priority: 50,
+        headline: `${streak.length} losses in a row`,
+        body: `Your last ${streak.length} trades lost ${streak.total_pnl_usd !== null ? money(streak.total_pnl_usd) : 'money'} combined${behavior.revenge ? ', and revenge trading has followed losses like this before' : ''}. Cut size in half until you book two planned wins.`,
+        source: 'computed',
+        action_label: 'Review recent trades',
+        action_url: '/trades'
+      });
+    } else if (streak && streak.type === 'win' && streak.length >= 4 && behavior?.overconfidence) {
+      insights.push({
+        type: 'streak',
+        key: `streak:win:${streak.length}`,
+        priority: 42,
+        headline: `${streak.length} wins in a row, watch your size`,
+        body: `You are ${streak.length} for ${streak.length}${streak.total_pnl_usd !== null ? ` (+${money(streak.total_pnl_usd)})` : ''}. After streaks like this you have sized up about ${Math.round(behavior.overconfidence.avg_size_increase_pct || 0)}%${behavior.overconfidence.ended_in_loss ? ` and ${behavior.overconfidence.ended_in_loss} of ${behavior.overconfidence.events} ended in a loss` : ''}. Keep the next entry at your normal size.`,
+        source: 'computed',
+        action_label: 'See behavioral analytics',
+        action_url: '/metrics/behavioral'
+      });
+    }
+
+    // Revenge trading in the behavior window.
+    if (behavior?.revenge) {
+      const r = behavior.revenge;
+      insights.push({
+        type: 'behavior',
+        key: 'behavior:revenge',
+        priority: 45,
+        headline: `Revenge trading showed up ${r.events} time${r.events === 1 ? '' : 's'}`,
+        body: `In the last ${behavior.window_days} days you re-entered within about ${Math.round(r.avg_window_minutes || 0)} minutes of losses near ${r.avg_trigger_loss_usd !== null ? money(r.avg_trigger_loss_usd) : 'your pain point'}${r.avg_size_increase_pct !== null ? `, sizing up ${Math.round(r.avg_size_increase_pct)}%` : ''}${r.total_additional_loss_usd !== null && r.total_additional_loss_usd < 0 ? `, costing another ${money(r.total_additional_loss_usd)}` : ''}. Set a 30-minute cooldown after any loss over ${r.avg_trigger_loss_usd !== null ? money(r.avg_trigger_loss_usd * 0.5) : 'your daily limit'}.`,
+        source: 'computed',
+        action_label: 'See revenge analysis',
+        action_url: '/metrics/behavioral'
+      });
+    } else if (behavior?.overconfidence && !(streak && streak.type === 'win')) {
+      const o = behavior.overconfidence;
+      insights.push({
+        type: 'behavior',
+        key: 'behavior:overconfidence',
+        priority: 40,
+        headline: 'You size up after win streaks',
+        body: `${o.events} overconfidence episode${o.events === 1 ? '' : 's'} in the last ${behavior.window_days} days: after about ${Math.round(o.avg_streak_length || 0)} wins you raised size ${Math.round(o.avg_size_increase_pct || 0)}%${o.ended_in_loss ? `, and ${o.ended_in_loss} ended in a loss` : ''}. Fix position size for the day before the first trade.`,
+        source: 'computed',
+        action_label: 'See behavioral analytics',
+        action_url: '/metrics/behavioral'
+      });
+    }
+
+    // Personality drift with real severity.
+    const drift = personality?.drift;
+    if (drift && ['high', 'severe'].includes(String(drift.severity).toLowerCase())) {
+      const change = drift.from && drift.to && drift.from !== drift.to ? `from ${drift.from} to ${drift.to}` : 'from your usual style';
+      insights.push({
+        type: 'behavior',
+        key: 'behavior:drift',
+        priority: 38,
+        headline: 'Your trading style has drifted',
+        body: `Recent trades moved ${change}${drift.hold_time_pct !== null ? ` (hold time ${drift.hold_time_pct >= 0 ? '+' : ''}${Math.round(drift.hold_time_pct)}%` : ''}${drift.frequency_pct !== null ? `${drift.hold_time_pct !== null ? ', ' : ' ('}frequency ${drift.frequency_pct >= 0 ? '+' : ''}${Math.round(drift.frequency_pct)}%)` : (drift.hold_time_pct !== null ? ')' : '')}. Decide whether this is deliberate; if not, return to the setup you grade best.`,
+        source: 'computed',
+        action_label: 'See personality analysis',
+        action_url: '/metrics/behavioral'
+      });
+    }
+
+    // Discipline: pick the single strongest gap.
+    const discipline = [];
+    if (observed && observed.trades >= 10 && observed.stop_usage_pct !== null && observed.stop_usage_pct < 70) {
+      discipline.push({
+        score: 100 - observed.stop_usage_pct,
+        insight: {
+          type: 'discipline',
+          key: 'discipline:stops',
+          priority: 36,
+          headline: `Stops recorded on only ${Math.round(observed.stop_usage_pct)}% of trades`,
+          body: `${observed.trades} closed trades in ${observed.window_days} days and ${Math.round(100 - observed.stop_usage_pct)}% had no stop on record${observed.avg_r !== null ? `, with an average of ${observed.avg_r.toFixed(2)}R where risk was defined` : ''}. Log a stop on every entry so R and MAE can tell you what is working.`,
+          source: 'computed',
+          action_label: 'Review trades',
+          action_url: '/trades'
+        }
+      });
+    }
+    const gradeCounts = observed?.grade_counts || {};
+    const graded = Object.values(gradeCounts).reduce((sum, n) => sum + (Number(n) || 0), 0);
+    const weak = (Number(gradeCounts.D) || 0) + (Number(gradeCounts.F) || 0);
+    if (graded >= 10 && weak / graded >= 0.4) {
+      const pct = Math.round((weak / graded) * 100);
+      discipline.push({
+        score: pct,
+        insight: {
+          type: 'discipline',
+          key: 'discipline:grades',
+          priority: 35,
+          headline: `${pct}% of your setups graded D or F`,
+          body: `${weak} of ${graded} graded trades in the last ${observed.window_days} days scored D or F. Before the next entry, require the setup to meet your A/B criteria or skip it.`,
+          source: 'computed',
+          action_label: 'Review setup quality',
+          action_url: '/trades'
+        }
+      });
+    }
+    if (playbooks?.recent && playbooks.recent.reviews >= 5 && playbooks.recent.followed_plan_pct !== null && playbooks.recent.followed_plan_pct < 60) {
+      discipline.push({
+        score: 100 - playbooks.recent.followed_plan_pct,
+        insight: {
+          type: 'discipline',
+          key: 'discipline:playbook',
+          priority: 37,
+          headline: `Plan followed on ${Math.round(playbooks.recent.followed_plan_pct)}% of reviewed trades`,
+          body: `${playbooks.recent.reviews} playbook reviews in the last ${playbooks.recent.window_days} days, average adherence ${Math.round(playbooks.recent.avg_adherence || 0)}%. Run the checklist before entry, not after, on the next ten trades.`,
+          source: 'computed',
+          action_label: 'Open playbooks',
+          action_url: '/playbooks'
+        }
+      });
+    }
+    if (discipline.length) {
+      discipline.sort((a, b) => b.score - a.score);
+      insights.push(discipline[0].insight);
+    }
+
+    // Cap so the carousel stays focused.
+    return insights.slice(0, 3);
+  },
+
   async enrichInsightsWithAI(userId, insights, ai_analysis_instructions = '') {
     if (!Array.isArray(insights) || insights.length === 0) return insights;
 
     // Pre-strip non-enrichable insights (e.g. system/empty-state). We still
     // return them in the output so ordering and priorities stay intact.
+    const ENRICHABLE_TYPES = new Set(['earnings', 'news', 'edge', 'behavior', 'discipline', 'streak', 'position']);
     const enrichable = insights
       .map((ins, idx) => ({ ins, idx }))
-      .filter(({ ins }) => ins.type === 'earnings' || ins.type === 'news' || ins.type === 'edge');
+      .filter(({ ins }) => ENRICHABLE_TYPES.has(ins.type));
 
     if (enrichable.length === 0) return insights;
+
+    // The dossier lets the rewrite reference the trader's goals, limits and
+    // known tendencies instead of generic coaching.
+    const dossierText = await AITraderContext.render(userId, {
+      sections: ['profile', 'observed', 'behavior', 'personality', 'edge', 'playbooks', 'risk']
+    });
 
     const numbered = enrichable.map(({ ins }, i) => ({
       n: i + 1,
@@ -3816,8 +4278,8 @@ const analyticsController = {
       body: ins.body
     }));
 
-    const prompt = `You are a senior trading coach. The user already has the following deterministic insights about their open positions and trading performance. Your job is to rewrite ONLY the BODY text of each insight to be sharper, more analytical, and more useful — keep the same data points but add concrete reasoning and a clearer action.
-
+    const prompt = `You are a senior trading coach. The user already has the following deterministic insights about their open positions, trading performance and tendencies. Your job is to rewrite ONLY the BODY text of each insight to be sharper, more analytical, and more useful — keep the same data points but add concrete reasoning and a clearer action.
+${dossierText ? `\n${dossierText}\n\nUse the dossier to tailor each body: tie actions to the trader's goals, risk limits, playbook rules and known tendencies. Use its numbers only when they support the insight's own facts.\n` : ''}
 Rules — non-negotiable:
 - Return ONLY a valid JSON array, no commentary, no markdown fences, no preface.
 - Each item: {"n": <number>, "body": "<rewritten body>"}.
@@ -3872,16 +4334,21 @@ Respond with the JSON array now.`;
     return out;
   },
 
-  buildRecommendationPrompt(metrics, trades, tradingProfile, sectorData) {
+  buildRecommendationPrompt(metrics, trades, tradingProfile, sectorData, dossierText = '') {
     const sectorAnalysis = sectorData && sectorData.length > 0
       ? `\n\nSector Performance Analysis:\n${sectorData.map(s =>
           `- ${s.industry}: ${s.total_trades} trades, ${s.total_pnl > 0 ? '+' : ''}$${s.total_pnl.toFixed(2)} P&L, ${s.win_rate}% win rate`
         ).join('\n')}`
       : '';
 
-    const tradingProfileInfo = tradingProfile
-      ? `\n\nTrading Profile:\n- Experience: ${tradingProfile.experienceLevel}\n- Risk Tolerance: ${tradingProfile.riskTolerance}\n- Trading Styles: ${tradingProfile.tradingStyles.join(', ')}\n- Strategies: ${tradingProfile.tradingStrategies.join(', ')}`
-      : '';
+    // The shared dossier carries the full profile (declared + observed),
+    // known tendencies, Edge Report, playbooks and risk limits. The short
+    // settings-only block is the fallback when no dossier could be built.
+    const tradingProfileInfo = dossierText
+      ? `\n\n${dossierText}\n\n${AITraderContext.focusGuidelines()}`
+      : (tradingProfile
+        ? `\n\nTrading Profile:\n- Experience: ${tradingProfile.experienceLevel}\n- Risk Tolerance: ${tradingProfile.riskTolerance}\n- Trading Styles: ${tradingProfile.tradingStyles.join(', ')}\n- Strategies: ${tradingProfile.tradingStrategies.join(', ')}\n- Position Size: ${tradingProfile.averagePositionSize}\n- Markets: ${tradingProfile.primaryMarkets.join(', ') || 'Not specified'}\n- Goals: ${tradingProfile.tradingGoals.join(', ') || 'Not specified'}\n- Preferred Sectors: ${tradingProfile.preferredSectors.join(', ') || 'Not specified'}`
+        : '');
 
     return `As a professional trading analyst, provide personalized trading recommendations based on this performance data:
 

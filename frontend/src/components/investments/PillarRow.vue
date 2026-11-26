@@ -9,16 +9,11 @@
       <div class="flex items-center space-x-4">
         <!-- Pass/Fail Icon -->
         <div
-          :class="[
-            'flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center',
-            pillar.passed
-              ? 'bg-green-100 dark:bg-green-900/30'
-              : 'bg-red-100 dark:bg-red-900/30'
-          ]"
+          :class="[ 'flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center', pillar.passed ? 'bg-primary-100 dark:bg-primary-900/30' : 'bg-gray-100 dark:bg-gray-700' ]"
         >
           <svg
             v-if="pillar.passed"
-            class="w-6 h-6 text-green-600"
+            class="w-6 h-6 text-primary-700 dark:text-primary-400"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -27,7 +22,7 @@
           </svg>
           <svg
             v-else
-            class="w-6 h-6 text-red-600"
+            class="w-6 h-6 text-gray-400 dark:text-gray-500"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -40,7 +35,7 @@
         <div>
           <div class="flex items-center">
             <span class="text-xs font-medium text-gray-400 dark:text-gray-500 mr-2">Pillar {{ pillarNumber }}</span>
-            <h4 class="text-sm font-medium text-gray-900 dark:text-white">{{ pillar.name }}</h4>
+            <h4 class="heading-sub">{{ pillar.name }}</h4>
           </div>
           <p class="text-sm text-gray-500 dark:text-gray-400">{{ pillar.description }}</p>
         </div>
@@ -50,17 +45,14 @@
       <div class="flex items-center space-x-4">
         <div class="text-right">
           <p
-            :class="[
-              'text-lg font-bold',
-              pillar.passed ? 'text-green-600' : 'text-red-600'
-            ]"
+            :class="[ 'text-lg font-bold', pillar.passed ? 'text-primary-700 dark:text-primary-400' : 'text-gray-500 dark:text-gray-400' ]"
           >
             {{ displayValue }}
           </p>
           <p v-if="pillar.threshold" class="text-xs text-gray-500 dark:text-gray-400">
             Threshold: {{ formatThreshold }}
           </p>
-          <p v-if="pillar.reason" class="text-xs text-gray-400 dark:text-gray-500">
+          <p v-if="pillar.reason" class="text-xs text-gray-500 dark:text-gray-400">
             {{ pillar.reason }}
           </p>
         </div>
@@ -90,12 +82,12 @@
         <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Annual P/E Ratios</p>
         <div class="overflow-x-auto">
           <table class="min-w-full text-sm">
-            <thead>
-              <tr class="bg-gray-100 dark:bg-gray-800">
-                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Year</th>
-                <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Price</th>
-                <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">EPS</th>
-                <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">P/E</th>
+            <thead class="table-head">
+              <tr>
+                <th class="px-3 py-2 text-left table-th">Year</th>
+                <th class="px-3 py-2 text-right table-th">Price</th>
+                <th class="px-3 py-2 text-right table-th">EPS</th>
+                <th class="px-3 py-2 text-right table-th">P/E</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -103,7 +95,7 @@
                 <td class="px-3 py-2 text-gray-900 dark:text-white">{{ row.year }}</td>
                 <td class="px-3 py-2 text-right text-gray-900 dark:text-white">{{ formatPrice(row.price) }}</td>
                 <td class="px-3 py-2 text-right text-gray-900 dark:text-white">{{ formatPrice(row.eps) }}</td>
-                <td class="px-3 py-2 text-right font-medium text-gray-900 dark:text-white">{{ row.pe?.toFixed(2) }}</td>
+                <td class="px-3 py-2 text-right font-medium text-gray-900 dark:text-white">{{ formatDecimal(row.pe, { nullValue: '' }) }}</td>
               </tr>
             </tbody>
           </table>
@@ -115,12 +107,12 @@
         <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Annual ROIC</p>
         <div class="overflow-x-auto">
           <table class="min-w-full text-sm">
-            <thead>
-              <tr class="bg-gray-100 dark:bg-gray-800">
-                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Year</th>
-                <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Op. Income</th>
-                <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Invested Capital</th>
-                <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">ROIC</th>
+            <thead class="table-head">
+              <tr>
+                <th class="px-3 py-2 text-left table-th">Year</th>
+                <th class="px-3 py-2 text-right table-th">Op. Income</th>
+                <th class="px-3 py-2 text-right table-th">Invested Capital</th>
+                <th class="px-3 py-2 text-right table-th">ROIC</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -128,7 +120,7 @@
                 <td class="px-3 py-2 text-gray-900 dark:text-white">{{ row.year }}</td>
                 <td class="px-3 py-2 text-right text-gray-900 dark:text-white">{{ formatCurrency(row.operatingIncome) }}</td>
                 <td class="px-3 py-2 text-right text-gray-900 dark:text-white">{{ formatCurrency(row.investedCapital) }}</td>
-                <td class="px-3 py-2 text-right font-medium text-gray-900 dark:text-white">{{ row.roic?.toFixed(2) }}%</td>
+                <td class="px-3 py-2 text-right font-medium text-gray-900 dark:text-white">{{ formatPercent(row.roic, { digits: 1 }) }}</td>
               </tr>
             </tbody>
           </table>
@@ -138,14 +130,14 @@
       <!-- Regular Data Grid (excluding arrays) -->
       <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
         <template v-for="(fieldValue, fieldKey) in formattedData" :key="fieldKey">
-          <div class="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
+          <div class="card p-3 dark:border-gray-600">
             <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">{{ formatLabel(fieldKey) }}</p>
             <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ fieldValue }}</p>
           </div>
         </template>
 
         <!-- Threshold Card if applicable -->
-        <div v-if="pillar.threshold" class="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
+        <div v-if="pillar.threshold" class="card p-3 dark:border-gray-600">
           <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Threshold</p>
           <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ formatThreshold }}</p>
         </div>
@@ -158,9 +150,10 @@
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCurrencyFormatter } from '@/composables/useCurrencyFormatter'
+import { formatDecimal, formatPercent } from '@/utils/formatters'
 
 const route = useRoute()
-const { symbolFor } = useCurrencyFormatter()
+const { symbolFor, formatCurrency: formatMoney } = useCurrencyFormatter()
 
 const props = defineProps({
   pillarNumber: {
@@ -283,7 +276,7 @@ const displayValue = computed(() => {
     : 0
 
   if (typeof value === 'number') {
-    return value.toFixed(2)
+    return formatDecimal(value, { digits: 2 })
   }
 
   return String(value)
@@ -345,20 +338,23 @@ function formatLabel(key) {
 
 function formatPrice(value) {
   if (value === null || value === undefined || !Number.isFinite(Number(value))) return 'N/A'
-  return `${symbolFor(props.currency)}${Number(value).toFixed(2)}`
+  return formatMoney(Number(value), { currency: props.currency })
 }
 
 function formatCurrency(value) {
   if (value === null || value === undefined) return 'N/A'
+  // Sign goes before the symbol (-$1.2M), matching the shared formatter.
   const sym = symbolFor(props.currency)
-  if (Math.abs(value) >= 1e12) {
-    return `${sym}${(value / 1e12).toFixed(2)}T`
-  } else if (Math.abs(value) >= 1e9) {
-    return `${sym}${(value / 1e9).toFixed(2)}B`
-  } else if (Math.abs(value) >= 1e6) {
-    return `${sym}${(value / 1e6).toFixed(2)}M`
+  const sign = value < 0 ? '-' : ''
+  const abs = Math.abs(value)
+  if (abs >= 1e12) {
+    return `${sign}${sym}${(abs / 1e12).toFixed(2)}T`
+  } else if (abs >= 1e9) {
+    return `${sign}${sym}${(abs / 1e9).toFixed(2)}B`
+  } else if (abs >= 1e6) {
+    return `${sign}${sym}${(abs / 1e6).toFixed(2)}M`
   } else {
-    return `${sym}${value.toLocaleString()}`
+    return `${sign}${sym}${abs.toLocaleString()}`
   }
 }
 

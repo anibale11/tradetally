@@ -25,11 +25,11 @@
 
     <!-- Loading -->
     <div v-if="initialLoading" class="flex justify-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div class="spinner spinner-lg"></div>
     </div>
 
     <!-- Error -->
-    <div v-else-if="error && !testimonials.length" class="rounded-md bg-red-50 dark:bg-red-900/20 p-4">
+    <div v-else-if="error && !testimonials.length" class="callout-danger">
       <p class="text-sm text-red-800 dark:text-red-400">{{ error }}</p>
     </div>
 
@@ -37,13 +37,13 @@
       <!-- Refresh indicator -->
       <div v-if="loading" class="flex justify-end mb-2">
         <div class="flex items-center space-x-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm border border-gray-200 dark:border-gray-700">
-          <div class="animate-spin rounded-full h-4 w-4 border-2 border-primary-600 border-t-transparent"></div>
+          <div class="spinner spinner-xs"></div>
           <span class="text-xs text-gray-600 dark:text-gray-400">Updating...</span>
         </div>
       </div>
 
       <!-- Empty state -->
-      <div v-if="filteredTestimonials.length === 0" class="card p-8 text-center">
+      <div v-if="filteredTestimonials.length === 0" class="card card-body text-center">
         <p class="text-gray-500 dark:text-gray-400">No testimonials {{ filterStatus !== 'all' ? 'matching filter' : 'yet' }}.</p>
       </div>
 
@@ -52,7 +52,7 @@
         <div
           v-for="t in filteredTestimonials"
           :key="t.id"
-          class="card p-5"
+          class="card card-body"
         >
           <div class="flex items-start justify-between gap-4">
             <div class="flex-1 min-w-0">
@@ -66,7 +66,7 @@
                   :class="t.approved
                     ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                     : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'"
-                  class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                  class="badge"
                 >
                   {{ t.approved ? 'Approved' : 'Pending' }}
                 </span>
@@ -98,7 +98,7 @@
                 v-if="!t.approved"
                 @click="approve(t)"
                 :disabled="t._loading"
-                class="btn-primary text-xs px-3 py-1.5"
+                class="btn-primary btn-sm"
               >
                 Approve
               </button>
@@ -106,14 +106,14 @@
                 v-if="t.approved"
                 @click="reject(t)"
                 :disabled="t._loading"
-                class="btn-secondary text-xs px-3 py-1.5"
+                class="btn-secondary btn-sm"
               >
                 Reject
               </button>
               <button
                 @click="remove(t)"
                 :disabled="t._loading"
-                class="text-xs px-3 py-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                class="btn-ghost btn-sm"
               >
                 Delete
               </button>

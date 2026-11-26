@@ -1,16 +1,17 @@
 <template>
     <div class="content-wrapper py-8">
-        <!-- Loading State -->
-        <div v-if="loading" class="flex items-center justify-center py-16">
+        <!-- Full-page spinner only on first load (or when switching holdings);
+             later refreshes keep the content and scroll position. -->
+        <div v-if="initialLoading" class="flex items-center justify-center py-16">
             <div
-                class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"
+                class="spinner spinner-lg"
             ></div>
         </div>
 
         <!-- Error State -->
         <div
             v-else-if="error"
-            class="bg-red-50 dark:bg-red-900/20 rounded-lg p-6 text-center"
+            class="callout-danger text-center"
         >
             <p class="text-red-700 dark:text-red-400">{{ error }}</p>
             <button @click="loadHolding" class="mt-4 btn-primary">
@@ -19,7 +20,13 @@
         </div>
 
         <!-- Content -->
-        <div v-else-if="holding">
+        <div v-else-if="holding" class="relative">
+            <div v-if="loading" class="absolute top-0 right-0 z-10">
+                <div class="flex items-center space-x-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm border border-gray-200 dark:border-gray-700">
+                    <span class="spinner spinner-xs"></span>
+                    <span class="text-xs text-gray-600 dark:text-gray-400">Updating...</span>
+                </div>
+            </div>
             <!-- Header -->
             <div class="mb-6">
                 <button
@@ -61,7 +68,7 @@
                             </p>
                             <p
                                 v-if="holding.broker"
-                                class="text-sm text-gray-400 dark:text-gray-500"
+                                class="text-sm text-gray-500 dark:text-gray-400"
                             >
                                 {{ holding.broker }}
                             </p>
@@ -89,7 +96,7 @@
                         </button>
                         <button
                             @click="confirmDelete"
-                            class="btn-secondary text-red-600 hover:text-red-700"
+                            class="btn-secondary text-red-600 dark:text-red-400 hover:text-red-700"
                         >
                             Delete
                         </button>
@@ -102,21 +109,21 @@
                 class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6"
             >
                 <!-- Shares -->
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+                <div class="card p-4">
                     <p class="text-sm text-gray-500 dark:text-gray-400">
                         Shares
                     </p>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                    <p class="stat-value text-gray-900 dark:text-white">
                         {{ formatNumber(holding.shares) }}
                     </p>
                 </div>
 
                 <!-- Current Value -->
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+                <div class="card p-4">
                     <p class="text-sm text-gray-500 dark:text-gray-400">
                         Current Value
                     </p>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                    <p class="stat-value text-gray-900 dark:text-white">
                         {{ formatCurrency(holding.currentValue) }}
                     </p>
                     <p
@@ -128,11 +135,11 @@
                 </div>
 
                 <!-- Cost Basis -->
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+                <div class="card p-4">
                     <p class="text-sm text-gray-500 dark:text-gray-400">
                         Cost Basis
                     </p>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                    <p class="stat-value text-gray-900 dark:text-white">
                         {{ formatCurrency(holding.costBasis) }}
                     </p>
                     <p class="text-xs text-gray-400">
@@ -141,31 +148,23 @@
                 </div>
 
                 <!-- Unrealized P&L -->
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+                <div class="card p-4">
                     <p class="text-sm text-gray-500 dark:text-gray-400">
                         Unrealized P&L
                     </p>
                     <p
                         :class="[
                             'text-2xl font-bold',
-                            holding.unrealizedPnL >= 0
-                                ? 'text-green-600'
-                                : 'text-red-600',
+                            pnlClass(holding.unrealizedPnL),
                         ]"
                     >
                         {{ formatCurrency(holding.unrealizedPnL) }}
                     </p>
                     <p
                         v-if="holding.unrealizedPnLPercent !== undefined"
-                        :class="[
-                            'text-xs',
-                            holding.unrealizedPnL >= 0
-                                ? 'text-green-500'
-                                : 'text-red-500',
-                        ]"
+                        :class="[ 'text-xs', holding.unrealizedPnL >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400', ]"
                     >
-                        {{ holding.unrealizedPnL >= 0 ? "+" : ""
-                        }}{{ holding.unrealizedPnLPercent.toFixed(2) }}%
+                        {{ formatPercent(holding.unrealizedPnLPercent, { digits: 1, showSign: holding.unrealizedPnL >= 0 }) }}
                     </p>
                 </div>
             </div>
@@ -177,17 +176,12 @@
                         v-for="tab in tabs"
                         :key="tab.id"
                         @click="activeTab = tab.id"
-                        :class="[
-                            'py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap',
-                            activeTab === tab.id
-                                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400',
-                        ]"
+                        :class="[ 'tab', activeTab === tab.id ? 'tab-active' : 'tab-inactive', ]"
                     >
                         {{ tab.name }}
                         <span
                             v-if="tab.count !== undefined"
-                            class="ml-2 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full text-xs"
+                            class="badge-neutral ml-2"
                         >
                             {{ tab.count }}
                         </span>
@@ -208,45 +202,45 @@
                         manual lots cover the same position.
                     </div>
                     <div
-                        class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden"
+                        class="card overflow-hidden"
                     >
                         <table
                             class="min-w-full divide-y divide-gray-200 dark:divide-gray-700"
                         >
-                            <thead class="bg-gray-50 dark:bg-gray-700">
+                            <thead class="table-head">
                                 <tr>
                                     <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                        class="text-left table-th px-4 py-2"
                                     >
                                         Purchase Date
                                     </th>
                                     <th
-                                        class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                        class="text-right table-th px-4 py-2"
                                     >
                                         Shares
                                     </th>
                                     <th
-                                        class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                        class="text-right table-th px-4 py-2"
                                     >
                                         Cost/Share
                                     </th>
                                     <th
-                                        class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                        class="text-right table-th px-4 py-2"
                                     >
                                         Total Cost
                                     </th>
                                     <th
-                                        class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                        class="text-right table-th px-4 py-2"
                                     >
                                         Current Value
                                     </th>
                                     <th
-                                        class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                        class="text-right table-th px-4 py-2"
                                     >
                                         Gain/Loss
                                     </th>
                                     <th
-                                        class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                        class="text-right table-th px-4 py-2"
                                     >
                                         Actions
                                     </th>
@@ -257,12 +251,12 @@
                             >
                                 <tr v-for="lot in lots" :key="lot.id">
                                     <td
-                                        class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white"
+                                        class="whitespace-nowrap text-sm text-gray-900 dark:text-white px-4 py-3"
                                     >
                                         {{ formatDate(lot.purchaseDate) }}
                                         <span
                                             v-if="lot.source === 'plaid'"
-                                            class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                                            class="badge-neutral ml-2"
                                             title="Synced automatically from your linked brokerage"
                                             >Plaid</span
                                         >
@@ -276,47 +270,45 @@
                                         </div>
                                     </td>
                                     <td
-                                        class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white"
+                                        class="whitespace-nowrap text-sm text-right text-gray-900 dark:text-white px-4 py-3"
                                     >
                                         {{ formatNumber(lot.shares) }}
                                     </td>
                                     <td
-                                        class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white"
+                                        class="whitespace-nowrap text-sm text-right text-gray-900 dark:text-white px-4 py-3"
                                     >
                                         {{ formatCurrency(lot.costPerShare) }}
                                     </td>
                                     <td
-                                        class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white"
+                                        class="whitespace-nowrap text-sm text-right text-gray-900 dark:text-white px-4 py-3"
                                     >
                                         {{ formatCurrency(lot.totalCost) }}
                                     </td>
                                     <td
-                                        class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white"
+                                        class="whitespace-nowrap text-sm text-right text-gray-900 dark:text-white px-4 py-3"
                                     >
                                         {{ formatCurrency(lot.currentValue) }}
                                     </td>
                                     <td
-                                        class="px-6 py-4 whitespace-nowrap text-sm text-right"
+                                        class="whitespace-nowrap text-sm text-right px-4 py-3"
                                         :class="
-                                            lot.gainLoss >= 0
-                                                ? 'text-green-600'
-                                                : 'text-red-600'
+                                            pnlClass(lot.gainLoss)
                                         "
                                     >
                                         {{ formatCurrency(lot.gainLoss) }}
                                         <span class="text-xs ml-1"
                                             >({{
-                                                lot.gainLossPercent.toFixed(1)
-                                            }}%)</span
+                                                formatPercent(lot.gainLossPercent, { digits: 1 })
+                                            }})</span
                                         >
                                     </td>
                                     <td
-                                        class="px-6 py-4 whitespace-nowrap text-sm text-right"
+                                        class="whitespace-nowrap text-sm text-right px-4 py-3"
                                     >
                                         <button
                                             v-if="lot.source !== 'plaid'"
                                             @click="deleteLot(lot.id)"
-                                            class="text-red-600 hover:text-red-800"
+                                            class="text-red-600 dark:text-red-400 hover:text-red-800"
                                             title="Delete lot"
                                         >
                                             <svg
@@ -338,7 +330,7 @@
                                 <tr v-if="lots.length === 0">
                                     <td
                                         colspan="7"
-                                        class="px-6 py-8 text-center text-gray-500 dark:text-gray-400"
+                                        class="text-center text-gray-500 dark:text-gray-400 px-4 py-3"
                                     >
                                         No purchase lots recorded. Add shares to
                                         track your cost basis.
@@ -352,7 +344,7 @@
                 <!-- Dividends Tab -->
                 <div v-if="activeTab === 'dividends'">
                     <div
-                        class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden"
+                        class="card overflow-hidden"
                     >
                         <!-- Summary -->
                         <div
@@ -365,7 +357,7 @@
                                     >
                                         Total Dividends Received
                                     </p>
-                                    <p class="text-xl font-bold text-green-600">
+                                    <p class="text-xl font-bold text-green-700 dark:text-green-400">
                                         {{ formatCurrency(totalDividends) }}
                                     </p>
                                 </div>
@@ -379,14 +371,13 @@
                                         class="text-xl font-bold text-gray-900 dark:text-white"
                                     >
                                         {{
-                                            holding.costBasis > 0
-                                                ? (
-                                                      (totalDividends /
-                                                          holding.costBasis) *
-                                                      100
-                                                  ).toFixed(2)
-                                                : 0
-                                        }}%
+                                            formatPercent(
+                                                holding.costBasis > 0
+                                                    ? (totalDividends / holding.costBasis) * 100
+                                                    : 0,
+                                                { digits: 1 }
+                                            )
+                                        }}
                                     </p>
                                 </div>
                             </div>
@@ -395,30 +386,30 @@
                         <table
                             class="min-w-full divide-y divide-gray-200 dark:divide-gray-700"
                         >
-                            <thead class="bg-gray-50 dark:bg-gray-700">
+                            <thead class="table-head">
                                 <tr>
                                     <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                        class="text-left table-th px-4 py-2"
                                     >
                                         Date
                                     </th>
                                     <th
-                                        class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                        class="text-right table-th px-4 py-2"
                                     >
                                         Amount
                                     </th>
                                     <th
-                                        class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                        class="text-right table-th px-4 py-2"
                                     >
                                         Per Share
                                     </th>
                                     <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                        class="text-left table-th px-4 py-2"
                                     >
                                         Type
                                     </th>
                                     <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                        class="text-left table-th px-4 py-2"
                                     >
                                         Notes
                                     </th>
@@ -432,17 +423,17 @@
                                     :key="dividend.id"
                                 >
                                     <td
-                                        class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white"
+                                        class="whitespace-nowrap text-sm text-gray-900 dark:text-white px-4 py-3"
                                     >
                                         {{ formatDate(dividend.paymentDate) }}
                                     </td>
                                     <td
-                                        class="px-6 py-4 whitespace-nowrap text-sm text-right text-green-600 font-medium"
+                                        class="whitespace-nowrap text-sm text-right text-green-700 dark:text-green-400 font-medium px-4 py-3"
                                     >
                                         {{ formatCurrency(dividend.amount) }}
                                     </td>
                                     <td
-                                        class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500 dark:text-gray-400"
+                                        class="whitespace-nowrap text-sm text-right text-gray-500 dark:text-gray-400 px-4 py-3"
                                     >
                                         {{
                                             dividend.perShare
@@ -453,12 +444,12 @@
                                         }}
                                     </td>
                                     <td
-                                        class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 capitalize"
+                                        class="whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 capitalize px-4 py-3"
                                     >
                                         {{ dividend.dividendType || "regular" }}
                                     </td>
                                     <td
-                                        class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate"
+                                        class="text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate px-4 py-3"
                                     >
                                         {{ dividend.notes || "-" }}
                                     </td>
@@ -466,7 +457,7 @@
                                 <tr v-if="dividends.length === 0">
                                     <td
                                         colspan="5"
-                                        class="px-6 py-8 text-center text-gray-500 dark:text-gray-400"
+                                        class="text-center text-gray-500 dark:text-gray-400 px-4 py-3"
                                     >
                                         No dividends recorded yet.
                                     </td>
@@ -483,7 +474,7 @@
                         class="flex items-center justify-center py-16"
                     >
                         <div
-                            class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"
+                            class="spinner spinner-md"
                         ></div>
                         <span class="ml-3 text-gray-500"
                             >Loading analysis...</span
@@ -503,7 +494,7 @@
 
                     <div
                         v-else
-                        class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-8 text-center"
+                        class="card card-body text-center"
                     >
                         <p class="text-gray-500 dark:text-gray-400 mb-4">
                             No 8 Pillars analysis available
@@ -517,10 +508,10 @@
                 <!-- Notes Tab -->
                 <div v-if="activeTab === 'notes'">
                     <div
-                        class="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-6"
+                        class="card card-body"
                     >
                         <h3
-                            class="text-lg font-medium text-gray-900 dark:text-white mb-4"
+                            class="heading-card mb-4"
                         >
                             Position Notes
                         </h3>
@@ -528,7 +519,7 @@
                             v-model="notes"
                             rows="6"
                             placeholder="Add notes about your investment thesis, target prices, etc..."
-                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                            class="input"
                         ></textarea>
                         <div class="mt-4 flex justify-end">
                             <button
@@ -564,13 +555,13 @@
         <!-- Delete Confirmation -->
         <div
             v-if="showDeleteConfirm"
-            class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50"
+            class="modal-overlay flex items-center justify-center"
         >
-            <div
-                class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 p-6"
+            <div role="dialog" aria-modal="true"
+                class="modal-panel max-w-md w-full mx-4 p-6"
             >
                 <h3
-                    class="text-lg font-medium text-gray-900 dark:text-white mb-4"
+                    class="modal-title mb-4"
                 >
                     Delete Holding
                 </h3>
@@ -579,7 +570,7 @@
                     remove all lots and dividend records. This action cannot be
                     undone.
                 </p>
-                <div class="flex justify-end space-x-3">
+                <div class="modal-footer">
                     <button
                         @click="showDeleteConfirm = false"
                         class="btn-secondary"
@@ -588,7 +579,7 @@
                     </button>
                     <button
                         @click="deleteHolding"
-                        class="btn-primary bg-red-600 hover:bg-red-700"
+                        class="btn-danger"
                     >
                         Delete
                     </button>
@@ -599,11 +590,13 @@
 </template>
 
 <script setup>
+import { pnlClass } from '@/utils/metricTone'
 import { ref, computed, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useInvestmentsStore } from "@/stores/investments";
 import { useNotification } from "@/composables/useNotification";
 import { useCurrencyFormatter } from "@/composables/useCurrencyFormatter";
+import { formatPercent } from "@/utils/formatters";
 import { format, parseISO } from "date-fns";
 import EightPillarsCard from "@/components/investments/EightPillarsCard.vue";
 import AddLotModal from "@/components/investments/AddLotModal.vue";
@@ -623,6 +616,7 @@ const analysis = ref(null);
 const notes = ref("");
 
 const loading = ref(false);
+const initialLoading = ref(true);
 const error = ref(null);
 const analysisLoading = ref(false);
 const savingNotes = ref(false);
@@ -664,6 +658,10 @@ async function loadHolding() {
     const id = route.params.id;
     if (!id) return;
 
+    // Only blank the page when there is nothing for this route to show yet.
+    if (!holding.value || String(holding.value.id) !== String(id)) {
+        initialLoading.value = true;
+    }
     loading.value = true;
     error.value = null;
 
@@ -708,6 +706,7 @@ async function loadHolding() {
         error.value = err.message || "Failed to load holding";
     } finally {
         loading.value = false;
+        initialLoading.value = false;
     }
 }
 

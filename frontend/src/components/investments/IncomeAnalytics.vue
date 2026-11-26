@@ -1,6 +1,6 @@
 <template>
   <div>
-    <p v-if="loading && !initialLoading" class="text-xs text-primary-600 mb-2" role="status">Updating...</p>
+    <p v-if="loading && !initialLoading" class="text-xs text-primary-700 mb-2" role="status">Updating...</p>
     <!-- Range selector -->
     <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
       <p class="text-sm text-gray-500 dark:text-gray-400">
@@ -11,10 +11,8 @@
           v-for="option in rangeOptions"
           :key="option.id"
           @click="setRange(option.id)"
-          class="px-3 py-1.5 text-xs font-medium rounded-md transition-colors"
-          :class="selectedRange === option.id
-            ? 'bg-primary-600 text-white'
-            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
+          class="segment"
+          :class="selectedRange === option.id ? 'segment-active' : ''"
         >
           {{ option.label }}
         </button>
@@ -22,33 +20,33 @@
     </div>
 
     <div v-if="initialLoading" class="flex justify-center py-12">
-      <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>
+      <div class="spinner spinner-lg"></div>
     </div>
 
     <template v-else-if="income">
       <!-- Summary cards -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-5">
-          <div class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Dividends</div>
-          <div class="mt-1 text-2xl font-bold tabular-nums text-green-600 dark:text-green-400">
+        <div class="card card-body">
+          <div class="text-label">Dividends</div>
+          <div class="stat-value mt-1 text-green-700 dark:text-green-400">
             {{ formatCurrency(income.summary.totalDividends) }}
           </div>
         </div>
-        <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-5">
-          <div class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Interest</div>
-          <div class="mt-1 text-2xl font-bold tabular-nums text-green-600 dark:text-green-400">
+        <div class="card card-body">
+          <div class="text-label">Interest</div>
+          <div class="stat-value mt-1 text-green-700 dark:text-green-400">
             {{ formatCurrency(income.summary.totalInterest) }}
           </div>
         </div>
-        <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-5">
-          <div class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Fees & Taxes</div>
-          <div class="mt-1 text-2xl font-bold tabular-nums text-red-600 dark:text-red-400">
+        <div class="card card-body">
+          <div class="text-label">Fees & Taxes</div>
+          <div class="stat-value mt-1 text-red-600 dark:text-red-400">
             {{ formatCurrency(income.summary.totalFees) }}
           </div>
         </div>
-        <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-5">
-          <div class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Dividends (Trailing 12M)</div>
-          <div class="mt-1 text-2xl font-bold tabular-nums text-gray-900 dark:text-white">
+        <div class="card card-body">
+          <div class="text-label">Dividends (Trailing 12M)</div>
+          <div class="stat-value mt-1 text-gray-900 dark:text-white">
             {{ formatCurrency(income.summary.trailing12mDividends) }}
           </div>
         </div>
@@ -57,19 +55,19 @@
       <!-- Empty state -->
       <div
         v-if="income.byMonth.length === 0"
-        class="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-sm"
+        class="card text-center py-12"
       >
-        <h3 class="text-sm font-medium text-gray-900 dark:text-white">No income activity yet</h3>
+        <h3 class="heading-sub">No income activity yet</h3>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
           Connect an investment account on the
-          <router-link to="/cashflow" class="text-primary-600 hover:text-primary-800">Account & Cashflow</router-link>
+          <router-link to="/cashflow" class="text-primary-700 hover:text-primary-800">Account & Cashflow</router-link>
           page and income will appear here after the first sync.
         </p>
       </div>
 
       <template v-else>
         <!-- Monthly chart -->
-        <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-6 mb-6">
+        <div class="card card-body mb-6">
           <h3 class="heading-card mb-4">Monthly Income</h3>
           <div class="h-72">
             <canvas ref="chartCanvas"></canvas>
@@ -77,40 +75,40 @@
         </div>
 
         <!-- By symbol table -->
-        <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden">
+        <div class="card overflow-hidden">
           <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <h3 class="heading-card">Income by Symbol</h3>
           </div>
           <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead class="bg-gray-50 dark:bg-gray-700">
+              <thead class="table-head">
                 <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Symbol</th>
-                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Dividends</th>
-                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Interest</th>
-                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Fees</th>
-                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Payments</th>
-                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Last Payment</th>
+                  <th class="text-left table-th px-4 py-2">Symbol</th>
+                  <th class="text-right table-th px-4 py-2">Dividends</th>
+                  <th class="text-right table-th px-4 py-2">Interest</th>
+                  <th class="text-right table-th px-4 py-2">Fees</th>
+                  <th class="text-right table-th px-4 py-2">Payments</th>
+                  <th class="text-right table-th px-4 py-2">Last Payment</th>
                 </tr>
               </thead>
               <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 <tr v-for="entry in income.bySymbol" :key="entry.symbol">
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                  <td class="whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white px-4 py-3">
                     {{ entry.symbol }}
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-100">
+                  <td class="whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-100 px-4 py-3">
                     {{ entry.dividends ? formatCurrency(entry.dividends) : '—' }}
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-100">
+                  <td class="whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-100 px-4 py-3">
                     {{ entry.interest ? formatCurrency(entry.interest) : '—' }}
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-100">
+                  <td class="whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-100 px-4 py-3">
                     {{ entry.fees ? formatCurrency(entry.fees) : '—' }}
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-100">
+                  <td class="whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-100 px-4 py-3">
                     {{ entry.transactionCount }}
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500 dark:text-gray-400">
+                  <td class="whitespace-nowrap text-sm text-right text-gray-500 dark:text-gray-400 px-4 py-3">
                     {{ formatDate(entry.lastDate) }}
                   </td>
                 </tr>
@@ -215,7 +213,7 @@ function createChart() {
         {
           label: 'Interest',
           data: months.map(entry => entry.interest),
-          backgroundColor: '#10B981',
+          backgroundColor: '#15803d',
           stack: 'income'
         },
         {

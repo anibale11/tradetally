@@ -25,22 +25,22 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm text-gray-500 dark:text-gray-400">Avg Heart Rate</p>
-              <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+              <p class="stat-value text-gray-900 dark:text-white">
                 {{ healthSummary.avgHeartRate ? Math.round(healthSummary.avgHeartRate) : '--' }}
               </p>
               <p class="text-xs text-gray-500 dark:text-gray-400">BPM</p>
             </div>
-            <svg class="w-10 h-10 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+            <svg class="w-10 h-10 text-red-600 dark:text-red-400" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12,21.35L10.55,20.03C5.4,15.36 2,12.27 2,8.5C2,5.41 4.42,3 7.5,3C9.24,3 10.91,3.81 12,5.08C13.09,3.81 14.76,3 16.5,3C19.58,3 22,5.41 22,8.5C22,12.27 18.6,15.36 13.45,20.03L12,21.35Z" />
             </svg>
           </div>
           <div class="mt-3">
             <div class="flex items-center text-xs">
-              <span v-if="healthSummary.heartRateTrend > 0" class="text-red-600">
-                ↑ {{ Math.abs(healthSummary.heartRateTrend).toFixed(1) }}%
+              <span v-if="healthSummary.heartRateTrend > 0" class="text-red-600 dark:text-red-400">
+                ↑ {{ formatPercent(healthSummary.heartRateTrend, { abs: true }) }}
               </span>
-              <span v-else-if="healthSummary.heartRateTrend < 0" class="text-green-600">
-                ↓ {{ Math.abs(healthSummary.heartRateTrend).toFixed(1) }}%
+              <span v-else-if="healthSummary.heartRateTrend < 0" class="text-green-700 dark:text-green-400">
+                ↓ {{ formatPercent(healthSummary.heartRateTrend, { abs: true }) }}
               </span>
               <span v-else class="text-gray-500">No change</span>
               <span class="ml-1 text-gray-500">vs last period</span>
@@ -54,22 +54,22 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm text-gray-500 dark:text-gray-400">Avg Sleep Score</p>
-              <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+              <p class="stat-value text-gray-900 dark:text-white">
                 {{ healthSummary.avgSleepScore ? Math.round(healthSummary.avgSleepScore) : '--' }}
               </p>
               <p class="text-xs text-gray-500 dark:text-gray-400">/ 100</p>
             </div>
-            <svg class="w-10 h-10 text-indigo-500" fill="currentColor" viewBox="0 0 24 24">
+            <svg class="w-10 h-10 text-primary-700 dark:text-primary-400" fill="currentColor" viewBox="0 0 24 24">
               <path d="M23,12H17V10L20.39,6H17V4H23V6L19.62,10H23V12M15,16H9V14L12.39,10H9V8H15V10L11.62,14H15V16M7,20H1V18L4.39,14H1V12H7V14L3.62,18H7V20Z" />
             </svg>
           </div>
           <div class="mt-3">
             <div class="flex items-center text-xs">
-              <span v-if="healthSummary.sleepScoreTrend > 0" class="text-green-600">
-                ↑ {{ Math.abs(healthSummary.sleepScoreTrend).toFixed(1) }}%
+              <span v-if="healthSummary.sleepScoreTrend > 0" class="text-green-700 dark:text-green-400">
+                ↑ {{ formatPercent(healthSummary.sleepScoreTrend, { abs: true }) }}
               </span>
-              <span v-else-if="healthSummary.sleepScoreTrend < 0" class="text-red-600">
-                ↓ {{ Math.abs(healthSummary.sleepScoreTrend).toFixed(1) }}%
+              <span v-else-if="healthSummary.sleepScoreTrend < 0" class="text-red-600 dark:text-red-400">
+                ↓ {{ formatPercent(healthSummary.sleepScoreTrend, { abs: true }) }}
               </span>
               <span v-else class="text-gray-500">No change</span>
               <span class="ml-1 text-gray-500">vs last period</span>
@@ -83,22 +83,22 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm text-gray-500 dark:text-gray-400">Avg Sleep Hours</p>
-              <p class="text-2xl font-semibold text-gray-900 dark:text-white">
-                {{ healthSummary.avgSleepHours ? healthSummary.avgSleepHours.toFixed(1) : '--' }}
+              <p class="stat-value text-gray-900 dark:text-white">
+                {{ healthSummary.avgSleepHours ? formatDecimal(healthSummary.avgSleepHours, { digits: 1 }) : '--' }}
               </p>
               <p class="text-xs text-gray-500 dark:text-gray-400">hours</p>
             </div>
-            <svg class="w-10 h-10 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+            <svg class="w-10 h-10 text-primary-700 dark:text-primary-400" fill="currentColor" viewBox="0 0 24 24">
               <path d="M19,7H11V14H3V5H1V20H3V17H21V20H23V11A4,4 0 0,0 19,7M7,10H5V8H7V10Z" />
             </svg>
           </div>
           <div class="mt-3">
             <div class="flex items-center text-xs">
-              <span v-if="healthSummary.sleepHoursTrend > 0" class="text-green-600">
-                ↑ {{ Math.abs(healthSummary.sleepHoursTrend).toFixed(1) }}%
+              <span v-if="healthSummary.sleepHoursTrend > 0" class="text-green-700 dark:text-green-400">
+                ↑ {{ formatPercent(healthSummary.sleepHoursTrend, { abs: true }) }}
               </span>
-              <span v-else-if="healthSummary.sleepHoursTrend < 0" class="text-red-600">
-                ↓ {{ Math.abs(healthSummary.sleepHoursTrend).toFixed(1) }}%
+              <span v-else-if="healthSummary.sleepHoursTrend < 0" class="text-red-600 dark:text-red-400">
+                ↓ {{ formatPercent(healthSummary.sleepHoursTrend, { abs: true }) }}
               </span>
               <span v-else class="text-gray-500">No change</span>
               <span class="ml-1 text-gray-500">vs last period</span>
@@ -112,22 +112,22 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm text-gray-500 dark:text-gray-400">Avg Stress Level</p>
-              <p class="text-2xl font-semibold text-gray-900 dark:text-white">
-                {{ healthSummary.avgStressLevel ? (healthSummary.avgStressLevel * 100).toFixed(0) : '--' }}%
+              <p class="stat-value text-gray-900 dark:text-white">
+                {{ healthSummary.avgStressLevel ? formatPercent(healthSummary.avgStressLevel, { multiplier: 100 }) : '--%' }}
               </p>
               <p class="text-xs text-gray-500 dark:text-gray-400">calculated</p>
             </div>
-            <svg class="w-10 h-10 text-orange-500" fill="currentColor" viewBox="0 0 24 24">
+            <svg class="w-10 h-10 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M10,9.5C10,10.3 9.3,11 8.5,11C7.7,11 7,10.3 7,9.5C7,8.7 7.7,8 8.5,8C9.3,8 10,8.7 10,9.5M15,13H9V14.5H15V13M17,9.5C17,10.3 16.3,11 15.5,11C14.7,11 14,10.3 14,9.5C14,8.7 14.7,8 15.5,8C16.3,8 17,8.7 17,9.5Z" />
             </svg>
           </div>
           <div class="mt-3">
             <div class="flex items-center text-xs">
-              <span v-if="healthSummary.stressLevelTrend > 0" class="text-red-600">
-                ↑ {{ Math.abs(healthSummary.stressLevelTrend).toFixed(1) }}%
+              <span v-if="healthSummary.stressLevelTrend > 0" class="text-red-600 dark:text-red-400">
+                ↑ {{ formatPercent(healthSummary.stressLevelTrend, { abs: true }) }}
               </span>
-              <span v-else-if="healthSummary.stressLevelTrend < 0" class="text-green-600">
-                ↓ {{ Math.abs(healthSummary.stressLevelTrend).toFixed(1) }}%
+              <span v-else-if="healthSummary.stressLevelTrend < 0" class="text-green-700 dark:text-green-400">
+                ↓ {{ formatPercent(healthSummary.stressLevelTrend, { abs: true }) }}
               </span>
               <span v-else class="text-gray-500">No change</span>
               <span class="ml-1 text-gray-500">vs last period</span>
@@ -143,34 +143,34 @@
     <!-- Performance by Health Condition -->
     <div class="card mt-6">
       <div class="card-body">
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
+        <h3 class="heading-card mb-4">
           Performance by Health Condition
         </h3>
         
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead class="bg-gray-50 dark:bg-gray-800">
+            <thead class="table-head">
               <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th class="text-left table-th px-4 py-2">
                   Condition
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th class="text-left table-th px-4 py-2">
                   Trades
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th class="text-left table-th px-4 py-2">
                   Win Rate
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th class="text-left table-th px-4 py-2">
                   Avg P&L
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th class="text-left table-th px-4 py-2">
                   Total P&L
                 </th>
               </tr>
             </thead>
             <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
               <tr v-for="condition in healthConditions" :key="condition.name">
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="whitespace-nowrap px-4 py-3">
                   <div class="flex items-center">
                     <svg class="w-8 h-8 mr-3" :class="condition.iconColor" fill="currentColor" viewBox="0 0 24 24">
                       <path :d="condition.iconPath" />
@@ -185,14 +185,14 @@
                     </div>
                   </div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                <td class="whitespace-nowrap text-sm text-gray-900 dark:text-white px-4 py-3">
                   {{ condition.tradeCount }}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="whitespace-nowrap px-4 py-3">
                   <div class="flex items-center">
                     <span class="text-sm font-medium" 
-                          :class="condition.winRate >= 50 ? 'text-green-600' : 'text-red-600'">
-                      {{ condition.winRate.toFixed(1) }}%
+                          :class="condition.winRate >= 50 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                      {{ formatPercent(condition.winRate) }}
                     </span>
                     <div class="ml-2 w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                       <div class="h-2 rounded-full" 
@@ -201,13 +201,13 @@
                     </div>
                   </div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-mono"
-                    :class="condition.avgPnL >= 0 ? 'text-green-600' : 'text-red-600'">
-                  ${{ Math.abs(condition.avgPnL).toFixed(2) }}
+                <td class="whitespace-nowrap text-sm text-mono-num px-4 py-3"
+                    :class="pnlClass(condition.avgPnL)">
+                  {{ formatSignedCurrency(condition.avgPnL) }}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-mono font-semibold"
-                    :class="condition.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'">
-                  ${{ Math.abs(condition.totalPnL).toFixed(2) }}
+                <td class="whitespace-nowrap text-sm text-mono-num font-semibold px-4 py-3"
+                    :class="pnlClass(condition.totalPnL)">
+                  {{ formatSignedCurrency(condition.totalPnL) }}
                 </td>
               </tr>
             </tbody>
@@ -225,11 +225,8 @@
           </h3>
           <button @click="refreshInsights" 
                   :disabled="loadingInsights"
-                  class="btn-secondary text-sm">
-            <svg v-if="loadingInsights" class="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
+                  class="btn-secondary">
+            <span v-if="loadingInsights" class="spinner spinner-xs spinner-current mr-2"></span>
             Refresh Insights
           </button>
         </div>
@@ -254,13 +251,13 @@
                 </svg>
               </div>
               <div class="ml-3 flex-1">
-                <h4 class="text-sm font-medium">{{ insight.title }}</h4>
+                <h4 class="heading-sub">{{ insight.title }}</h4>
                 <p class="mt-1 text-sm">{{ insight.description }}</p>
                 <div class="mt-2 flex items-center justify-between">
                   <span class="text-xs opacity-75">
-                    Confidence: {{ (insight.confidence * 100).toFixed(0) }}%
+                    Confidence: {{ formatPercent(insight.confidence, { multiplier: 100 }) }}
                   </span>
-                  <span v-if="insight.isActionable" class="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400 rounded-full">
+                  <span v-if="insight.isActionable" class="badge-primary">
                     Actionable
                   </span>
                 </div>
@@ -274,15 +271,19 @@
 </template>
 
 <script setup>
+import { pnlClass } from '@/utils/metricTone'
 import { ref, onMounted, computed, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useNotification } from '@/composables/useNotification'
 import { useGlobalAccountFilter } from '@/composables/useGlobalAccountFilter'
+import { useCurrencyFormatter } from '@/composables/useCurrencyFormatter'
+import { formatDecimal, formatPercent } from '@/utils/formatters'
 import api from '@/services/api'
 import HealthCorrelationChart from '@/components/health/HealthCorrelationChart.vue'
 
 const authStore = useAuthStore()
 const { selectedAccount } = useGlobalAccountFilter()
+const { formatSignedCurrency } = useCurrencyFormatter()
 const { showSuccessModal, showCriticalError } = useNotification()
 
 const healthSummary = ref({
@@ -458,7 +459,7 @@ function calculateHealthConditions(trades) {
     {
       name: 'Well Rested',
       iconPath: 'M23,12H17V10L20.39,6H17V4H23V6L19.62,10H23V12M15,16H9V14L12.39,10H9V8H15V10L11.62,14H15V16M7,20H1V18L4.39,14H1V12H7V14L3.62,18H7V20Z',
-      iconColor: 'text-indigo-500',
+      iconColor: 'text-primary-500',
       description: 'Sleep > 7 hours',
       filter: t => {
         const sleepHours = getTradeHealthValue(t, 'sleep_hours')
@@ -468,7 +469,7 @@ function calculateHealthConditions(trades) {
     {
       name: 'Sleep Deprived',
       iconPath: 'M2,21H20V19H2M20,8H18V5H20M20,3H4V13A4,4 0 0,0 8,17H14A4,4 0 0,0 18,13V10H20A2,2 0 0,0 22,8V5C22,3.89 21.1,3 20,3Z',
-      iconColor: 'text-orange-500',
+      iconColor: 'text-yellow-500',
       description: 'Sleep < 6 hours',
       filter: t => {
         const sleepHours = getTradeHealthValue(t, 'sleep_hours')
@@ -478,7 +479,7 @@ function calculateHealthConditions(trades) {
     {
       name: 'Low Stress',
       iconPath: 'M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M10,9.5C10,10.3 9.3,11 8.5,11C7.7,11 7,10.3 7,9.5C7,8.7 7.7,8 8.5,8C9.3,8 10,8.7 10,9.5M17,9.5C17,10.3 16.3,11 15.5,11C14.7,11 14,10.3 14,9.5C14,8.7 14.7,8 15.5,8C16.3,8 17,8.7 17,9.5M12,17.5C10.07,17.5 8.5,16.5 7.5,15H16.5C15.5,16.5 13.93,17.5 12,17.5Z',
-      iconColor: 'text-green-500',
+      iconColor: 'text-green-700 dark:text-green-400',
       description: 'Stress < 30%',
       filter: t => {
         const stressLevel = getTradeHealthValue(t, 'stress_level')
@@ -488,7 +489,7 @@ function calculateHealthConditions(trades) {
     {
       name: 'High Stress',
       iconPath: 'M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M10,9.5C10,10.3 9.3,11 8.5,11C7.7,11 7,10.3 7,9.5C7,8.7 7.7,8 8.5,8C9.3,8 10,8.7 10,9.5M15,13H9V14.5H15V13M17,9.5C17,10.3 16.3,11 15.5,11C14.7,11 14,10.3 14,9.5C14,8.7 14.7,8 15.5,8C16.3,8 17,8.7 17,9.5Z',
-      iconColor: 'text-red-500',
+      iconColor: 'text-red-600 dark:text-red-400',
       description: 'Stress > 60%',
       filter: t => {
         const stressLevel = getTradeHealthValue(t, 'stress_level')
@@ -498,7 +499,7 @@ function calculateHealthConditions(trades) {
     {
       name: 'Normal Heart Rate',
       iconPath: 'M12,21.35L10.55,20.03C5.4,15.36 2,12.27 2,8.5C2,5.41 4.42,3 7.5,3C9.24,3 10.91,3.81 12,5.08C13.09,3.81 14.76,3 16.5,3C19.58,3 22,5.41 22,8.5C22,12.27 18.6,15.36 13.45,20.03L12,21.35Z',
-      iconColor: 'text-green-500',
+      iconColor: 'text-green-700 dark:text-green-400',
       description: '60-80 BPM',
       filter: t => {
         const heartRate = getTradeHealthValue(t, 'heart_rate')
@@ -508,7 +509,7 @@ function calculateHealthConditions(trades) {
     {
       name: 'Elevated Heart Rate',
       iconPath: 'M12,21.35L10.55,20.03C5.4,15.36 2,12.27 2,8.5C2,5.41 4.42,3 7.5,3C9.24,3 10.91,3.81 12,5.08C13.09,3.81 14.76,3 16.5,3C19.58,3 22,5.41 22,8.5C22,12.27 18.6,15.36 13.45,20.03L12,21.35Z',
-      iconColor: 'text-red-500',
+      iconColor: 'text-red-600 dark:text-red-400',
       description: '> 80 BPM',
       filter: t => {
         const heartRate = getTradeHealthValue(t, 'heart_rate')
@@ -587,11 +588,11 @@ async function refreshInsights() {
 
 function getInsightTypeClass(type) {
   const classes = {
-    'sleep_quality': 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800 text-purple-800 dark:text-purple-300',
+    'sleep_quality': 'bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800 text-primary-800 dark:text-primary-300',
     'heart_rate': 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-300',
-    'stress': 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 text-orange-800 dark:text-orange-300',
+    'stress': 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-300',
     'composure': 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-300',
-    'overall': 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-300'
+    'overall': 'bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800 text-primary-800 dark:text-primary-300'
   }
   return classes[type] || classes.overall
 }

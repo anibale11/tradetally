@@ -18,6 +18,10 @@ const AnalyticsCache = require('../analyticsCache');
 const OptionStrategyGroupingService = require('../optionStrategyGroupingService');
 const db = require('../../config/database');
 
+// 8 alphanumerics + check digit; matches the pattern Trade.create uses to
+// queue CUSIP resolution.
+const CUSIP_PATTERN = /^[A-Z0-9]{8}[0-9]$/;
+
 const SCHWAB_API_BASE = 'https://api.schwabapi.com/trader/v1';
 const BrokerReauthNotificationService = require('./brokerReauthNotificationService');
 const TOKEN_REFRESH_BUFFER = 5 * 60 * 1000; // Refresh 5 minutes before expiration
@@ -599,43 +603,6 @@ class SchwabService {
         });
       } else if (positionEffect === 'CLOSING') {
         // Match against open positions using FIFO
-        if (!openPositions[positionKey] || openPositions[positionKey].length === 0) {
-          // No matching open - position was opened before sync window
-          // Use Schwab's netAmount for P&L
-          rawTrades.push({
-            symbol,
-            side: tx.side,
-            quantity: tx.quantity,
-            entryPrice: null,
-            exitPrice: tx.price,
-            entryTime: null,
-            exitTime: tx.time,
-            tradeDate: tx.time.split('T')[0],
-            commission: tx.commission || 0,
-            fees: tx.fees || 0,
-            pnl: tx.netAmount || null,
-            broker: 'schwab',
-            instrumentType: tx.instrumentType,
-            optionType: tx.optionType,
-            strikePrice: tx.strikePrice,
-            expirationDate: tx.expirationDate,
-            underlyingSymbol: tx.underlyingSymbol,
-            matchingSymbol: tx.matchingSymbol,
-            cusip: tx.cusip,
-            accountIdentifier: tx.accountIdentifier,
-            roundTripId: 0, // No matching open - unique round-trip
-            executionData: [{
-              datetime: tx.time,
-              price: tx.price,
-              quantity: tx.quantity,
-              side: tx.side,
-              type: 'exit',
-              orderId: tx.orderId
-            }]
-          });
-          continue;
-        }
-
         let remainingCloseQty = tx.quantity;
 
         while (remainingCloseQty > 0 && openPositions[positionKey] && openPositions[positionKey].length > 0) {
@@ -680,6 +647,7 @@ class SchwabService {
                 price: openPos.price,
                 quantity: matchQty,
                 side: openPos.side,
+                action: openPos.side === 'long' ? 'buy' : 'sell',
                 type: 'entry',
                 orderId: openPos.orderId
               },
@@ -688,6 +656,10 @@ class SchwabService {
                 price: tx.price,
                 quantity: matchQty,
                 side: tx.side,
+                // Schwab's amount sign is not a reliable fill direction for
+                // option legs, so state the action from the position being
+                // closed instead of leaving the P&L engine to guess from side.
+                action: openPos.side === 'long' ? 'sell' : 'buy',
                 type: 'exit',
                 orderId: tx.orderId
               }
@@ -702,6 +674,50 @@ class SchwabService {
           if (openPos.qty <= 0) {
             openPositions[positionKey].shift();
           }
+        }
+
+        // Whatever the in-window lots could not absorb was opened before the
+        // sync window (or added by hand). It used to be dropped on the floor,
+        // so a 100-share sale against a 70-share synced lot lost 30 shares.
+        // Keep it as a closed trade with an unknown entry, prorating the
+        // exit-side costs and Schwab's net amount to the unmatched slice.
+        if (remainingCloseQty > 0) {
+          const share = tx.quantity > 0 ? remainingCloseQty / tx.quantity : 1;
+          // tx.side is the fill direction (a sell maps to 'short'); the trade
+          // records the position that fill closed, which is the opposite.
+          const closedSide = tx.side === 'short' ? 'long' : 'short';
+          rawTrades.push({
+            symbol,
+            side: closedSide,
+            quantity: remainingCloseQty,
+            entryPrice: null,
+            exitPrice: tx.price,
+            entryTime: null,
+            exitTime: tx.time,
+            tradeDate: tx.time.split('T')[0],
+            commission: (tx.commission || 0) * share,
+            fees: (tx.fees || 0) * share,
+            pnl: tx.netAmount != null ? tx.netAmount * share : null,
+            broker: 'schwab',
+            instrumentType: tx.instrumentType,
+            optionType: tx.optionType,
+            strikePrice: tx.strikePrice,
+            expirationDate: tx.expirationDate,
+            underlyingSymbol: tx.underlyingSymbol,
+            matchingSymbol: tx.matchingSymbol,
+            cusip: tx.cusip,
+            accountIdentifier: tx.accountIdentifier,
+            roundTripId: 0, // No matching open - unique round-trip
+            executionData: [{
+              datetime: tx.time,
+              price: tx.price,
+              quantity: remainingCloseQty,
+              side: tx.side,
+              action: closedSide === 'long' ? 'sell' : 'buy',
+              type: 'exit',
+              orderId: tx.orderId
+            }]
+          });
         }
       }
     }
@@ -738,6 +754,7 @@ class SchwabService {
               price: pos.price,
               quantity: pos.qty,
               side: pos.side,
+              action: pos.side === 'long' ? 'buy' : 'sell',
               type: 'entry',
               orderId: pos.orderId
             }]
@@ -1205,6 +1222,7 @@ class SchwabService {
     let duplicates = 0;
 
     const existingTrades = await this.getExistingTrades(userId, trades);
+    await this.annotateCusipAliases(userId, trades);
 
     for (const tradeData of trades) {
       try {
@@ -1502,12 +1520,69 @@ class SchwabService {
     return false;
   }
 
+  /**
+   * Schwab reports delisted equities (ATVI, acquired 2023) by CUSIP rather
+   * than ticker. The first sync stores the CUSIP and the resolver later
+   * renames the trade to its ticker, so on the next sync the incoming CUSIP
+   * no longer equals the stored symbol and every such trade re-imports as a
+   * duplicate. Attach the already-known ticker to each incoming CUSIP trade
+   * so the dedup can compare like with like.
+   */
+  async annotateCusipAliases(userId, trades) {
+    if (!Array.isArray(trades) || trades.length === 0) return new Map();
+
+    const cusips = new Set();
+    for (const trade of trades) {
+      const symbol = String(trade?.symbol || '').toUpperCase();
+      if (CUSIP_PATTERN.test(symbol)) cusips.add(symbol);
+    }
+    if (cusips.size === 0) return new Map();
+
+    let aliases = new Map();
+    try {
+      // A user's own mapping wins over the shared one.
+      const result = await db.query(
+        `SELECT cusip, ticker
+           FROM cusip_mappings
+          WHERE cusip = ANY($1::text[])
+            AND (user_id IS NULL OR user_id = $2)
+          ORDER BY (user_id IS NOT NULL) ASC`,
+        [Array.from(cusips), userId]
+      );
+      for (const row of result.rows) {
+        if (row.ticker) aliases.set(String(row.cusip).toUpperCase(), String(row.ticker).toUpperCase());
+      }
+    } catch (error) {
+      console.warn(`[SCHWAB] CUSIP alias lookup failed; dedup will compare raw symbols only: ${error.message}`);
+      aliases = new Map();
+    }
+
+    for (const trade of trades) {
+      const symbol = String(trade?.symbol || '').toUpperCase();
+      const ticker = aliases.get(symbol);
+      if (ticker && ticker !== symbol) trade.resolvedSymbol = ticker;
+    }
+    return aliases;
+  }
+
   _tradeSymbolsMatch(newTrade, existingTrade) {
     const newSymbol = newTrade.symbol?.toUpperCase();
     const existingSymbol = existingTrade.symbol?.toUpperCase();
 
     if (!newSymbol || !existingSymbol) return false;
     if (existingSymbol === newSymbol) return true;
+
+    // Same instrument under a different name: the incoming CUSIP has already
+    // been resolved to the stored ticker, or the stored row still carries the
+    // CUSIP that the incoming trade reports as its identifier.
+    const newInstrument = newTrade.instrumentType || newTrade.instrument_type || 'stock';
+    const existingInstrument = existingTrade.instrument_type || existingTrade.instrumentType || 'stock';
+    if (newInstrument !== 'option' && existingInstrument !== 'option') {
+      const resolved = newTrade.resolvedSymbol ? String(newTrade.resolvedSymbol).toUpperCase() : null;
+      const cusip = newTrade.cusip ? String(newTrade.cusip).toUpperCase() : null;
+      if (resolved && resolved === existingSymbol) return true;
+      if (cusip && cusip === existingSymbol) return true;
+    }
 
     const newInstrumentType = newTrade.instrumentType || newTrade.instrument_type || 'stock';
     const existingInstrumentType = existingTrade.instrument_type || existingTrade.instrumentType || 'stock';

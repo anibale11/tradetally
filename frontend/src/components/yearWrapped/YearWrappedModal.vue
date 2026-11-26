@@ -3,7 +3,7 @@
     <transition name="fade">
       <div
         v-if="yearWrappedStore.isModalOpen"
-        class="fixed inset-0 z-[9999] bg-black"
+        class="fixed inset-0 z-[100] bg-black"
         @keydown.escape="handleClose"
         @keydown.left="yearWrappedStore.prevSlide"
         @keydown.right="yearWrappedStore.nextSlide"
@@ -12,7 +12,7 @@
       >
         <!-- Loading State -->
         <div v-if="yearWrappedStore.loading" class="h-full flex items-center justify-center">
-          <div class="animate-spin rounded-full h-16 w-16 border-4 border-white/20 border-t-white"></div>
+          <div class="spinner spinner-lg spinner-light"></div>
         </div>
 
         <!-- Error State -->

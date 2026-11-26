@@ -1,12 +1,12 @@
 <template>
     <section
         id="markets-webhook-destinations"
-        class="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow"
+        class="card mb-6"
     >
         <button
             type="button"
             @click="expanded = !expanded"
-            class="w-full flex items-center justify-between gap-3 px-4 py-3 text-left focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-inset rounded-lg"
+            class="menu-item justify-between"
             :aria-expanded="expanded"
             aria-controls="webhook-destinations-panel"
         >
@@ -58,20 +58,20 @@
                 Send every triggered price alert to Slack, Discord, or a custom webhook endpoint. All destinations receive the <code class="text-gray-600 dark:text-gray-300">price_alert.triggered</code> event.
             </p>
 
-            <div v-if="loading" class="flex justify-center py-6">
+            <div v-if="initialLoading" class="flex justify-center py-6">
                 <div
-                    class="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"
+                    class="spinner spinner-sm"
                 ></div>
             </div>
 
             <div
                 v-else-if="loadError"
-                class="rounded-lg border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800 p-3"
+                class="callout-danger"
             >
                 <p class="text-sm text-red-700 dark:text-red-300">
                     {{ loadError }}
                 </p>
-                <button @click="loadWebhooks" class="mt-2 btn-secondary text-sm">
+                <button @click="loadWebhooks" class="mt-2 btn-secondary">
                     Retry
                 </button>
             </div>
@@ -81,7 +81,7 @@
                     <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
                         No webhook destinations configured yet.
                     </p>
-                    <button @click="openCreateModal" class="btn-primary text-sm">
+                    <button @click="openCreateModal" class="btn-primary">
                         Add Webhook
                     </button>
                 </div>
@@ -94,7 +94,7 @@
                             class="py-2 flex items-center gap-3"
                         >
                             <span
-                                class="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium flex-shrink-0"
+                                class="badge flex-shrink-0"
                                 :class="providerBadgeClass(webhook.providerType)"
                             >
                                 {{ providerLabel(webhook.providerType) }}
@@ -118,21 +118,21 @@
                                 <button
                                     @click="testWebhook(webhook)"
                                     :disabled="testingWebhookId === webhook.id"
-                                    class="p-1.5 rounded-md text-gray-500 hover:text-primary-600 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
+                                    class="btn-icon"
                                     :title="testingWebhookId === webhook.id ? 'Testing...' : 'Send test delivery'"
                                 >
                                     <MdiIcon :icon="mdiSend" :size="16" />
                                 </button>
                                 <button
                                     @click="editWebhook(webhook)"
-                                    class="p-1.5 rounded-md text-gray-500 hover:text-primary-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    class="btn-icon"
                                     title="Edit"
                                 >
                                     <MdiIcon :icon="mdiPencilOutline" :size="16" />
                                 </button>
                                 <button
                                     @click="deleteWebhook(webhook)"
-                                    class="p-1.5 rounded-md text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                    class="btn-icon"
                                     title="Delete"
                                 >
                                     <MdiIcon :icon="mdiTrashCanOutline" :size="16" />
@@ -140,8 +140,8 @@
                             </div>
                         </li>
                     </ul>
-                    <div class="mt-3 flex justify-end">
-                        <button @click="openCreateModal" class="btn-secondary text-sm">
+                    <div class="modal-footer">
+                        <button @click="openCreateModal" class="btn-secondary">
                             Add Webhook
                         </button>
                     </div>
@@ -151,16 +151,16 @@
 
         <div
             v-if="showModal"
-            class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+            class="modal-overlay overflow-y-auto"
             role="dialog"
             aria-modal="true"
             @click.self="closeModal"
         >
             <div
-                class="relative top-20 mx-4 sm:mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white dark:bg-gray-800 dark:border-gray-700"
+                class="modal-panel top-20 mx-4 sm:mx-auto p-6 w-full max-w-2xl"
             >
                 <div class="mt-3">
-                    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
+                    <h3 class="modal-title mb-4">
                         {{ editingWebhook ? "Edit Webhook Destination" : "Add Webhook Destination" }}
                     </h3>
 
@@ -206,7 +206,7 @@
                             />
                             <p
                                 v-if="urlDetectedProvider"
-                                class="mt-2 text-xs text-primary-600 dark:text-primary-400"
+                                class="mt-2 text-xs text-primary-700 dark:text-primary-400"
                             >
                                 Detected a {{ providerLabel(urlDetectedProvider) }} webhook URL — Destination Type set to {{ providerLabel(urlDetectedProvider) }} automatically.
                             </p>
@@ -215,14 +215,14 @@
                         <div v-if="form.providerType === 'custom'" class="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
                             <div class="flex items-center justify-between mb-3">
                                 <div>
-                                    <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                    <h4 class="heading-sub">
                                         Custom Headers
                                     </h4>
                                     <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
                                         Optional headers for your custom endpoint. TradeTally still signs the request body.
                                     </p>
                                 </div>
-                                <button type="button" @click="addHeaderRow" class="btn-secondary text-sm">
+                                <button type="button" @click="addHeaderRow" class="btn-secondary">
                                     Add Header
                                 </button>
                             </div>
@@ -279,21 +279,21 @@
                             <input
                                 v-model="form.isActive"
                                 type="checkbox"
-                                class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                class="checkbox"
                             />
                             <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">
                                 Destination is active
                             </span>
                         </label>
 
-                        <div class="flex justify-end space-x-3">
+                        <div class="modal-footer">
                             <button type="button" @click="closeModal" class="btn-secondary">
                                 Cancel
                             </button>
                             <button
                                 type="submit"
                                 :disabled="saving"
-                                class="btn-primary disabled:opacity-50"
+                                class="btn-primary"
                             >
                                 {{ saving ? "Saving..." : editingWebhook ? "Update" : "Create" }}
                             </button>
@@ -324,6 +324,7 @@ const { showConfirmation, showCriticalError, showSuccess } = useNotification();
 
 const webhooks = ref([]);
 const loading = ref(true);
+const initialLoading = ref(true);
 const loadError = ref("");
 const showModal = ref(false);
 const saving = ref(false);
@@ -406,9 +407,9 @@ function providerLabel(providerType) {
 function providerBadgeClass(providerType) {
     switch (providerType) {
         case "slack":
-            return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300";
+            return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300";
         case "discord":
-            return "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300";
+            return "bg-primary-100 text-primary-800 dark:bg-primary-900/30 dark:text-primary-300";
         default:
             return "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200";
     }
@@ -530,7 +531,8 @@ async function loadWebhooks() {
             error.response?.data?.error || "Failed to load webhook destinations";
         expanded.value = true;
     } finally {
-        loading.value = false;
+        loading.value = false
+        initialLoading.value = false;
     }
 }
 

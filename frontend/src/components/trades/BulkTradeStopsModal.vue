@@ -5,13 +5,13 @@
       Enter a stop for each trade you want to change. Blank fields keep their current stop.
     </p>
     <label class="mb-4 flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200">
-      <input v-model="applyDefaults" type="checkbox" class="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+      <input v-model="applyDefaults" type="checkbox" class="checkbox" />
       Fill remaining missing stops from my default risk setting
     </label>
     <div class="max-h-[55vh] overflow-auto rounded-lg border border-gray-200 dark:border-gray-700">
       <table class="w-full min-w-[650px] text-sm">
-        <thead class="sticky top-0 bg-gray-50 text-left text-gray-600 dark:bg-gray-800 dark:text-gray-300">
-          <tr><th class="px-3 py-2">Trade</th><th class="px-3 py-2">Entry</th><th class="px-3 py-2">Current stop</th><th class="px-3 py-2">New stop</th><th class="px-3 py-2">Proposed R</th></tr>
+        <thead class="sticky top-0 table-head text-left">
+          <tr><th class="px-3 py-2 table-th">Trade</th><th class="px-3 py-2 table-th">Entry</th><th class="px-3 py-2 table-th">Current stop</th><th class="px-3 py-2 table-th">New stop</th><th class="px-3 py-2 table-th">Proposed R</th></tr>
         </thead>
         <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
           <tr v-for="row in rows" :key="row.id" class="text-gray-800 dark:text-gray-200">
@@ -23,11 +23,11 @@
                 :aria-label="`New stop for ${row.symbol}`" placeholder="Keep current" />
             </td>
             <td class="px-3 py-2">
-              <span v-if="previewById[row.id]">{{ previewById[row.id].r_value == null ? 'Open' : `${Number(previewById[row.id].r_value).toFixed(2)}R` }}</span>
-              <span v-else>{{ (row.r_value ?? row.rValue) == null ? '—' : `${Number(row.r_value ?? row.rValue).toFixed(2)}R` }}</span>
+              <span v-if="previewById[row.id]">{{ previewById[row.id].r_value == null ? 'Open' : formatR(Number(previewById[row.id].r_value)) }}</span>
+              <span v-else>{{ (row.r_value ?? row.rValue) == null ? '—' : formatR(Number(row.r_value ?? row.rValue)) }}</span>
               <span v-if="previewById[row.id]" class="block text-xs text-gray-500 dark:text-gray-400">
                 {{ previewById[row.id].r_value == null ? 'Risk' : 'R = net P&L ÷ risk' }}
-                {{ Number(previewById[row.id].risk_amount).toFixed(2) }}
+                {{ formatDecimal(Number(previewById[row.id].risk_amount)) }}
               </span>
             </td>
           </tr>
@@ -51,6 +51,8 @@ import { computed, reactive, ref, watch } from 'vue'
 import BaseModal from '@/components/common/BaseModal.vue'
 import api from '@/services/api'
 import { useTradesStore } from '@/stores/trades'
+import { formatDecimal } from '@/utils/formatters'
+import { formatR } from '@/utils/rFormat'
 
 const props = defineProps({ open: Boolean, tradeIds: { type: Array, default: () => [] }, trades: { type: Array, default: () => [] } })
 const emit = defineEmits(['close', 'saved'])

@@ -9,6 +9,7 @@
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { Chart } from '@/lib/chartSetup'
 import { formatTradeDate } from '@/utils/date'
+import { formatDecimal, formatPercent } from '@/utils/formatters'
 
 const props = defineProps({
   dailyWinRate: {
@@ -39,7 +40,7 @@ function renderChart() {
   //   ≥60%      green  — solid winning day
   const barColorPair = pct => {
     const v = parseFloat(pct) || 0
-    if (v >= 60) return { fill: 'rgba(22, 163, 74, 0.7)',  border: '#16a34a' }  // green-600
+    if (v >= 60) return { fill: 'rgba(21, 128, 61, 0.7)',  border: '#15803d' }  // green-600
     if (v >= 50) return { fill: 'rgba(234, 179, 8, 0.7)',  border: '#eab308' }  // yellow-500
     if (v >= 40) return { fill: 'rgba(240, 129, 42, 0.7)', border: '#F0812A' }  // primary orange
     return         { fill: 'rgba(220, 38, 38, 0.7)',  border: '#dc2626' }       // red-600
@@ -75,7 +76,7 @@ function renderChart() {
           pointStyle: 'line',
           pointRadius: 8,
           pointHoverRadius: 10,
-          pointBorderColor: '#3f3f46',  // zinc-700
+          pointBorderColor: Chart.defaults.color,
           pointBorderWidth: 2,
           yAxisID: 'yPL'
         }
@@ -97,8 +98,7 @@ function renderChart() {
           align: 'end',
           labels: {
             usePointStyle: true,
-            boxWidth: 8,
-            font: { size: 11 }
+            boxWidth: 8
           }
         },
         tooltip: {
@@ -107,10 +107,10 @@ function renderChart() {
               if (context.dataset.label === 'P/L Ratio') {
                 const raw = rawPlRatios[context.dataIndex] || 0
                 if (raw >= 999) return ' P/L Ratio: ∞ (no losses)'
-                if (raw > PL_DISPLAY_CAP) return ` P/L Ratio: ${raw.toFixed(2)} (capped at ${PL_DISPLAY_CAP} on chart)`
-                return ` P/L Ratio: ${raw.toFixed(2)}`
+                if (raw > PL_DISPLAY_CAP) return ` P/L Ratio: ${formatDecimal(raw)} (capped at ${PL_DISPLAY_CAP} on chart)`
+                return ` P/L Ratio: ${formatDecimal(raw)}`
               }
-              return ` Win Rate: ${(parseFloat(context.raw) || 0).toFixed(1)}%`
+              return ` Win Rate: ${formatPercent(parseFloat(context.raw) || 0)}`
             }
           }
         }

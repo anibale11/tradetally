@@ -1,11 +1,11 @@
 <template>
   <div v-if="isOpen" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
     <!-- Background overlay -->
-    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-      <div class="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-75 transition-opacity" aria-hidden="true" @click="$emit('close')"></div>
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center ">
+      <div class="modal-backdrop" aria-hidden="true" @click="$emit('close')"></div>
 
       <!-- Modal panel -->
-      <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full sm:p-6">
+      <div class="modal-panel w-full p-6 max-w-2xl">
         <div>
           <!-- Success/Warning Icon -->
           <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full" :class="iconBgClass">
@@ -15,31 +15,31 @@
           </div>
 
           <div class="mt-3 text-center sm:mt-5">
-            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title">
+            <h3 class="modal-title" id="modal-title">
               {{ title }}
             </h3>
           </div>
 
           <!-- Summary Stats -->
           <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-            <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 text-center">
-              <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ tradesImported }}</p>
+            <div class="callout-success text-center">
+              <p class="stat-value text-green-700 dark:text-green-400">{{ tradesImported }}</p>
               <p class="text-xs text-green-700 dark:text-green-300">Imported</p>
             </div>
-            <div v-if="duplicatesSkipped > 0" class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-center">
-              <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ duplicatesSkipped }}</p>
-              <p class="text-xs text-blue-700 dark:text-blue-300">Duplicates</p>
+            <div v-if="duplicatesSkipped > 0" class="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-3 text-center">
+              <p class="stat-value text-primary-700 dark:text-primary-400">{{ duplicatesSkipped }}</p>
+              <p class="text-xs text-primary-700 dark:text-primary-300">Duplicates</p>
             </div>
             <div v-else class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
-              <p class="text-2xl font-bold text-gray-400">0</p>
+              <p class="stat-value text-gray-400">0</p>
               <p class="text-xs text-gray-500 dark:text-gray-400">Duplicates</p>
             </div>
             <div v-if="rowsSkipped > 0" class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3 text-center">
-              <p class="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{{ rowsSkipped }}</p>
+              <p class="stat-value text-yellow-600 dark:text-yellow-400">{{ rowsSkipped }}</p>
               <p class="text-xs text-yellow-700 dark:text-yellow-300">Skipped</p>
             </div>
             <div v-else class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
-              <p class="text-2xl font-bold text-gray-400">0</p>
+              <p class="stat-value text-gray-400">0</p>
               <p class="text-xs text-gray-500 dark:text-gray-400">Skipped</p>
             </div>
           </div>
@@ -54,6 +54,50 @@
             </p>
           </div>
 
+          <!-- First Leak / Edge Diagnosis (Aha Moment) -->
+          <div
+            v-if="tradesImported > 0 && importInsight?.ready && importInsight?.insight"
+            class="mt-4 text-left"
+            :class="insightCardClass"
+            data-testid="import-first-diagnosis"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <p class="text-label" :class="insightEyebrowClass">
+                    {{ importInsight.insight.tone === 'success' ? 'First edge detected' : 'First leak diagnosis' }}
+                  </p>
+                  <span
+                    v-if="importInsight.scope"
+                    class="text-xs font-medium text-gray-500 dark:text-gray-400"
+                    data-testid="import-insight-scope"
+                  >
+                    {{ importInsight.scope === 'import' ? 'This import' : 'Account history' }}
+                    <template v-if="importInsight.trade_count > 0">
+                      · {{ importInsight.trade_count.toLocaleString() }} closed trade{{ importInsight.trade_count === 1 ? '' : 's' }}
+                    </template>
+                  </span>
+                </div>
+                <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
+                  {{ importInsight.insight.headline }}
+                </p>
+                <p class="mt-1 text-sm text-gray-700 dark:text-gray-300">
+                  {{ importInsight.insight.detail }}
+                </p>
+                <div class="mt-3">
+                  <router-link
+                    :to="importInsight.insight.cta_route || '/metrics'"
+                    class="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-700 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300"
+                    @click="$emit('close')"
+                  >
+                    <span>{{ importInsight.insight.cta_label || 'Inspect in Analytics' }}</span>
+                    <span aria-hidden="true">&rarr;</span>
+                  </router-link>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div v-if="reasonBreakdown.length > 0" class="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900/40">
             <p class="text-sm font-medium text-gray-900 dark:text-white">Top row issues</p>
             <ul class="mt-2 space-y-1 text-sm text-gray-600 dark:text-gray-400">
@@ -64,10 +108,10 @@
             </ul>
           </div>
 
-          <div v-if="props.tradesImported === 0" class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/60 dark:bg-amber-950/20">
-            <p class="text-sm font-semibold text-amber-900 dark:text-amber-100">{{ zeroTradeReason.title }}</p>
-            <p class="mt-1 text-sm text-amber-800 dark:text-amber-200">{{ zeroTradeReason.body }}</p>
-            <ul class="mt-3 space-y-1 text-sm text-amber-800 dark:text-amber-200">
+          <div v-if="props.tradesImported === 0" class="callout-warning mt-4">
+            <p class="text-sm font-semibold text-yellow-900 dark:text-yellow-100">{{ zeroTradeReason.title }}</p>
+            <p class="mt-1 text-sm text-yellow-800 dark:text-yellow-200">{{ zeroTradeReason.body }}</p>
+            <ul class="mt-3 space-y-1 text-sm text-yellow-800 dark:text-yellow-200">
               <li v-for="step in zeroTradeReason.steps" :key="step" class="flex gap-2">
                 <span aria-hidden="true">•</span>
                 <span>{{ step }}</span>
@@ -76,27 +120,27 @@
           </div>
 
           <div v-if="props.achievements.length > 0" class="mt-4">
-            <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
+            <div class="callout-warning">
               <div class="flex items-start gap-3">
-                <TrophyIcon class="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+                <TrophyIcon class="mt-0.5 h-5 w-5 flex-shrink-0 text-yellow-600 dark:text-yellow-400" />
                 <div class="min-w-0 flex-1">
-                  <p class="text-sm font-medium text-amber-900 dark:text-amber-100">
+                  <p class="text-sm font-medium text-yellow-900 dark:text-yellow-100">
                     {{ props.achievements.length === 1 ? 'Achievement unlocked' : `${props.achievements.length} achievements unlocked` }}
                   </p>
-                  <p class="mt-1 text-sm text-amber-800 dark:text-amber-200">
+                  <p class="mt-1 text-sm text-yellow-800 dark:text-yellow-200">
                     {{ achievementSummary }}
                   </p>
                   <div class="mt-3 flex flex-wrap gap-2">
                     <span
                       v-for="achievement in props.achievements.slice(0, 4)"
                       :key="achievement.id || achievement.name"
-                      class="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-xs font-medium text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:ring-amber-800"
+                      class="badge bg-white text-yellow-700 ring-1 ring-yellow-200 dark:bg-yellow-950/40 dark:text-yellow-200 dark:ring-yellow-800"
                     >
                       {{ achievement.name }}
                     </span>
                     <span
                       v-if="props.achievements.length > 4"
-                      class="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-xs font-medium text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:ring-amber-800"
+                      class="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-xs font-medium text-yellow-700 ring-1 ring-yellow-200 dark:bg-yellow-950/40 dark:text-yellow-200 dark:ring-yellow-800"
                     >
                       +{{ props.achievements.length - 4 }} more
                     </span>
@@ -108,7 +152,7 @@
 
           <!-- Warnings Section -->
           <div v-if="warnings && warnings.length > 0" class="mt-4">
-            <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+            <div class="callout-warning">
               <div class="flex items-start">
                 <ExclamationTriangleIcon class="h-5 w-5 text-yellow-600 dark:text-yellow-400 mr-2 flex-shrink-0 mt-0.5" />
                 <div>
@@ -121,19 +165,19 @@
             </div>
           </div>
 
-          <div v-if="manualReviewItems.length > 0" class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
+          <div v-if="manualReviewItems.length > 0" class="mt-4 rounded-lg border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-800 dark:bg-yellow-900/20">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <p class="text-sm font-medium text-amber-900 dark:text-amber-100">
+                <p class="text-sm font-medium text-yellow-900 dark:text-yellow-100">
                   {{ manualReviewItems.length }} sell-only execution{{ manualReviewItems.length === 1 ? '' : 's' }} need review
                 </p>
-                <p class="mt-1 text-sm text-amber-800 dark:text-amber-200">
+                <p class="mt-1 text-sm text-yellow-800 dark:text-yellow-200">
                   Confirm whether each row was a short entry, a close-only long, or should be ignored.
                 </p>
               </div>
               <button
                 type="button"
-                class="inline-flex shrink-0 items-center justify-center rounded-md border border-amber-300 bg-white px-3 py-1.5 text-sm font-medium text-amber-800 hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:border-amber-700 dark:bg-gray-800 dark:text-amber-200 dark:hover:bg-amber-900/30"
+                class="inline-flex shrink-0 items-center justify-center rounded-md border border-yellow-300 bg-white px-3 py-1.5 text-sm font-medium text-yellow-800 hover:bg-yellow-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:border-yellow-700 dark:bg-gray-800 dark:text-yellow-200 dark:hover:bg-yellow-900/30"
                 @click="$emit('review-manual-items')"
               >
                 Review
@@ -164,10 +208,10 @@
 
             <div v-if="showSkippedDetails" class="mt-2 max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg">
               <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
-                <thead class="bg-gray-50 dark:bg-gray-700 sticky top-0">
+                <thead class="table-head sticky top-0">
                   <tr>
-                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Row</th>
-                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Reason</th>
+                    <th class="px-3 py-2 text-left table-th">Row</th>
+                    <th class="px-3 py-2 text-left table-th">Reason</th>
                   </tr>
                 </thead>
                 <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -214,19 +258,19 @@
         </div>
 
         <div v-if="showDemoDataCta && tradesImported === 0" class="mt-4">
-          <div class="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg p-4">
+          <div class="callout-info">
             <div class="flex items-start">
-              <InformationCircleIcon class="h-5 w-5 text-emerald-600 dark:text-emerald-400 mr-2 flex-shrink-0 mt-0.5" />
+              <InformationCircleIcon class="h-5 w-5 text-primary-700 dark:text-primary-400 mr-2 flex-shrink-0 mt-0.5" />
               <div class="flex-1">
-                <p class="text-sm font-medium text-emerald-800 dark:text-emerald-200">
+                <p class="text-sm font-medium text-primary-800 dark:text-primary-200">
                   Explore with demo data instead
                 </p>
-                <p class="mt-1 text-sm text-emerald-700 dark:text-emerald-300">
+                <p class="mt-1 text-sm text-primary-700 dark:text-primary-300">
                   If this CSV is blocking you, load sample trades and explore the dashboard and analytics flow right now.
                 </p>
                 <button
                   type="button"
-                  class="mt-3 inline-flex items-center justify-center px-3 py-1.5 text-sm font-medium text-white bg-emerald-600 border border-transparent rounded-md hover:bg-emerald-700 disabled:opacity-60"
+                  class="btn-primary btn-sm mt-3"
                   :disabled="demoDataLoading"
                   @click="$emit('load-demo-data')"
                 >
@@ -239,9 +283,9 @@
 
         <!-- Need Help? Section (for supported brokers with 0 trades) -->
         <div v-if="showNeedHelp" class="mt-4">
-          <div class="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-4">
+          <div class="callout-info">
             <div class="flex items-start">
-              <InformationCircleIcon class="h-5 w-5 text-primary-600 dark:text-primary-400 mr-2 flex-shrink-0 mt-0.5" />
+              <InformationCircleIcon class="h-5 w-5 text-primary-700 dark:text-primary-400 mr-2 flex-shrink-0 mt-0.5" />
               <div class="flex-1">
                 <p class="text-sm font-medium text-primary-800 dark:text-primary-200">
                   Need Help?
@@ -263,7 +307,7 @@
                   </a>
                   <a
                     :href="supportMailtoLink"
-                    class="inline-flex items-center justify-center px-3 py-1.5 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md hover:bg-primary-700"
+                    class="btn-primary btn-sm"
                     @click="$emit('support-clicked', { source: 'results_modal', detectedBroker: effectiveBroker, headerCount: diagnostics?.headerAnalysis?.foundHeaders?.length || 0 })"
                   >
                     Open a Support Ticket
@@ -280,7 +324,7 @@
         <div class="mt-5 sm:mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <button
             type="button"
-            class="inline-flex w-full justify-center rounded-md border border-gray-300 px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700 sm:w-auto sm:text-sm"
+            class="btn-secondary w-full justify-center sm:w-auto"
             @click="$emit('close')"
           >
             Close
@@ -295,7 +339,7 @@
           </button>
           <button
             type="button"
-            class="inline-flex w-full justify-center rounded-md border border-transparent bg-primary-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 sm:w-auto sm:text-sm"
+            class="btn-primary w-full sm:w-auto"
             @click="$emit('view-analytics')"
           >
             View Analytics
@@ -342,6 +386,10 @@ const props = defineProps({
     type: Array,
     default: () => []
   },
+  importInsight: {
+    type: Object,
+    default: null
+  },
   selectedBroker: {
     type: String,
     default: ''
@@ -365,6 +413,24 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'load-demo-data', 'view-analytics', 'view-trades', 'support-clicked', 'review-manual-items'])
+
+const insightCardClass = computed(() => {
+  const tone = props.importInsight?.insight?.tone
+  if (tone === 'success') return 'callout-success'
+  if (tone === 'danger') return 'callout-danger'
+  return 'callout-warning'
+})
+
+const insightEyebrowClass = computed(() => {
+  const tone = props.importInsight?.insight?.tone
+  if (tone === 'success') {
+    return 'text-green-700 dark:text-green-400'
+  }
+  if (tone === 'danger') {
+    return 'text-red-700 dark:text-red-400'
+  }
+  return 'text-yellow-700 dark:text-yellow-400'
+})
 
 function handleEscape(e) {
   if (e.key === 'Escape' && props.isOpen) {
@@ -493,7 +559,7 @@ const iconBgClass = computed(() => {
 
 const iconClass = computed(() => {
   switch (importStatus.value) {
-    case 'success': return 'text-green-600 dark:text-green-400'
+    case 'success': return 'text-green-700 dark:text-green-400'
     case 'warning': return 'text-yellow-600 dark:text-yellow-400'
     default: return 'text-red-600 dark:text-red-400'
   }

@@ -1,17 +1,10 @@
 <template>
     <Teleport to="body">
-        <Transition
-            enter-active-class="transition duration-200 ease-out"
-            enter-from-class="opacity-0"
-            enter-to-class="opacity-100"
-            leave-active-class="transition duration-150 ease-in"
-            leave-from-class="opacity-100"
-            leave-to-class="opacity-0"
-        >
             <div
                 v-if="modelValue"
                 ref="overlayRef"
-                class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+                class="modal-overlay overflow-y-auto"
+                data-dialog-managed
                 :class="overlayClass"
                 role="dialog"
                 aria-modal="true"
@@ -24,7 +17,7 @@
                 >
                 <div
                     ref="modalRef"
-                    class="relative p-5 border shadow-lg rounded-md bg-white dark:bg-gray-800 dark:border-gray-700"
+                    class="modal-panel p-6"
                     :class="[sizeClass, panelClass]"
                     tabindex="-1"
                 >
@@ -33,7 +26,7 @@
                             <slot name="header">
                                 <h3
                                     :id="titleId"
-                                    class="text-lg font-medium text-gray-900 dark:text-gray-100"
+                                    class="modal-title"
                                 >
                                     {{ title }}
                                 </h3>
@@ -42,7 +35,7 @@
                         <button
                             v-if="showClose"
                             type="button"
-                            class="ml-4 -mt-1 inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            class="btn-icon ml-4 -mt-1"
                             aria-label="Close"
                             @click="close"
                         >
@@ -54,13 +47,12 @@
 
                     <slot />
 
-                    <div v-if="$slots.footer" class="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+                    <div v-if="$slots.footer" class="modal-footer">
                         <slot name="footer" />
                     </div>
                 </div>
                 </div>
             </div>
-        </Transition>
     </Teleport>
 </template>
 

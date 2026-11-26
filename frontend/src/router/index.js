@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useRegistrationMode } from '@/composables/useRegistrationMode'
 import { useAnalytics } from '@/composables/useAnalytics'
+import { hasProAccess } from '@/composables/useProAccess'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -110,6 +111,12 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/ai-chat',
+      name: 'ai-chat',
+      component: () => import('@/views/AIChatView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/metrics/monthly',
       name: 'monthly-performance',
       component: () => import('@/views/MonthlyPerformanceView.vue'),
@@ -119,6 +126,14 @@ const router = createRouter({
       path: '/metrics/edge-report',
       name: 'edge-report',
       component: () => import('@/views/EdgeReportView.vue'),
+      // /api/edge-reports/* is Pro-only; free users go to the upgrade page.
+      meta: { requiresAuth: true, requiresTier: 'pro' }
+    },
+    {
+      path: '/metrics/tax-report',
+      name: 'tax-report',
+      component: () => import('@/views/TaxReportView.vue'),
+      // The report is open to every plan; only its file exports are Pro.
       meta: { requiresAuth: true }
     },
     {
@@ -566,13 +581,13 @@ router.beforeEach(async (to, from, next) => {
     }
 
     const requiredTier = to.meta.requiresTier
-    const userTier = authStore.user?.tier || 'free'
 
-    // Check if user has required tier (pro is higher than free)
-    if (requiredTier === 'pro' && userTier !== 'pro') {
-      // Pro feature requested without a Pro tier; on a billing-enabled instance
-      // this is handled before reaching here, so fall back to the dashboard.
-      next({ name: 'dashboard' })
+    // Check if user has required tier (pro is higher than free). Admins and
+    // owners are granted Pro by the backend, so hasProAccess covers them.
+    if (requiredTier === 'pro' && !hasProAccess(authStore.user)) {
+      // Send free users to the upgrade page instead of silently bouncing them
+      // to the dashboard; the redirect param returns them after upgrading.
+      next({ path: '/pricing', query: { redirect: to.fullPath } })
     } else {
       next()
     }

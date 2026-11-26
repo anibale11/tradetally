@@ -3,7 +3,7 @@
     <div class="card">
         <div class="card-body">
             <h3
-                class="text-lg font-medium text-gray-900 dark:text-white mb-6"
+                class="heading-card mb-6"
             >
                 Admin AI Provider Settings
             </h3>
@@ -69,7 +69,7 @@
 
                 <div
                     v-if="HOST_CLI_AI_PROVIDERS.includes(form.provider)"
-                    class="rounded-lg border border-primary-200 bg-primary-50 px-4 py-3 text-sm text-primary-800 dark:border-primary-800 dark:bg-primary-900/20 dark:text-primary-200"
+                    class="callout-info"
                 >
                     Runs <code>{{ form.provider === "codex_cli" ? "codex exec" : "claude -p" }}</code>
                     on the TradeTally backend host. All users inheriting this default share
@@ -159,7 +159,7 @@
                     >
                         <div>
                             <h4
-                                class="text-base font-medium text-gray-900 dark:text-white"
+                                class="heading-card"
                             >
                                 Follow-up Question Checker
                             </h4>
@@ -182,7 +182,7 @@
                                     form.classifierEnabled
                                 "
                                 type="checkbox"
-                                class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                                class="checkbox"
                             />
                             Enabled
                         </label>
@@ -190,11 +190,7 @@
 
                     <fieldset
                         class="mt-6 space-y-6"
-                        :class="
-                            !form.classifierEnabled
-                                ? 'opacity-60'
-                                : ''
-                        "
+                        :class="!form.classifierEnabled ? 'opacity-60' : ''"
                         :disabled="!form.classifierEnabled"
                     >
                         <div
@@ -305,7 +301,7 @@
                             class="flex items-center"
                         >
                             <div
-                                class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"
+                                class="spinner spinner-xs spinner-light mr-2"
                             ></div>
                             Saving...
                         </span>

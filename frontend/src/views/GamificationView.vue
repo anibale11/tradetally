@@ -25,7 +25,7 @@
                                 class="mt-2 flex items-center"
                             >
                                 <span
-                                    class="text-xs bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 px-2 py-1 rounded-full"
+                                    class="badge-primary"
                                 >
                                     Your leaderboard name: {{ anonymousName }}
                                 </span>
@@ -34,7 +34,7 @@
                         <div class="flex items-center space-x-4">
                             <div class="text-right">
                                 <div
-                                    class="text-2xl font-bold text-primary-600 dark:text-primary-400"
+                                    class="stat-value text-primary-700 dark:text-primary-400"
                                 >
                                     Level {{ userStats.level || 1 }}
                                 </div>
@@ -93,7 +93,7 @@
                                     class="absolute inset-0 flex items-center justify-center"
                                 >
                                     <span
-                                        class="text-lg font-bold text-primary-600 dark:text-primary-400"
+                                        class="text-lg font-bold text-primary-700 dark:text-primary-400"
                                     >
                                         {{ userStats.level || 1 }}
                                     </span>
@@ -113,12 +113,7 @@
                         v-for="tab in tabs"
                         :key="tab.key"
                         @click="activeTab = tab.key"
-                        :class="[
-                            'py-3 px-1 border-b-2 font-medium text-sm',
-                            activeTab === tab.key
-                                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300',
-                        ]"
+                        :class="[ 'py-3 px-1 border-b-2 font-medium text-sm', activeTab === tab.key ? 'tab-active' : 'tab-inactive', ]"
                     >
                         <MdiIcon :icon="tab.icon" :size="20" class="mr-2" />
                         {{ tab.name }}
@@ -130,7 +125,14 @@
         <!-- Tab Content -->
         <div class="content-wrapper py-8">
             <!-- Challenges Tab -->
-            <ChallengesPanel v-if="activeTab === 'challenges'" />
+            <template v-if="activeTab === 'challenges'">
+                <ChallengesPanel v-if="isProUser" />
+                <ProUpgradePrompt
+                    v-else-if="showProLock"
+                    variant="card"
+                    description="Join trading challenges and compete on challenge leaderboards with TradeTally Pro."
+                />
+            </template>
 
             <!-- Overview Tab -->
             <div v-if="activeTab === 'overview'">
@@ -139,7 +141,7 @@
                     class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8"
                 >
                     <div
-                        class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg"
+                        class="card overflow-hidden"
                     >
                         <div class="p-5">
                             <div class="flex items-center">
@@ -169,7 +171,7 @@
                     </div>
 
                     <div
-                        class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg"
+                        class="card overflow-hidden"
                     >
                         <div class="p-5">
                             <div class="flex items-center">
@@ -177,7 +179,7 @@
                                     <MdiIcon
                                         :icon="mdiChartLine"
                                         :size="24"
-                                        class="text-blue-500"
+                                        class="text-primary-700 dark:text-primary-400"
                                     />
                                 </div>
                                 <div class="ml-5 w-0 flex-1">
@@ -199,7 +201,7 @@
                     </div>
 
                     <div
-                        class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg"
+                        class="card overflow-hidden"
                     >
                         <div class="p-5">
                             <div class="flex items-center">
@@ -207,7 +209,7 @@
                                     <MdiIcon
                                         :icon="mdiFire"
                                         :size="24"
-                                        class="text-red-500"
+                                        class="text-red-600 dark:text-red-400"
                                     />
                                 </div>
                                 <div class="ml-5 w-0 flex-1">
@@ -232,7 +234,7 @@
                     </div>
 
                     <div
-                        class="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg"
+                        class="card overflow-hidden"
                     >
                         <div class="p-5">
                             <div class="flex items-center">
@@ -306,12 +308,12 @@
                 </div>
 
                 <!-- Recent Achievements -->
-                <div class="bg-white dark:bg-gray-800 shadow rounded-lg mb-8">
+                <div class="card mb-8">
                     <div
                         class="px-6 py-4 border-b border-gray-200 dark:border-gray-700"
                     >
                         <h3
-                            class="text-lg font-medium text-gray-900 dark:text-white flex items-center"
+                            class="heading-card flex items-center"
                         >
                             <MdiIcon
                                 :icon="mdiTrophy"
@@ -351,7 +353,7 @@
                                 </div>
                                 <div class="ml-4 flex-1">
                                     <h4
-                                        class="text-sm font-medium text-gray-900 dark:text-white"
+                                        class="heading-sub"
                                     >
                                         {{ achievement.name }}
                                     </h4>
@@ -363,7 +365,7 @@
                                 </div>
                                 <div class="text-right">
                                     <div
-                                        class="text-sm font-medium text-primary-600 dark:text-primary-400"
+                                        class="text-sm font-medium text-primary-700 dark:text-primary-400"
                                     >
                                         +{{ achievement.points }} XP
                                     </div>
@@ -373,23 +375,18 @@
                         <div class="mt-6 flex items-center justify-between">
                             <button
                                 @click="activeTab = 'achievements'"
-                                class="text-primary-600 dark:text-primary-400 hover:text-primary-500 text-sm font-medium"
+                                class="btn-link"
                             >
                                 View all achievements →
                             </button>
-                            <button
+                            <button class="btn-link"
                                 @click="checkForNewAchievements"
                                 :disabled="checkingAchievements"
-                                :class="[
-                                    'px-3 py-1 rounded text-xs font-medium transition-colors flex items-center',
-                                    checkingAchievements
-                                        ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                                        : 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 hover:bg-primary-200 dark:hover:bg-primary-800',
-                                ]"
+                                :class="[ 'px-3 py-1 rounded text-xs font-medium transition-colors flex items-center', checkingAchievements ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 hover:bg-primary-200 dark:hover:bg-primary-800', ]"
                             >
                                 <div
                                     v-if="checkingAchievements"
-                                    class="inline-block animate-spin rounded-full h-3 w-3 border-b border-current mr-2"
+                                    class="inline-block spinner h-3 w-3 spinner-current mr-2"
                                 ></div>
                                 {{
                                     checkingAchievements
@@ -406,7 +403,7 @@
             <div v-if="activeTab === 'achievements'">
                 <div v-if="achievementsLoading" class="text-center py-12">
                     <div
-                        class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"
+                        class="spinner spinner-md inline-block"
                     ></div>
                     <p class="mt-2 text-gray-600 dark:text-gray-400">
                         Loading achievements...
@@ -418,20 +415,14 @@
                         v-for="achievement in achievements"
                         :key="achievement.id"
                         :data-achievement-id="achievement.id"
-                        :class="[
-                            'bg-white dark:bg-gray-800 rounded-lg shadow-sm border-2 transition-all duration-200 hover:shadow-md',
-                            achievement.is_earned
-                                ? 'border-primary-200 dark:border-primary-700 bg-gradient-to-br from-primary-50 to-white dark:from-primary-900/20 dark:to-gray-800'
-                                : 'border-gray-200 dark:border-gray-700',
-                            highlightedAchievementId === achievement.id && 'achievement-highlight',
-                        ]"
+                        :class="[ 'card border-2 transition-all duration-200 hover:shadow-md', achievement.is_earned ? 'border-primary-200 dark:border-primary-700 bg-gradient-to-br from-primary-50 to-white dark:from-primary-900/20 dark:to-gray-800' : 'border-gray-200 dark:border-gray-700', highlightedAchievementId === achievement.id && 'achievement-highlight', ]"
                     >
                         <div class="p-5">
                             <!-- Badge in top right corner -->
                             <div class="flex justify-end mb-2">
                                 <span
                                     v-if="achievement.is_earned"
-                                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                    class="badge-primary"
                                 >
                                     <MdiIcon
                                         :icon="mdiCheckCircle"
@@ -441,7 +432,7 @@
                                 </span>
                                 <span
                                     v-else
-                                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400"
+                                    class="badge-neutral"
                                 >
                                     <MdiIcon :icon="mdiLock" :size="14" />
                                     Locked
@@ -451,41 +442,22 @@
                             <!-- Achievement info -->
                             <div class="flex items-start">
                                 <div
-                                    :class="[
-                                        'w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center',
-                                        achievement.is_earned
-                                            ? 'bg-primary-100 dark:bg-primary-900'
-                                            : 'bg-gray-100 dark:bg-gray-700',
-                                    ]"
+                                    :class="[ 'w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center', achievement.is_earned ? 'bg-primary-100 dark:bg-primary-900' : 'bg-gray-100 dark:bg-gray-700', ]"
                                 >
                                     <MdiIcon
                                         :icon="mdiTrophy"
                                         :size="24"
-                                        :class="
-                                            achievement.is_earned
-                                                ? 'text-yellow-500'
-                                                : 'text-gray-400 grayscale opacity-50'
-                                        "
+                                        :class="achievement.is_earned ? 'text-yellow-500' : 'text-gray-400 grayscale opacity-50'"
                                     />
                                 </div>
                                 <div class="ml-4 flex-1">
                                     <h3
-                                        :class="[
-                                            'text-lg font-semibold',
-                                            achievement.is_earned
-                                                ? 'text-gray-900 dark:text-white'
-                                                : 'text-gray-600 dark:text-gray-400',
-                                        ]"
+                                        :class="[ 'text-lg font-semibold', achievement.is_earned ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400', ]"
                                     >
                                         {{ achievement.name }}
                                     </h3>
                                     <span
-                                        :class="[
-                                            'text-sm font-medium',
-                                            achievement.is_earned
-                                                ? 'text-primary-600 dark:text-primary-400'
-                                                : 'text-gray-500 dark:text-gray-500',
-                                        ]"
+                                        :class="[ 'text-sm font-medium', achievement.is_earned ? 'text-primary-700 dark:text-primary-400' : 'text-gray-500 dark:text-gray-500', ]"
                                     >
                                         +{{ achievement.points }} XP
                                     </span>
@@ -493,12 +465,7 @@
                             </div>
 
                             <p
-                                :class="[
-                                    'text-sm mt-3',
-                                    achievement.is_earned
-                                        ? 'text-gray-700 dark:text-gray-300'
-                                        : 'text-gray-500 dark:text-gray-400',
-                                ]"
+                                :class="[ 'text-sm mt-3', achievement.is_earned ? 'text-gray-700 dark:text-gray-300' : 'text-gray-500 dark:text-gray-400', ]"
                             >
                                 {{ achievement.description }}
                             </p>
@@ -531,7 +498,7 @@
                         class="text-gray-400 mx-auto mb-4"
                     />
                     <h3
-                        class="mt-4 text-lg font-medium text-gray-900 dark:text-white"
+                        class="heading-card mt-4"
                     >
                         No achievements found
                     </h3>
@@ -540,7 +507,7 @@
                     </p>
                     <button
                         @click="loadAchievements"
-                        class="mt-4 bg-primary-600 text-white px-4 py-2 rounded hover:bg-primary-700 transition-colors"
+                        class="btn-primary mt-4"
                     >
                         Reload Achievements
                     </button>
@@ -551,29 +518,24 @@
             <div v-if="activeTab === 'leaderboards'">
                 <!-- My Rankings Section -->
                 <div class="mb-8">
-                    <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
+                    <div class="card">
                         <div
                             class="px-6 py-4 border-b border-gray-200 dark:border-gray-700"
                         >
                             <div class="flex items-center justify-between">
                                 <h3
-                                    class="text-lg font-medium text-gray-900 dark:text-white flex items-center"
+                                    class="heading-card flex items-center"
                                 >
                                     <MdiIcon
                                         :icon="mdiAccount"
                                         :size="20"
-                                        class="mr-2 text-primary-500"
+                                        class="mr-2 text-primary-700 dark:text-primary-400"
                                     />
                                     My Rankings
                                 </h3>
-                                <button
+                                <button class="btn-link"
                                     @click="showFilters = !showFilters"
-                                    :class="[
-                                        'px-3 py-1 rounded text-sm font-medium transition-colors flex items-center',
-                                        showFilters
-                                            ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300'
-                                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600',
-                                    ]"
+                                    :class="[ 'px-3 py-1 rounded text-sm font-medium transition-colors flex items-center', showFilters ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600', ]"
                                 >
                                     <MdiIcon
                                         :icon="mdiFilter"
@@ -589,14 +551,23 @@
                             </div>
                         </div>
 
-                        <!-- Filters Section -->
+                        <!-- Filters Section (Pro only) -->
                         <div
-                            v-if="showFilters"
-                            class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750"
+                            v-if="showFilters && showProLock"
+                            class="px-6 pt-4 border-b border-gray-200 dark:border-gray-700"
+                        >
+                            <ProUpgradePrompt
+                                variant="banner"
+                                description="Filter rankings by strategy, position size, and profit per trade to compare yourself with similar traders."
+                            />
+                        </div>
+                        <div
+                            v-if="showFilters && isProUser"
+                            class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40"
                         >
                             <div v-if="loadingFilters" class="text-center py-4">
                                 <div
-                                    class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"
+                                    class="spinner spinner-xs inline-block"
                                 ></div>
                                 <span
                                     class="ml-2 text-sm text-gray-600 dark:text-gray-400"
@@ -673,7 +644,7 @@
                                 class="text-center py-8"
                             >
                                 <div
-                                    class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"
+                                    class="spinner spinner-sm inline-block"
                                 ></div>
                                 <p
                                     class="mt-2 text-gray-600 dark:text-gray-400"
@@ -706,7 +677,7 @@
                                 </p>
                                 <p
                                     v-if="hasFiltersApplied"
-                                    class="text-xs text-gray-400 dark:text-gray-500 mt-2"
+                                    class="text-xs text-gray-500 dark:text-gray-400 mt-2"
                                 >
                                     Try adjusting your filters to find peers
                                     with similar trading patterns
@@ -716,7 +687,7 @@
                             <div v-else class="space-y-4">
                                 <div
                                     v-if="hasFiltersApplied"
-                                    class="mb-4 p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-200 dark:border-primary-700"
+                                    class="callout-info mb-4"
                                 >
                                     <div
                                         class="flex items-center justify-between"
@@ -735,7 +706,7 @@
                                                     userRankings[0]
                                                         ?.total_filtered_users
                                                 "
-                                                class="ml-2 px-2 py-1 bg-primary-100 dark:bg-primary-800 rounded-full text-xs"
+                                                class="badge-primary ml-2"
                                             >
                                                 {{
                                                     userRankings[0]
@@ -754,7 +725,7 @@
                                 >
                                     <div class="flex items-center">
                                         <div
-                                            class="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-sm font-bold text-primary-600 dark:text-primary-400"
+                                            class="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-sm font-bold text-primary-700 dark:text-primary-400"
                                         >
                                             #{{ ranking.rank }}
                                         </div>
@@ -808,7 +779,7 @@
                 <!-- All Leaderboards Section -->
                 <div>
                     <h3
-                        class="text-lg font-medium text-gray-900 dark:text-white mb-4"
+                        class="heading-card mb-4"
                     >
                         {{
                             hasFiltersApplied
@@ -820,7 +791,7 @@
                         <div
                             v-for="leaderboard in leaderboards"
                             :key="leaderboard.key"
-                            class="bg-white dark:bg-gray-800 shadow rounded-lg"
+                            class="card"
                         >
                             <div
                                 class="px-6 py-4 border-b border-gray-200 dark:border-gray-700"
@@ -870,25 +841,11 @@
                                             entry, index
                                         ) in leaderboard.entries.slice(0, 10)"
                                         :key="entry.user_id"
-                                        :class="[
-                                            'flex items-center justify-between p-3 rounded-lg',
-                                            entry.is_current_user
-                                                ? 'bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-700'
-                                                : 'bg-gray-50 dark:bg-gray-700',
-                                        ]"
+                                        :class="[ 'flex items-center justify-between p-3 rounded-lg', entry.is_current_user ? 'bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-700' : 'bg-gray-50 dark:bg-gray-700', ]"
                                     >
                                         <div class="flex items-center">
                                             <div
-                                                :class="[
-                                                    'w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium',
-                                                    index === 0
-                                                        ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                                                        : index === 1
-                                                          ? 'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200'
-                                                          : index === 2
-                                                            ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
-                                                            : 'bg-gray-200 text-gray-600 dark:bg-gray-600 dark:text-gray-400',
-                                                ]"
+                                                :class="[ 'w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium', index === 0 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : index === 1 ? 'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200' : index === 2 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : 'bg-gray-200 text-gray-600 dark:bg-gray-600 dark:text-gray-400', ]"
                                             >
                                                 {{ index + 1 }}
                                             </div>
@@ -903,7 +860,7 @@
                                                 </div>
                                                 <div
                                                     v-if="entry.is_current_user"
-                                                    class="text-xs text-primary-600 dark:text-primary-400"
+                                                    class="text-xs text-primary-700 dark:text-primary-400"
                                                 >
                                                     You
                                                 </div>
@@ -931,7 +888,7 @@
                                         @click="
                                             viewFullLeaderboard(leaderboard)
                                         "
-                                        class="text-primary-600 dark:text-primary-400 hover:text-primary-500 text-sm font-medium flex items-center mx-auto"
+                                        class="text-primary-700 dark:text-primary-400 hover:text-primary-500 text-sm font-medium flex items-center mx-auto"
                                     >
                                         View all rankings
                                         <MdiIcon
@@ -952,7 +909,7 @@
                 <div class="mb-6">
                     <button
                         @click="activeTab = 'leaderboards'"
-                        class="flex items-center text-primary-600 dark:text-primary-400 hover:text-primary-500 mb-4"
+                        class="flex items-center text-primary-700 dark:text-primary-400 hover:text-primary-500 mb-4"
                     >
                         <MdiIcon
                             :icon="mdiChevronLeft"
@@ -962,19 +919,19 @@
                         Back to Rankings
                     </button>
                     <h2
-                        class="text-2xl font-bold text-gray-900 dark:text-white"
+                        class="heading-section"
                     >
                         {{ selectedLeaderboard?.name }} - Full Rankings
                     </h2>
                 </div>
 
-                <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
+                <div class="card">
                     <div
                         v-if="fullLeaderboardLoading"
                         class="text-center py-12"
                     >
                         <div
-                            class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"
+                            class="spinner spinner-md inline-block"
                         ></div>
                         <p class="mt-2 text-gray-600 dark:text-gray-400">
                             Loading full rankings...
@@ -1000,25 +957,11 @@
                             <div
                                 v-for="(entry, index) in fullLeaderboardEntries"
                                 :key="entry.user_id"
-                                :class="[
-                                    'flex items-center justify-between p-4 rounded-lg',
-                                    entry.is_current_user
-                                        ? 'bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-700'
-                                        : 'bg-gray-50 dark:bg-gray-700',
-                                ]"
+                                :class="[ 'flex items-center justify-between p-4 rounded-lg', entry.is_current_user ? 'bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-700' : 'bg-gray-50 dark:bg-gray-700', ]"
                             >
                                 <div class="flex items-center">
                                     <div
-                                        :class="[
-                                            'w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold',
-                                            index === 0
-                                                ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                                                : index === 1
-                                                  ? 'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200'
-                                                  : index === 2
-                                                    ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
-                                                    : 'bg-gray-200 text-gray-600 dark:bg-gray-600 dark:text-gray-400',
-                                        ]"
+                                        :class="[ 'w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold', index === 0 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : index === 1 ? 'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200' : index === 2 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : 'bg-gray-200 text-gray-600 dark:bg-gray-600 dark:text-gray-400', ]"
                                     >
                                         {{ entry.rank || index + 1 }}
                                     </div>
@@ -1033,7 +976,7 @@
                                         </div>
                                         <div
                                             v-if="entry.is_current_user"
-                                            class="text-sm text-primary-600 dark:text-primary-400"
+                                            class="text-sm text-primary-700 dark:text-primary-400"
                                         >
                                             You
                                         </div>
@@ -1067,6 +1010,8 @@ import api from "@/services/api";
 import MdiIcon from "@/components/MdiIcon.vue";
 import BaseSelect from "@/components/common/BaseSelect.vue";
 import ChallengesPanel from "@/components/gamification/ChallengesPanel.vue";
+import ProUpgradePrompt from "@/components/ProUpgradePrompt.vue";
+import { useProAccess } from "@/composables/useProAccess";
 import { useNotification } from "@/composables/useNotification";
 import {
     usePriceAlertNotifications,
@@ -1074,6 +1019,7 @@ import {
 } from "@/composables/usePriceAlertNotifications";
 import { useAuthStore } from "@/stores/auth";
 import { useUiPreferencesStore } from "@/stores/uiPreferences";
+import { formatDecimal, formatPercent } from "@/utils/formatters";
 import {
     mdiTrophy,
     mdiChartLine,
@@ -1097,6 +1043,7 @@ export default {
         MdiIcon,
         BaseSelect,
         ChallengesPanel,
+        ProUpgradePrompt,
     },
     setup() {
         const { showSuccess, showError, showWarning } = useNotification();
@@ -1106,6 +1053,7 @@ export default {
             celebrationLevelContext,
         } = usePriceAlertNotifications();
         const authStore = useAuthStore();
+        const { isProUser, showProLock } = useProAccess();
         const uiPreferencesStore = useUiPreferencesStore();
         const route = useRoute();
         const router = useRouter();
@@ -1341,7 +1289,9 @@ export default {
             }
         };
 
-        const loadLeaderboards = async (appliedFilters = {}) => {
+        const loadLeaderboards = async (requestedFilters = {}) => {
+            // Peer filters are Pro-only; the API ignores them for free users.
+            const appliedFilters = isProUser.value ? requestedFilters : {};
             try {
                 // Build query parameters from filters
                 const params = new URLSearchParams();
@@ -1423,6 +1373,7 @@ export default {
 
         // Load filter options from the API
         const loadFilterOptions = async () => {
+            if (!isProUser.value) return;
             try {
                 loadingFilters.value = true;
                 const response = await api.get(
@@ -1454,7 +1405,9 @@ export default {
         };
 
         // Load user rankings (with optional filters)
-        const loadUserRankings = async (appliedFilters = {}) => {
+        const loadUserRankings = async (requestedFilters = {}) => {
+            // Peer filters are Pro-only; the API ignores them for free users.
+            const appliedFilters = isProUser.value ? requestedFilters : {};
             try {
                 rankingsLoading.value = true;
 
@@ -1617,10 +1570,10 @@ export default {
 
         const RARITY_TEXT_COLORS = {
             common: "text-slate-500 dark:text-slate-400",
-            uncommon: "text-green-600 dark:text-green-400",
-            rare: "text-cyan-600 dark:text-cyan-400",
-            epic: "text-violet-600 dark:text-violet-400",
-            legendary: "text-primary-600 dark:text-primary-400",
+            uncommon: "text-green-700 dark:text-green-400",
+            rare: "text-primary-700 dark:text-primary-400",
+            epic: "text-purple-600 dark:text-purple-400",
+            legendary: "text-primary-700 dark:text-primary-400",
         };
 
         const rarityTextClass = (pct) => RARITY_TEXT_COLORS[rarityFromUnlockPct(pct)];
@@ -1629,7 +1582,7 @@ export default {
             if (typeof pct !== "number" || isNaN(pct)) return "";
             if (pct === 0) return "0%";
             if (pct < 0.1) return "<0.1%";
-            if (pct < 10) return `${pct.toFixed(1)}%`;
+            if (pct < 10) return formatPercent(pct, { digits: 1 });
             return `${Math.round(pct)}%`;
         };
 
@@ -1646,7 +1599,7 @@ export default {
 
             // Consistency score
             if (key.includes("consistent")) {
-                return `${parseFloat(value).toFixed(2)}`;
+                return formatDecimal(parseFloat(value), { digits: 2 });
             }
 
             // Legacy formats
@@ -2293,6 +2246,8 @@ export default {
             checkingAchievements,
             // Filter-related
             showFilters,
+            isProUser,
+            showProLock,
             loadingFilters,
             rankingsLoading,
             applyingFilters,

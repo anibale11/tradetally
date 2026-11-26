@@ -2,6 +2,7 @@ const Trade = require('../models/Trade');
 const TradeQueries = require('../services/tradeQueries');
 const User = require('../models/User');
 const { parseCSV, detectBrokerFormat, getCsvHeaderLine, getCsvSampleRows } = require('../utils/csvParser');
+const { normalizeImportFile } = require('../utils/csv/fileNormalizer');
 const { uuidv4 } = require('../utils/uuid');
 const db = require('../config/database');
 const logger = require('../utils/logger');
@@ -10,13 +11,24 @@ const cache = require('../utils/cache');
 const AnalyticsCache = require('../services/analyticsCache');
 const { computeTradePnl } = require('../services/pnlEngine');
 const { convertForDisplay } = require('../utils/displayCurrency');
+const { computePerformanceScore } = require('../utils/performanceScore');
+
+// The score is derived at response time rather than stored with the analytics,
+// so payloads cached before it existed still carry it. It is computed from the
+// USD figures and attached after currency conversion: every input is a ratio.
+async function withPerformanceScore(req, analytics) {
+  const performanceScore = computePerformanceScore(analytics);
+  const body = await convertForDisplay(req, analytics);
+  body.performanceScore = performanceScore;
+  return body;
+}
 const { groupTradesIntoPositions, storedCurrency } = require('../utils/openPositionGrouping');
 const yahooFinance = require('../utils/yahooFinance');
 const { convertQuoteCurrency } = require('../utils/quoteCurrency');
 const symbolCategories = require('../utils/symbolCategories');
 const imageProcessor = require('../utils/imageProcessor');
 const ensureString = require('../utils/ensureString');
-const { parseTradeFilters, tradeFilterProfiles } = require('../utils/tradeFilters');
+const { parseTradeFilters, tradeFilterProfiles, restrictFiltersToTier } = require('../utils/tradeFilters');
 const upload = require('../middleware/upload');
 const { normalizeCsvBuffer, stripNullCharacters } = require('../utils/csv/encoding');
 const currencyConverter = require('../utils/currencyConverter');
@@ -24,7 +36,7 @@ const path = require('path');
 const fs = require('fs').promises;
 const ChartService = require('../services/chartService');
 const axios = require('axios');
-const { sendV1NotImplemented } = require('../utils/apiResponse');
+const { isV1Request, sendV1Error, sendV1NotImplemented } = require('../utils/apiResponse');
 const { getUserTimezone } = require('../utils/timezone');
 const Playbook = require('../models/Playbook');
 const PlaybookAdherenceService = require('../services/playbookAdherence.service');
@@ -33,6 +45,21 @@ const TierService = require('../services/tierService');
 const Account = require('../models/Account');
 const { verifyJwtToken, TOKEN_PURPOSES, isTokenSessionValid } = require('../middleware/auth');
 const { escapeCsv } = require('../utils/csvEscape');
+
+// Excel workbooks, zipped exports and HTML reports are converted to CSV bytes
+// once at the upload boundary so detection, parsing and account scanning all
+// see the same text. Unsupported files answer 400 with a format-specific hint.
+function normalizeUploadedImport(req, res) {
+  try {
+    return normalizeImportFile(req.file.buffer, req.file.originalname);
+  } catch (error) {
+    if (error.code === 'UNSUPPORTED_IMPORT_FILE') {
+      res.status(400).json({ error: error.message, code: error.code });
+      return null;
+    }
+    throw error;
+  }
+}
 const { buildExistingTradeIndex, classifyImportTrade } = require('../utils/importDuplicateDetection');
 const { publishInBackground } = require('../events/domainEvents');
 const { publishEnrichmentCompleted } = require('../events/enrichmentEvents');
@@ -52,6 +79,7 @@ const AmbiguousTradeReviewService = require('../services/ambiguousTradeReviewSer
 const BulkTradeMetadataService = require('../services/bulkTradeMetadataService');
 const FeeProfileService = require('../services/feeProfileService');
 const BulkTradeStopsService = require('../services/bulkTradeStopsService');
+const BulkTradeChartsService = require('../services/bulkTradeChartsService');
 const BrokerTradeExclusions = require('../services/brokerTradeExclusions');
 
 // Analytics requests can arrive in parallel from the dashboard, trade list,
@@ -516,6 +544,15 @@ function publishTradeEvent(eventType, req, payload) {
   });
 }
 
+// Media handlers are shared by the browser and the public v1 API.
+function sendTradeMediaError(req, res, status, message) {
+  if (isV1Request(req)) {
+    const code = status === 404 ? 'NOT_FOUND' : status === 403 ? 'FORBIDDEN' : 'BAD_REQUEST';
+    return sendV1Error(res, status, code, message);
+  }
+  return res.status(status).json({ error: message });
+}
+
 const tradeController = {
   async getUserTrades(req, res, next) {
     const requestStartTime = Date.now();
@@ -759,8 +796,13 @@ const tradeController = {
     try {
       const { limit = 50, offset = 0 } = req.query;
 
+      // Round trips use their own SQL builder (Trade.getRoundTripTrades), so
+      // drop Pro-only advanced filters here rather than in TradeQueries.
       const filters = {
-        ...parseTradeFilters(req.query, tradeFilterProfiles.roundTrip),
+        ...(await restrictFiltersToTier(
+          req.user.id,
+          parseTradeFilters(req.query, tradeFilterProfiles.roundTrip)
+        )),
         limit: parseInt(limit),
         offset: parseInt(offset)
       };
@@ -1648,6 +1690,20 @@ const tradeController = {
     } catch (error) { next(error); }
   },
 
+  async bulkAddCharts(req, res, next) {
+    try {
+      const result = await BulkTradeChartsService.add(
+        req.user.id, req.body?.trade_ids, req.body?.chart_url, req.body?.chart_title
+      );
+      res.json(result);
+      for (const change of result.changes) {
+        publishTradeEvent('trade.updated', req, {
+          tradeId: change.trade_id, bulk: true, changedFields: ['charts']
+        });
+      }
+    } catch (error) { next(error); }
+  },
+
   async previewBulkStops(req, res, next) {
     try {
       res.json(await BulkTradeStopsService.preview(
@@ -1930,8 +1986,10 @@ const tradeController = {
         return res.status(400).json({ error: 'No file uploaded' });
       }
 
-      const result = detectImportAccounts(req.file.buffer, req.file.originalname);
-      res.json(result);
+      const upload = normalizeUploadedImport(req, res);
+      if (!upload) return;
+      const result = detectImportAccounts(upload.buffer, upload.fileName);
+      res.json({ ...result, fileName: upload.originalFileName, sourceFormat: upload.sourceFormat });
     } catch (error) {
       console.error('Import account analysis error:', error);
       next(error);
@@ -1951,7 +2009,9 @@ const tradeController = {
       }
 
       const { broker = 'auto' } = req.body;
-      const fileBuffer = normalizeCsvBuffer(req.file.buffer);
+      const upload = normalizeUploadedImport(req, res);
+      if (!upload) return;
+      const fileBuffer = normalizeCsvBuffer(upload.buffer);
 
       console.log('Selected broker:', broker);
       console.log('File name:', req.file.originalname);
@@ -1989,7 +2049,10 @@ const tradeController = {
         detectedHeaders: detectedHeaders.slice(0, 30), // Limit headers to first 30
         rowCount,
         fileName: req.file.originalname,
-        fileSize: req.file.size
+        fileSize: req.file.size,
+        sourceFormat: upload.sourceFormat,
+        sheetName: upload.sheetName || null,
+        archiveEntry: upload.archiveEntry || null
       };
 
       console.log('Validation result:', result);
@@ -2018,6 +2081,14 @@ const tradeController = {
       if (!req.file) {
         console.log('ERROR: No file found in request');
         return res.status(400).json({ error: 'No file uploaded' });
+      }
+
+      const upload = normalizeUploadedImport(req, res);
+      if (!upload) return;
+      if (upload.sourceFormat !== 'text') {
+        console.log(`Converted ${upload.sourceFormat} upload "${upload.originalFileName}" to CSV` +
+          (upload.sheetName ? ` (sheet "${upload.sheetName}")` : '') +
+          (upload.archiveEntry ? ` (archive entry "${upload.archiveEntry}")` : ''));
       }
 
       const importId = uuidv4();
@@ -2098,8 +2169,10 @@ const tradeController = {
       // Copy file buffer and metadata to prevent issues if request is cleaned up
       // UTF-16 exports are converted to UTF-8 so detection, parsing and the
       // diagnostics we store all see the same text.
-      const fileBuffer = normalizeCsvBuffer(Buffer.from(req.file.buffer));
-      const fileName = req.file.originalname;
+      const fileBuffer = normalizeCsvBuffer(Buffer.from(upload.buffer));
+      // Parsers that key off the file name (Sierra Chart account names) get
+      // the extracted/converted name; import_logs above keeps the original.
+      const fileName = upload.fileName;
       const fileUserId = req.user.id;
 
       // Ensure import continues in background regardless of client connection
@@ -2314,6 +2387,8 @@ const tradeController = {
             importId,
             userTimezone,
             sourceTimezone,
+            // This is the actual import worker, never the preview path.
+            reconcile_ibkr_records: accountMode === 'none' ? undefined : require('../services/brokerSync/ibkrReconciliation').reconcileImportRecords,
             tradeGroupingSettings: {
               enabled: userSettings.enable_trade_grouping ?? true,
               timeGapMinutes: userSettings.trade_grouping_time_gap_minutes ?? 60
@@ -2645,9 +2720,9 @@ const tradeController = {
             // Continue without applying fees
           }
 
-          let imported = 0;
+          let imported = parseResult.ibkr_reconciliation?.updated || 0;
           let failed = 0;
-          let duplicates = 0;
+          let duplicates = parseResult.ibkr_reconciliation?.duplicates || 0;
           const failedTrades = [];
 
           // Clear timeout since we're proceeding normally
@@ -2775,7 +2850,7 @@ const tradeController = {
 
                 // Omitting imported notes must not erase notes the user has
                 // already written on an existing trade.
-                if (!includeImportedNotes) {
+                if (!includeImportedNotes || ['ibkr', 'captrader'].includes(tradeData.broker)) {
                   delete cleanTradeData.notes;
                 }
 
@@ -3719,7 +3794,7 @@ const tradeController = {
 
       const { minHoldTime, maxHoldTime } = req.query;
 
-      const filters = {
+      let filters = {
         ...parseTradeFilters(req.query, tradeFilterProfiles.analytics),
         includeArchived: req.query.includeArchived === 'true' || req.query.includeArchived === '1'
       };
@@ -3738,12 +3813,15 @@ const tradeController = {
         }
       }
 
+      // Drop Pro-only filters before keying the cache so a free user's key
+      // matches the population TradeQueries actually computes.
+      filters = await restrictFiltersToTier(req.user.id, filters);
       const cacheKey = TradeQueries.cacheKey(req.user.id, filters);
 
       const cached = cache.get(cacheKey);
       if (cached) {
         console.log('[CACHE] Analytics cache hit for user:', req.user.id);
-        return res.json(await convertForDisplay(req, cached));
+        return res.json(await withPerformanceScore(req, cached));
       }
 
       console.log('[CACHE] Analytics cache miss for user:', req.user.id);
@@ -3768,7 +3846,7 @@ const tradeController = {
         return computed;
       });
 
-      res.json(await convertForDisplay(req, analytics));
+      res.json(await withPerformanceScore(req, analytics));
     } catch (error) {
       console.error('Analytics error:', error);
       next(error);
@@ -3797,6 +3875,29 @@ const tradeController = {
       res.json(await convertForDisplay(req, analytics));
     } catch (error) {
       console.error('[ERROR] Partial exit analytics error:', error);
+      next(error);
+    }
+  },
+
+  /**
+   * First diagnosis after an import (biggest net leak or strongest edge).
+   * GET /api/trades/import-insight?importId=<uuid>
+   */
+  async getImportInsight(req, res, next) {
+    try {
+      const ImportInsightService = require('../services/importInsightService');
+      const rawImportId = typeof req.query.importId === 'string' ? req.query.importId.trim() : '';
+      let importId = null;
+      if (rawImportId) {
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawImportId)) {
+          return res.status(400).json({ error: 'Invalid importId format' });
+        }
+        importId = rawImportId;
+      }
+      const result = await ImportInsightService.getImportInsight(req.user.id, { importId });
+      res.json(result);
+    } catch (error) {
+      console.error('[ERROR] Import insight error:', error);
       next(error);
     }
   },
@@ -4475,14 +4576,16 @@ const tradeController = {
         // Trade details
         entryPrice: trade.price || trade.entry_price,
         exitPrice: trade.exit_price,
-        // The chart's summary row formats entryPrice/exitPrice/pnl above, so it
-        // must be told the currency those STORED values are in. That is not
-        // original_currency: a converted import holds USD there while
-        // original_currency still names the source it came from.
+        // Stored money fields use this base; native_prices below is derived
+        // separately from the original currency and historical import rate.
         currency: storedCurrency(trade) || trade.currency || null,
-        // The display walker scales this row by its stored base currency and
-        // relabels `currency`, so the chart summary never shows a stale $.
-        original_currency: storedCurrency(trade) || trade.currency || 'USD',
+        // Preserve import provenance so native price snapshots can recover
+        // historical quote prices while P&L uses the display currency.
+        original_currency: trade.original_currency || 'USD',
+        exchange_rate: trade.exchange_rate,
+        original_entry_price_currency: trade.original_entry_price_currency,
+        original_exit_price_currency: trade.original_exit_price_currency,
+        original_pnl_currency: trade.original_pnl_currency,
         quantity: trade.quantity,
         side: trade.side,
         pnl: trade.pnl,
@@ -4519,12 +4622,16 @@ const tradeController = {
       // Candles are quoted in the SYMBOL's trading currency (provider data) -
       // a different source than the stored trade row's base currency. Scale
       // candles from that source and skip them in the row walker so price
-      // bars and entry/exit markers land in the same display currency.
+      // bars and entry/exit markers land in the same quote currency.
       let candlesSource = 'USD';
       try {
-        const FundamentalDataService = require('../services/fundamentalDataService');
-        const profile = await FundamentalDataService.getProfile(symbol);
-        candlesSource = String(profile?.currency || 'USD').toUpperCase();
+        if (trade.instrument_type === 'forex') {
+          candlesSource = require('../utils/forexSymbols').parseForexPair(symbol).quote;
+        } else {
+          const FundamentalDataService = require('../services/fundamentalDataService');
+          const profile = await FundamentalDataService.getProfile(symbol);
+          candlesSource = String(profile?.currency || 'USD').toUpperCase();
+        }
       } catch { /* provider currency unavailable - assume USD quotes */ }
       const convertedChart = await ChartService.convertTradeChartForDisplay(req, chartData, candlesSource);
       res.json(convertedChart);
@@ -4567,7 +4674,16 @@ const tradeController = {
           error: error.message
         });
       }
-      
+
+      // Services mark "no provider available / provider down" as 503 so it is
+      // not logged and surfaced as an application fault.
+      if (error.statusCode === 503) {
+        return res.status(503).json({
+          error: 'Chart data unavailable',
+          message: error.message
+        });
+      }
+
       res.status(500).json({
         error: 'Failed to fetch chart data',
         message: error.message
@@ -4640,11 +4756,11 @@ const tradeController = {
       // Verify trade belongs to user (findById also returns public trades — reject those)
       const trade = await Trade.findById(tradeId, req.user.id);
       if (!trade || trade.user_id !== req.user.id) {
-        return res.status(404).json({ error: 'Trade not found' });
+        return sendTradeMediaError(req, res, 404, 'Trade not found');
       }
 
       if (!req.files || req.files.length === 0) {
-        return res.status(400).json({ error: 'No images uploaded' });
+        return sendTradeMediaError(req, res, 400, 'No images uploaded');
       }
 
       const uploadsDir = path.join(__dirname, '../../uploads/trades');
@@ -4652,6 +4768,7 @@ const tradeController = {
 
       // Process each uploaded image
       for (const file of req.files) {
+        let saved_image;
         try {
           // Validate image
           await imageProcessor.validateImage(file.buffer);
@@ -4666,6 +4783,7 @@ const tradeController = {
 
           // Save to disk
           const savedImage = await imageProcessor.saveImage(processedImage, uploadsDir);
+          saved_image = savedImage;
 
           // Save to database
           const attachmentData = {
@@ -4677,7 +4795,12 @@ const tradeController = {
 
           const attachment = await Trade.addAttachment(tradeId, attachmentData);
           
-          processedImages.push({
+          processedImages.push(isV1Request(req) ? {
+            ...attachment,
+            original_size: savedImage.originalSize,
+            compressed_size: savedImage.size,
+            compression_ratio: savedImage.compressionRatio
+          } : {
             ...attachment,
             originalSize: savedImage.originalSize,
             compressedSize: savedImage.size,
@@ -4685,6 +4808,8 @@ const tradeController = {
           });
 
         } catch (error) {
+          // A failed DB insert must not leave an unreferenced file on disk.
+          if (saved_image) await imageProcessor.deleteImage(saved_image.filePath);
           console.error('Failed to process image %s:', file.originalname, error);
           processedImages.push({
             filename: file.originalname,
@@ -4693,11 +4818,29 @@ const tradeController = {
         }
       }
 
+      const successful_uploads = processedImages.filter(img => !img.error).length;
+      if (successful_uploads > 0) {
+        await AnalyticsCache.invalidate(req.user.id);
+        publishTradeEvent('trade.updated', req, { tradeId });
+      }
+
+      if (isV1Request(req)) {
+        if (successful_uploads === 0) {
+          return sendV1Error(res, 422, 'IMAGE_UPLOAD_FAILED', 'No images could be processed', { images: processedImages });
+        }
+        return res.json({
+          message: 'Images processed successfully',
+          images: processedImages,
+          total_images: processedImages.length,
+          successful_uploads
+        });
+      }
+
       res.json({
         message: 'Images processed successfully',
         images: processedImages,
         totalImages: processedImages.length,
-        successfulUploads: processedImages.filter(img => !img.error).length
+        successfulUploads: successful_uploads
       });
 
     } catch (error) {
@@ -4707,12 +4850,13 @@ const tradeController = {
 
   async getTradeImage(req, res, next) {
     try {
-      const { id: tradeId, filename } = req.params;
+      const tradeId = req.params.id;
+      const filename = req.params.image_id ?? req.params.filename;
 
       // Sanitize filename to prevent path traversal attacks
       const sanitizedFilename = path.basename(filename);
       if (sanitizedFilename !== filename || filename.includes('..')) {
-        return res.status(400).json({ error: 'Invalid filename' });
+        return sendTradeMediaError(req, res, 400, 'Invalid filename');
       }
 
       console.log('getTradeImage called:', {
@@ -4744,13 +4888,17 @@ const tradeController = {
         SELECT ta.*, t.is_public, t.user_id
         FROM trade_attachments ta
         JOIN trades t ON ta.trade_id = t.id
-        WHERE ta.trade_id = $1 AND ta.file_url LIKE $2
+        WHERE ta.trade_id = $1 AND ta.file_url IN ($2, $3)
       `;
 
-      const attachmentResult = await db.query(attachmentQuery, [tradeId, `%${sanitizedFilename}`]);
+      const attachmentResult = await db.query(attachmentQuery, [
+        tradeId,
+        `/api/trades/${tradeId}/images/${sanitizedFilename}`,
+        `/api/v1/trades/${tradeId}/images/${sanitizedFilename}`
+      ]);
 
       if (attachmentResult.rows.length === 0) {
-        return res.status(404).json({ error: 'Image not found' });
+        return sendTradeMediaError(req, res, 404, 'Image not found');
       }
 
       const attachment = attachmentResult.rows[0];
@@ -4767,7 +4915,7 @@ const tradeController = {
           isPublic: attachment.is_public,
           hasUser: !!user
         });
-        return res.status(403).json({ error: 'Access denied' });
+        return sendTradeMediaError(req, res, 403, 'Access denied');
       }
 
       // Build and validate file path to prevent path traversal
@@ -4777,14 +4925,14 @@ const tradeController = {
 
       // Verify the resolved path is within the uploads directory
       if (!resolvedPath.startsWith(uploadsDir + path.sep) && resolvedPath !== uploadsDir) {
-        return res.status(400).json({ error: 'Invalid file path' });
+        return sendTradeMediaError(req, res, 400, 'Invalid file path');
       }
 
       // Check if file exists
       try {
         await fs.access(resolvedPath);
       } catch (error) {
-        return res.status(404).json({ error: 'Image file not found on disk' });
+        return sendTradeMediaError(req, res, 404, 'Image file not found on disk');
       }
 
       // Set appropriate headers
@@ -4806,24 +4954,25 @@ const tradeController = {
 
   async deleteTradeImage(req, res, next) {
     try {
-      const { id: tradeId, attachmentId } = req.params;
+      const tradeId = req.params.id;
+      const attachmentId = req.params.image_id ?? req.params.attachmentId;
       
       // Verify trade belongs to user
       const trade = await Trade.findById(tradeId, req.user.id);
-      if (!trade) {
-        return res.status(404).json({ error: 'Trade not found' });
+      if (!trade || trade.user_id !== req.user.id) {
+        return sendTradeMediaError(req, res, 404, 'Trade not found');
       }
 
       // Get attachment details before deletion
       const attachmentQuery = `
         SELECT ta.* FROM trade_attachments ta
         JOIN trades t ON ta.trade_id = t.id
-        WHERE ta.id = $1 AND t.user_id = $2
+        WHERE ta.id = $1 AND t.user_id = $2 AND ta.trade_id = $3
       `;
-      const attachmentResult = await db.query(attachmentQuery, [attachmentId, req.user.id]);
+      const attachmentResult = await db.query(attachmentQuery, [attachmentId, req.user.id, tradeId]);
       
       if (attachmentResult.rows.length === 0) {
-        return res.status(404).json({ error: 'Image not found' });
+        return sendTradeMediaError(req, res, 404, 'Image not found');
       }
 
       const attachment = attachmentResult.rows[0];
@@ -4836,6 +4985,8 @@ const tradeController = {
       const filePath = path.join(__dirname, '../../uploads/trades', filename);
       await imageProcessor.deleteImage(filePath);
 
+      await AnalyticsCache.invalidate(req.user.id);
+      publishTradeEvent('trade.updated', req, { tradeId });
       res.json({ message: 'Image deleted successfully' });
 
     } catch (error) {
@@ -4847,17 +4998,29 @@ const tradeController = {
   async addTradeChart(req, res, next) {
     try {
       const tradeId = req.params.id;
-      const { chartUrl, chartTitle } = req.body;
+      const chartUrl = req.body?.chart_url ?? req.body?.chartUrl;
+      const chartTitle = req.body?.chart_title ?? req.body?.chartTitle;
 
       // Validate chart URL
       if (!chartUrl || typeof chartUrl !== 'string' || chartUrl.trim().length === 0) {
-        return res.status(400).json({ error: 'Chart URL is required' });
+        return sendTradeMediaError(req, res, 400, 'Chart URL is required');
+      }
+      // Same rules as the bulk chart endpoint: the link is rendered into an
+      // href, so only http(s) without embedded credentials is accepted.
+      let parsedChartUrl;
+      try { parsedChartUrl = new URL(chartUrl.trim()); } catch (_) { /* rejected below */ }
+      if (chartUrl.length > 1000 || !parsedChartUrl ||
+          !['http:', 'https:'].includes(parsedChartUrl.protocol) || parsedChartUrl.username || parsedChartUrl.password) {
+        return sendTradeMediaError(req, res, 400, 'Enter a valid HTTP or HTTPS chart link');
+      }
+      if (chartTitle != null && (typeof chartTitle !== 'string' || chartTitle.length > 255)) {
+        return sendTradeMediaError(req, res, 400, 'Chart title must be a string of at most 255 characters');
       }
 
       // Verify trade belongs to user (findById also returns public trades — reject those)
       const trade = await Trade.findById(tradeId, req.user.id);
       if (!trade || trade.user_id !== req.user.id) {
-        return res.status(404).json({ error: 'Trade not found' });
+        return sendTradeMediaError(req, res, 404, 'Trade not found');
       }
 
       // Add chart to database
@@ -4867,9 +5030,11 @@ const tradeController = {
       };
 
       const chart = await Trade.addChart(tradeId, chartData);
+      await AnalyticsCache.invalidate(req.user.id);
+      publishTradeEvent('trade.updated', req, { tradeId });
 
       // Convert to camelCase for frontend consistency
-      const chartResponse = {
+      const chartResponse = isV1Request(req) ? chart : {
         id: chart.id,
         chartUrl: chart.chart_url,
         chartTitle: chart.chart_title,

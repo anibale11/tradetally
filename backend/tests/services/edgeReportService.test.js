@@ -17,6 +17,10 @@ jest.mock('../../src/models/User', () => ({
   getSettings: jest.fn(),
   findById: jest.fn()
 }));
+jest.mock('../../src/services/tierService', () => ({
+  isProUser: jest.fn(),
+  filterProUserIds: jest.fn()
+}));
 jest.mock('../../src/models/Playbook', () => ({
   getAnalytics: jest.fn()
 }));
@@ -27,6 +31,7 @@ const AIService = require('../../src/utils/aiService');
 const EmailService = require('../../src/services/emailService');
 const User = require('../../src/models/User');
 const Playbook = require('../../src/models/Playbook');
+const TierService = require('../../src/services/tierService');
 const EdgeReportService = require('../../src/services/edgeReportService');
 
 const PERIOD = { periodStart: '2026-06-01', periodEnd: '2026-06-07' };
@@ -74,6 +79,8 @@ describe('EdgeReportService', () => {
     Playbook.getAnalytics.mockResolvedValue({ overview: { playbook_count: 0 } });
     AIService.getUserSettings.mockResolvedValue({ provider: '' });
     AIService.isProviderConfigured.mockReturnValue(false);
+    TierService.isProUser.mockResolvedValue(true);
+    TierService.filterProUserIds.mockImplementation(async ids => ids.map(String));
   });
 
   describe('zero-trade weeks', () => {
@@ -253,6 +260,18 @@ describe('EdgeReportService', () => {
       expect(typeof narrativeArg).toBe('string');
     });
 
+    it('does not email free users even when opted in', async () => {
+      TierService.isProUser.mockResolvedValue(false);
+      User.getSettings.mockResolvedValue({ edge_report_enabled: true });
+      User.findById.mockResolvedValue({ id: 'user-1', email: 'trader@example.com' });
+      EmailService.isConfigured.mockReturnValue(true);
+
+      const row = await EdgeReportService.generateForUser('user-1', { ...PERIOD, force: true });
+
+      expect(row).toEqual({ id: 'report-row-1' });
+      expect(EmailService.sendEdgeReportEmail).not.toHaveBeenCalled();
+    });
+
     it('does not email users who have not opted in', async () => {
       User.getSettings.mockResolvedValue({ edge_report_enabled: false });
       EmailService.isConfigured.mockReturnValue(true);
@@ -316,6 +335,17 @@ describe('EdgeReportService', () => {
 
       expect(narrative).toBe('Solid week with a clear AAPL edge.');
     });
+
+    it('never calls the AI provider for free users', async () => {
+      TierService.isProUser.mockResolvedValue(false);
+      AIService.getUserSettings.mockResolvedValue({ provider: 'claude', apiKey: 'key' });
+      AIService.isProviderConfigured.mockReturnValue(true);
+
+      const narrative = await EdgeReportService.generateNarrative('user-1', report);
+
+      expect(AIService.generateResponse).not.toHaveBeenCalled();
+      expect(narrative).toContain('You closed 5 trades this week');
+    });
   });
 
   describe('runWeeklyBatch', () => {
@@ -330,9 +360,9 @@ describe('EdgeReportService', () => {
       const stats = await EdgeReportService.runWeeklyBatch();
 
       expect(spy).toHaveBeenCalledTimes(3);
-      expect(spy).toHaveBeenCalledWith('user-a', { force: true });
-      expect(spy).toHaveBeenCalledWith('user-b', { force: true });
-      expect(spy).toHaveBeenCalledWith('user-c', { force: true });
+      expect(spy).toHaveBeenCalledWith('user-a', { force: true, excludeSample: true });
+      expect(spy).toHaveBeenCalledWith('user-b', { force: true, excludeSample: true });
+      expect(spy).toHaveBeenCalledWith('user-c', { force: true, excludeSample: true });
       expect(stats).toEqual({ users: 3, generated: 1, skipped: 1, failed: 1 });
 
       spy.mockRestore();
@@ -346,6 +376,83 @@ describe('EdgeReportService', () => {
       expect(stats).toEqual({ users: 0, generated: 0, skipped: 0, failed: 0 });
       const [sql] = db.query.mock.calls[0];
       expect(sql).toContain('edge_report_enabled = true');
+    });
+
+    it('skips opted-in users who are not Pro', async () => {
+      db.query.mockResolvedValue({ rows: [{ id: 'free-user' }, { id: 'pro-user' }] });
+      TierService.filterProUserIds.mockResolvedValue(['pro-user']);
+      const spy = jest.spyOn(EdgeReportService, 'generateForUser').mockResolvedValue({ id: 'r' });
+
+      const stats = await EdgeReportService.runWeeklyBatch();
+
+      expect(spy).toHaveBeenCalledTimes(1);
+      expect(spy).toHaveBeenCalledWith('pro-user', { force: true, excludeSample: true });
+      expect(stats.users).toBe(1);
+      spy.mockRestore();
+    });
+  });
+
+  describe('week bounds and sample-trade exclusion', () => {
+    it('computes Monday-Sunday UTC bounds for any date including Sunday', () => {
+      expect(EdgeReportService.getWeekBoundsForDate('2026-06-03')).toEqual({
+        periodStart: '2026-06-01',
+        periodEnd: '2026-06-07'
+      });
+      expect(EdgeReportService.getWeekBoundsForDate('2026-06-07')).toEqual({
+        periodStart: '2026-06-01',
+        periodEnd: '2026-06-07'
+      });
+    });
+
+    it('buildReport excludes sample trades from analytics and dimension queries and skips comparison/playbook in summary-only mode', async () => {
+      TradeQueries.getAnalytics.mockResolvedValueOnce(mockAnalytics({
+        totalTrades: 5,
+        winningTrades: 3,
+        losingTrades: 2,
+        winRate: 60,
+        totalPnL: 250,
+        profitFactor: 1.5,
+        avgWin: 120,
+        avgLoss: -55
+      }));
+      mockDimensionQueries({
+        symbolRows: [
+          { name: 'NVDA', trades: '3', total_pnl: '400', wins: '3' },
+          { name: 'TSLA', trades: '2', total_pnl: '-150', wins: '0' }
+        ]
+      });
+
+      const report = await EdgeReportService.buildReport('user-1', {
+        ...PERIOD,
+        excludeSample: true,
+        summaryOnly: true
+      });
+
+      expect(TradeQueries.getAnalytics).toHaveBeenCalledTimes(1);
+      expect(TradeQueries.getAnalytics).toHaveBeenCalledWith('user-1', {
+        startDate: '2026-06-01',
+        endDate: '2026-06-07',
+        excludeSample: true
+      });
+      expect(Playbook.getAnalytics).not.toHaveBeenCalled();
+      expect(report.previous_week).toBeNull();
+      expect(report.playbook).toBeNull();
+      const tradeQueries = db.query.mock.calls.filter(([sql]) => String(sql).includes('FROM trades'));
+      expect(tradeQueries.length).toBeGreaterThanOrEqual(3);
+      for (const [sql] of tradeQueries) {
+        expect(sql).toContain("NOT COALESCE('sample' = ANY(t.tags), false)");
+      }
+    });
+
+    it('runWeeklyBatch passes excludeSample: true so scheduled reports never include sample trades', async () => {
+      db.query.mockResolvedValueOnce({ rows: [{ id: 'user-1' }] });
+      const genSpy = jest.spyOn(EdgeReportService, 'generateForUser').mockResolvedValueOnce({ id: 'rep-1' });
+
+      const stats = await EdgeReportService.runWeeklyBatch();
+
+      expect(stats).toEqual({ users: 1, generated: 1, skipped: 0, failed: 0 });
+      expect(genSpy).toHaveBeenCalledWith('user-1', { force: true, excludeSample: true });
+      genSpy.mockRestore();
     });
   });
 });

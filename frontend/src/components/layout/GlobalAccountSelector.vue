@@ -3,7 +3,7 @@
     <!-- Trigger Button -->
     <button
       @click="toggleDropdown"
-      class="flex items-center space-x-2 px-3 py-2 text-sm rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+      class="btn-ghost btn-sm space-x-2"
       :title="selectedAccountLabel"
     >
       <!-- Account Icon -->
@@ -36,19 +36,19 @@
     >
       <div
         v-if="isOpen"
-        class="absolute left-0 mt-2 w-72 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 dark:ring-gray-700 z-50"
+        class="popover absolute left-0 mt-2 w-72 z-40"
       >
         <div class="py-1" role="menu">
           <!-- Header -->
-          <div class="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700">
+          <div class="text-label px-4 py-2 border-b border-gray-100 dark:border-gray-700">
             Filter by Account
           </div>
 
           <!-- All Accounts Option -->
           <button
             @click="handleClearAccount"
-            class="w-full text-left px-4 py-2 text-sm flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            :class="!isFiltered ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-gray-700 dark:text-gray-300'"
+            class="menu-item justify-between"
+            :class="!isFiltered ? 'text-primary-700 dark:text-primary-400 font-medium' : 'text-gray-700 dark:text-gray-300'"
             role="menuitem"
           >
             <span>All Accounts</span>
@@ -58,8 +58,8 @@
           <!-- Unsorted Option (trades without account) -->
           <button
             @click="handleSelectUnsorted"
-            class="w-full text-left px-4 py-2 text-sm flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            :class="selectedAccount === UNSORTED_ACCOUNT ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-gray-700 dark:text-gray-300'"
+            class="menu-item justify-between"
+            :class="selectedAccount === UNSORTED_ACCOUNT ? 'text-primary-700 dark:text-primary-400 font-medium' : 'text-gray-700 dark:text-gray-300'"
             role="menuitem"
           >
             <span>Unsorted</span>
@@ -85,8 +85,8 @@
               v-for="account in accounts"
               :key="account.value"
               @click="handleSelectAccount(account.value)"
-              class="w-full text-left px-4 py-2 text-sm flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              :class="selectedAccount === account.value ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-gray-700 dark:text-gray-300'"
+              class="menu-item justify-between"
+              :class="selectedAccount === account.value ? 'text-primary-700 dark:text-primary-400 font-medium' : 'text-gray-700 dark:text-gray-300'"
               role="menuitem"
             >
               <div class="min-w-0 pr-3">

@@ -3,7 +3,7 @@
     <div class="card-body">
       <div class="flex items-center justify-between mb-4">
         <div class="flex items-center">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white">Today's Journal Entries</h3>
+          <h3 class="heading-card">Today's Journal Entries</h3>
           <span
             v-if="todayEntries.length > 0"
             class="ml-3 inline-flex items-center rounded-full bg-primary-50 px-2 py-0.5 text-xs font-medium text-primary-700 dark:bg-primary-900/20 dark:text-primary-300"
@@ -13,7 +13,7 @@
           <div v-if="entry?.market_bias" class="ml-3 flex items-center">
             <span class="text-sm text-gray-500 dark:text-gray-400 mr-2">Market Bias:</span>
             <span 
-              class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+              class="badge"
               :class="marketBiasClasses(entry.market_bias)"
             >
               <component :is="marketBiasIcon(entry.market_bias)" class="w-3 h-3 mr-1" />
@@ -26,7 +26,7 @@
           <button
             v-if="entry"
             @click="createFullEntry"
-            class="btn-primary text-sm"
+            class="btn-primary"
           >
             <PlusIcon class="w-4 h-4 mr-1" />
             New Entry
@@ -34,7 +34,7 @@
           <button
             v-if="entry"
             @click="editEntry"
-            class="btn-secondary text-sm"
+            class="btn-secondary"
           >
             <PencilIcon class="w-4 h-4 mr-1" />
             Edit
@@ -42,14 +42,14 @@
           
           <router-link
             to="/diary"
-            class="text-sm text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300"
+            class="text-sm text-primary-700 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300"
           >
             View All →
           </router-link>
           
           <button
             @click="toggleExpanded"
-            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            class="btn-ghost btn-sm"
           >
             <ChevronDownIcon 
               class="w-4 h-4 transition-transform duration-200"
@@ -65,8 +65,8 @@
           Showing your most recent entry. Open the journal to view all entries from today.
         </p>
         <!-- Title -->
-        <div v-if="entry.title" class="border-l-4 border-primary-500 pl-3">
-          <h4 class="font-medium text-gray-900 dark:text-white">{{ entry.title }}</h4>
+        <div v-if="entry.title">
+          <h4 class="heading-card">{{ entry.title }}</h4>
         </div>
 
         <!-- Content (split into cards if appended) -->
@@ -74,10 +74,7 @@
           <div
             v-for="(contentPart, idx) in splitContent(entry.content)"
             :key="idx"
-            :class="[
-              'text-sm text-gray-700 dark:text-gray-300 prose prose-sm max-w-none dark:prose-invert',
-              splitContent(entry.content).length > 1 ? 'bg-gray-50 dark:bg-gray-700/30 p-4 rounded-lg mb-3 last:mb-0' : ''
-            ]"
+            :class="[ 'text-sm text-gray-700 dark:text-gray-300 prose prose-sm max-w-none dark:prose-invert', splitContent(entry.content).length > 1 ? 'bg-gray-50 dark:bg-gray-700/30 p-4 rounded-lg mb-3 last:mb-0' : '' ]"
           >
             <div
               v-if="!expanded && contentPart.length > 200"
@@ -92,26 +89,26 @@
           <button
             v-if="!expanded && entry.content.length > 200"
             @click="expanded = true"
-            class="text-primary-600 hover:text-primary-900 dark:text-primary-400 text-sm mt-2"
+            class="text-primary-700 hover:text-primary-900 dark:text-primary-400 text-sm mt-2"
           >
             Show more...
           </button>
         </div>
 
         <!-- Key Levels -->
-        <div v-if="entry.key_levels && expanded" class="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg">
+        <div v-if="entry.key_levels && expanded" class="callout-warning">
           <h5 class="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-2">Key Levels</h5>
           <div class="text-sm text-yellow-700 dark:text-yellow-300" v-html="parseMarkdown(entry.key_levels)"></div>
         </div>
 
         <!-- Watchlist -->
-        <div v-if="entry.watchlist && entry.watchlist.length > 0 && expanded" class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
-          <h5 class="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">Watchlist</h5>
+        <div v-if="entry.watchlist && entry.watchlist.length > 0 && expanded" class="bg-primary-50 dark:bg-primary-900/20 p-3 rounded-lg">
+          <h5 class="text-sm font-medium text-primary-800 dark:text-primary-200 mb-2">Watchlist</h5>
           <div class="flex flex-wrap gap-2">
             <span
               v-for="symbol in entry.watchlist"
               :key="symbol"
-              class="inline-flex items-center px-2 py-1 rounded bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 text-xs font-medium"
+              class="badge-primary"
             >
               {{ symbol }}
             </span>
@@ -123,7 +120,7 @@
           <span
             v-for="tag in entry.tags"
             :key="tag"
-            class="inline-flex items-center px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs"
+            class="badge-neutral"
           >
             #{{ tag }}
           </span>
@@ -134,7 +131,7 @@
           <div class="flex items-center text-sm">
             <span class="text-gray-500 dark:text-gray-400 mr-2">Followed Plan:</span>
             <span 
-              :class="entry.followed_plan ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'"
+              :class="entry.followed_plan ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'"
               class="font-medium"
             >
               {{ entry.followed_plan ? 'Yes' : 'No' }}
@@ -149,24 +146,25 @@
       </div>
 
       <!-- No Entry State -->
-      <div v-if="!entry && !loading" class="text-center py-6">
-        <BookOpenIcon class="w-12 h-12 text-gray-400 mx-auto mb-3" />
-        <p class="text-gray-500 dark:text-gray-400 mb-4">
-          No journal entry for today yet. Start documenting your trading plan and market thoughts.
-        </p>
+      <!-- Compact prompt: the dashboard should not spend a tall empty state on a missing note. -->
+      <div v-if="!entry && !loading" class="flex flex-wrap items-center justify-between gap-3 py-1">
+        <div class="flex items-center gap-3 min-w-0">
+          <BookOpenIcon class="w-5 h-5 shrink-0 text-gray-400" />
+          <p class="text-sm text-gray-500 dark:text-gray-400">No journal entry for today yet.</p>
+        </div>
         <button
           @click="createTodaysEntry"
-          class="btn-primary"
+          class="btn-secondary btn-sm"
           :disabled="creating"
         >
-          <PlusIcon class="w-4 h-4 mr-2" />
-          {{ creating ? 'Creating...' : 'Create Today\'s Entry' }}
+          <PlusIcon class="w-4 h-4 mr-1" />
+          {{ creating ? 'Creating...' : 'Start today\'s entry' }}
         </button>
       </div>
 
       <!-- Loading State -->
       <div v-if="loading" class="text-center py-6">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+        <div class="spinner spinner-md mx-auto"></div>
         <p class="text-gray-500 dark:text-gray-400 mt-2">Loading today's entry...</p>
       </div>
 
@@ -198,7 +196,7 @@
               <textarea
                 v-model="quickEntry.content"
                 rows="3"
-                class="input text-sm"
+                class="input input-sm"
                 placeholder="What's your plan for today?"
               ></textarea>
             </div>
@@ -207,13 +205,13 @@
               <button
                 type="button"
                 @click="cancelQuickEntry"
-                class="btn-secondary text-sm"
+                class="btn-secondary"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                class="btn-primary text-sm"
+                class="btn-primary"
                 :disabled="saving"
               >
                 {{ saving ? 'Saving...' : 'Save Entry' }}

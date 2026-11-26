@@ -45,10 +45,10 @@
 
     <!-- Full page spinner only on initial load -->
     <div v-if="initialLoading" class="flex justify-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div class="spinner spinner-lg"></div>
     </div>
 
-    <div v-else-if="error" class="card p-8 text-center">
+    <div v-else-if="error" class="card card-body text-center">
       <p class="text-danger mb-4">{{ error }}</p>
       <button @click="loadData" class="btn-primary">Retry</button>
     </div>
@@ -58,7 +58,7 @@
       <!-- Subtle refresh indicator -->
       <div v-if="loading" class="absolute top-0 right-0 z-10">
         <div class="flex items-center space-x-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm border border-gray-200 dark:border-gray-700">
-          <div class="animate-spin rounded-full h-4 w-4 border-2 border-primary-600 border-t-transparent"></div>
+          <div class="spinner spinner-xs"></div>
           <span class="text-xs text-gray-600 dark:text-gray-400">Updating...</span>
         </div>
       </div>
@@ -66,21 +66,21 @@
       <!-- Summary stats -->
       <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
         <div class="card p-4 text-center">
-          <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ analytics.total_trades }}</div>
+          <div class="stat-value text-gray-900 dark:text-white">{{ analytics.total_trades }}</div>
           <div class="text-sm text-gray-600 dark:text-gray-400">Trades Analyzed</div>
         </div>
         <div class="card p-4 text-center">
-          <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ analytics.max_partials }}</div>
+          <div class="stat-value text-gray-900 dark:text-white">{{ analytics.max_partials }}</div>
           <div class="text-sm text-gray-600 dark:text-gray-400">Max Partial Levels</div>
         </div>
         <div class="card p-4 text-center">
-          <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ filteredPartials.length }}</div>
+          <div class="stat-value text-gray-900 dark:text-white">{{ filteredPartials.length }}</div>
           <div class="text-sm text-gray-600 dark:text-gray-400">Partial Indices</div>
         </div>
       </div>
 
       <!-- No data state -->
-      <div v-if="filteredPartials.length === 0" class="card p-8 text-center">
+      <div v-if="filteredPartials.length === 0" class="card card-body text-center">
         <p class="text-gray-500 dark:text-gray-400">
           {{ analytics.partials?.length > 0 && minEligibleTrades > 0
             ? `No partial levels have ${minEligibleTrades}+ eligible trades. Try lowering the threshold.`
@@ -92,39 +92,39 @@
       <div v-else class="card overflow-hidden">
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead class="bg-gray-50 dark:bg-gray-700">
+            <thead class="table-head">
               <tr>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th class="text-left table-th px-4 py-2">
                   Partial
                 </th>
-                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th class="text-center table-th px-4 py-2">
                   Eligible
                 </th>
-                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th class="text-center table-th px-4 py-2">
                   Abs. Hit %
                 </th>
-                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th class="text-center table-th px-4 py-2">
                   Cond. Hit %
                 </th>
-                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th class="text-center table-th px-4 py-2">
                   Profitable
                 </th>
-                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th class="text-center table-th px-4 py-2">
                   BE/Scratch
                 </th>
-                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th class="text-center table-th px-4 py-2">
                   Loss
                 </th>
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th class="text-right table-th px-4 py-2">
                   Avg Exit (pts)
                 </th>
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th class="text-right table-th px-4 py-2">
                   Avg Exit Profit (pts)
                 </th>
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th class="text-right table-th px-4 py-2">
                   Avg R
                 </th>
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th class="text-right table-th px-4 py-2">
                   Avg SL (pts)
                 </th>
               </tr>
@@ -136,14 +136,14 @@
                 class="hover:bg-gray-50 dark:hover:bg-gray-700"
               >
                 <!-- Partial Label -->
-                <td class="px-4 py-3 whitespace-nowrap">
+                <td class="whitespace-nowrap px-4 py-3">
                   <div class="flex items-center gap-2">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200">
+                    <span class="badge bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200">
                       {{ partial.label }}
                     </span>
                     <span
                       v-if="partial.is_last"
-                      class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-600 dark:text-gray-300"
+                      class="badge-neutral"
                     >
                       last
                     </span>
@@ -151,52 +151,52 @@
                 </td>
 
                 <!-- Eligible Trades -->
-                <td class="px-4 py-3 whitespace-nowrap text-center text-sm text-gray-900 dark:text-white">
+                <td class="whitespace-nowrap text-center text-sm text-gray-900 dark:text-white px-4 py-3">
                   {{ partial.eligible_trades }}
                 </td>
 
                 <!-- Absolute Hit Rate -->
-                <td class="px-4 py-3 whitespace-nowrap text-center text-sm font-medium" :class="hitRateColor(partial.absolute_hit_rate)">
+                <td class="whitespace-nowrap text-center text-sm font-medium px-4 py-3" :class="hitRateColor(partial.absolute_hit_rate)">
                   {{ partial.absolute_hit_rate }}%
                 </td>
 
                 <!-- Conditional Hit Rate -->
-                <td class="px-4 py-3 whitespace-nowrap text-center text-sm" :class="partial.conditional_hit_rate !== null ? hitRateColor(partial.conditional_hit_rate) : 'text-gray-400 dark:text-gray-500'">
+                <td class="whitespace-nowrap text-center text-sm px-4 py-3" :class="partial.conditional_hit_rate !== null ? hitRateColor(partial.conditional_hit_rate) : 'text-gray-400 dark:text-gray-500'">
                   {{ partial.conditional_hit_rate !== null ? partial.conditional_hit_rate + '%' : '--' }}
                 </td>
 
                 <!-- Profitable Count -->
-                <td class="px-4 py-3 whitespace-nowrap text-center text-sm text-green-600 dark:text-green-400">
+                <td class="whitespace-nowrap text-center text-sm text-green-700 dark:text-green-400 px-4 py-3">
                   {{ partial.profitable_count }}
                 </td>
 
                 <!-- BE/Scratch Count -->
-                <td class="px-4 py-3 whitespace-nowrap text-center text-sm text-gray-600 dark:text-gray-400">
+                <td class="whitespace-nowrap text-center text-sm text-gray-600 dark:text-gray-400 px-4 py-3">
                   {{ partial.be_scratch_count }}
                 </td>
 
                 <!-- Loss Count -->
-                <td class="px-4 py-3 whitespace-nowrap text-center text-sm text-red-600 dark:text-red-400">
+                <td class="whitespace-nowrap text-center text-sm text-red-600 dark:text-red-400 px-4 py-3">
                   {{ partial.loss_count }}
                 </td>
 
                 <!-- Avg Exit Pts (all) -->
-                <td class="px-4 py-3 whitespace-nowrap text-right text-sm font-medium" :class="ptsColor(partial.avg_exit_pts)">
+                <td class="whitespace-nowrap text-right text-sm font-medium px-4 py-3" :class="ptsColor(partial.avg_exit_pts)">
                   {{ formatPts(partial.avg_exit_pts) }}
                 </td>
 
                 <!-- Avg Exit Pts (profitable) -->
-                <td class="px-4 py-3 whitespace-nowrap text-right text-sm" :class="partial.avg_exit_pts_profitable !== null ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'">
+                <td class="whitespace-nowrap text-right text-sm px-4 py-3" :class="partial.avg_exit_pts_profitable !== null ? 'text-green-700 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'">
                   {{ partial.avg_exit_pts_profitable !== null ? formatPts(partial.avg_exit_pts_profitable) : '--' }}
                 </td>
 
                 <!-- Avg R -->
-                <td class="px-4 py-3 whitespace-nowrap text-right text-sm font-medium" :class="partial.avg_r_at_exit !== null ? ptsColor(partial.avg_r_at_exit) : 'text-gray-400 dark:text-gray-500'">
+                <td class="whitespace-nowrap text-right text-sm font-medium px-4 py-3" :class="partial.avg_r_at_exit !== null ? ptsColor(partial.avg_r_at_exit) : 'text-gray-400 dark:text-gray-500'">
                   {{ partial.avg_r_at_exit !== null ? formatR(partial.avg_r_at_exit) : '--' }}
                 </td>
 
                 <!-- Avg SL -->
-                <td class="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-900 dark:text-white">
+                <td class="whitespace-nowrap text-right text-sm text-gray-900 dark:text-white px-4 py-3">
                   {{ partial.avg_sl_pts !== null ? formatPts(partial.avg_sl_pts) : '--' }}
                 </td>
               </tr>
@@ -222,6 +222,8 @@ import api from '@/services/api'
 import TradeFilters from '@/components/trades/TradeFilters.vue'
 import BaseSelect from '@/components/common/BaseSelect.vue'
 import { useGlobalAccountFilter } from '@/composables/useGlobalAccountFilter'
+import { formatDecimal } from '@/utils/formatters'
+import { formatR as formatRBase } from '@/utils/rFormat'
 
 const { selectedAccount } = useGlobalAccountFilter()
 
@@ -285,27 +287,24 @@ const loadData = async () => {
 }
 
 const hitRateColor = (rate) => {
-  if (rate >= 50) return 'text-green-600 dark:text-green-400'
+  if (rate >= 50) return 'text-green-700 dark:text-green-400'
   if (rate >= 25) return 'text-yellow-600 dark:text-yellow-400'
   return 'text-red-600 dark:text-red-400'
 }
 
 const ptsColor = (pts) => {
-  if (pts > 0) return 'text-green-600 dark:text-green-400'
+  if (pts > 0) return 'text-green-700 dark:text-green-400'
   if (pts < 0) return 'text-red-600 dark:text-red-400'
   return 'text-gray-600 dark:text-gray-400'
 }
 
 const formatPts = (value) => {
-  if (value === null || value === undefined) return '--'
-  const sign = value >= 0 ? '+' : ''
-  return `${sign}${value.toFixed(2)}`
+  return formatDecimal(value, { showSign: true, nullValue: '--' })
 }
 
 const formatR = (value) => {
   if (value === null || value === undefined) return '--'
-  const sign = value >= 0 ? '+' : ''
-  return `${sign}${value.toFixed(2)}R`
+  return formatRBase(value)
 }
 
 watch(selectedAccount, () => {

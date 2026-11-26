@@ -1,9 +1,9 @@
 <template>
     <div
-        class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+        class="card card-body"
     >
         <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+            <h2 class="heading-card">
                 Pinned Notes
             </h2>
             <button @click="showAddModal = true" class="btn-primary">
@@ -23,7 +23,7 @@
                     <div class="flex-1">
                         <h3
                             v-if="note.title"
-                            class="font-medium text-gray-900 dark:text-white mb-2"
+                            class="heading-card mb-2"
                         >
                             {{ note.title }}
                         </h3>
@@ -41,7 +41,7 @@
                     <div class="flex items-center space-x-2 ml-4">
                         <button
                             @click="editNote(note)"
-                            class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                            class="btn-ghost btn-sm"
                             title="Edit"
                         >
                             <PencilIcon class="w-4 h-4" />
@@ -69,13 +69,13 @@
         <!-- Add/Edit Modal -->
         <div
             v-if="showAddModal"
-            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
+            class="modal-overlay flex items-center justify-center p-4"
         >
-            <div
-                class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full p-6"
+            <div role="dialog" aria-modal="true"
+                class="modal-panel max-w-2xl w-full p-6"
             >
                 <h3
-                    class="text-lg font-semibold text-gray-900 dark:text-white mb-4"
+                    class="modal-title mb-4"
                 >
                     {{ editingNote ? "Edit Note" : "Add Note" }}
                 </h3>
@@ -111,7 +111,7 @@
                     </div>
                 </div>
 
-                <div class="flex justify-end space-x-3 mt-6">
+                <div class="modal-footer">
                     <button @click="closeModal" class="btn-secondary">
                         Cancel
                     </button>

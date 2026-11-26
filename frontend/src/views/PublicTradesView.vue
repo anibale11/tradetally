@@ -8,26 +8,26 @@
       </p>
       <p class="mt-3 text-sm text-gray-500 dark:text-gray-400 max-w-3xl">
         Looking for platform details? Visit our
-        <router-link to="/features" class="text-primary-600 hover:text-primary-500">Features</router-link>,
-        <router-link to="/compare" class="text-primary-600 hover:text-primary-500">Compare</router-link>,
-        <router-link to="/pricing" class="text-primary-600 hover:text-primary-500">Pricing</router-link>,
+        <router-link to="/features" class="text-primary-700 hover:text-primary-500">Features</router-link>,
+        <router-link to="/compare" class="text-primary-700 hover:text-primary-500">Compare</router-link>,
+        <router-link to="/pricing" class="text-primary-700 hover:text-primary-500">Pricing</router-link>,
         and
-        <router-link to="/faq" class="text-primary-600 hover:text-primary-500">FAQ</router-link>
+        <router-link to="/faq" class="text-primary-700 hover:text-primary-500">FAQ</router-link>
         pages.
         You can also read
-        <a href="https://tradetally.io/docs" target="_blank" rel="noopener noreferrer" class="text-primary-600 hover:text-primary-500">Documentation</a>
+        <a href="https://tradetally.io/docs" target="_blank" rel="noopener noreferrer" class="text-primary-700 hover:text-primary-500">Documentation</a>
         and view the
-        <a href="https://github.com/GeneBO98/tradetally" target="_blank" rel="noopener noreferrer" class="text-primary-600 hover:text-primary-500">open-source repository</a>.
+        <a href="https://github.com/GeneBO98/tradetally" target="_blank" rel="noopener noreferrer" class="text-primary-700 hover:text-primary-500">open-source repository</a>.
       </p>
     </div>
 
     <div v-if="initialLoading" class="flex justify-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div class="spinner spinner-lg"></div>
     </div>
 
     <div v-else-if="trades.length === 0" class="text-center py-12">
       <DocumentTextIcon class="mx-auto h-12 w-12 text-gray-400" />
-      <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No public trades</h3>
+      <h3 class="heading-sub mt-2">No public trades</h3>
       <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
         No trades have been shared publicly yet.
       </p>
@@ -37,7 +37,7 @@
       <div
         v-for="trade in trades"
         :key="trade.id"
-        class="card hover:shadow-lg transition-shadow duration-200"
+        class="card transition-shadow duration-200"
       >
         <div class="card-body">
           <div class="flex items-start justify-between">
@@ -63,7 +63,7 @@
                   <h3 class="heading-card">
                     {{ trade.symbol }}
                   </h3>
-                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
+                  <span class="badge"
                     :class="[
                       trade.side === 'long'
                         ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
@@ -71,12 +71,8 @@
                     ]">
                     {{ trade.side }}
                   </span>
-                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
-                    :class="[
-                      trade.exit_price
-                        ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                        : 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400'
-                    ]">
+                  <span class="badge"
+                    :class="[ trade.exit_price ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' : 'bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-400' ]">
                     {{ trade.exit_price ? 'Closed' : 'Open' }}
                   </span>
                 </div>
@@ -88,19 +84,19 @@
             
             <div class="text-right">
               <div class="text-lg font-semibold" :class="[
-                trade.pnl >= 0 ? 'text-green-600' : 'text-red-600'
+                pnlClass(trade.pnl)
               ]">
                 {{ trade.pnl ? formatCurrency(trade.pnl) : 'Open' }}
               </div>
               <div v-if="trade.pnl_percent" class="text-sm text-gray-500 dark:text-gray-400">
-                {{ trade.pnl_percent > 0 ? '+' : '' }}{{ formatNumber(trade.pnl_percent) }}%
+                {{ formatDecimal(Number(trade.pnl_percent), { digits: 1, showSign: true }) }}%
               </div>
             </div>
           </div>
 
           <div class="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
             <div>
-              <dt class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <dt class="table-th">
                 Entry Price
               </dt>
               <dd class="mt-1 text-sm font-medium text-gray-900 dark:text-white">
@@ -108,7 +104,7 @@
               </dd>
             </div>
             <div>
-              <dt class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <dt class="table-th">
                 Exit Price
               </dt>
               <dd class="mt-1 text-sm font-medium text-gray-900 dark:text-white">
@@ -116,7 +112,7 @@
               </dd>
             </div>
             <div>
-              <dt class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <dt class="table-th">
                 Quantity
               </dt>
               <dd class="mt-1 text-sm font-medium text-gray-900 dark:text-white">
@@ -124,7 +120,7 @@
               </dd>
             </div>
             <div>
-              <dt class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <dt class="table-th">
                 Value
               </dt>
               <dd class="mt-1 text-sm font-medium text-gray-900 dark:text-white">
@@ -138,7 +134,7 @@
               <span
                 v-for="tag in trade.tags"
                 :key="tag"
-                class="px-2 py-1 bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-400 text-xs rounded-full"
+                class="badge-primary"
               >
                 {{ tag }}
               </span>
@@ -170,7 +166,7 @@
             <div class="flex items-center space-x-4">
               <button
                 @click="openComments(trade)"
-                class="flex items-center hover:text-primary-600 transition-colors"
+                class="flex items-center hover:text-primary-800 transition-colors"
               >
                 <ChatBubbleLeftIcon class="h-4 w-4 mr-1" />
                 {{ trade.comment_count || 0 }} comments
@@ -180,7 +176,7 @@
               <button
                 v-if="canDeleteTrade(trade)"
                 @click="deleteTrade(trade)"
-                class="flex items-center text-red-600 hover:text-red-700 transition-colors"
+                class="flex items-center text-red-600 dark:text-red-400 hover:text-red-700 transition-colors"
                 title="Delete trade"
               >
                 <TrashIcon class="h-4 w-4" />
@@ -189,7 +185,7 @@
             
             <router-link
               :to="`/trades/${trade.id}`"
-              class="text-primary-600 hover:text-primary-500 font-medium"
+              class="text-primary-700 hover:text-primary-500 font-medium"
             >
               View Details
             </router-link>
@@ -223,6 +219,8 @@
 </template>
 
 <script setup>
+import { pnlClass } from '@/utils/metricTone'
+import { formatDecimal } from '@/utils/formatters'
 import { ref, onMounted } from 'vue'
 import { format } from 'date-fns'
 import { formatTradeDate } from '@/utils/date'

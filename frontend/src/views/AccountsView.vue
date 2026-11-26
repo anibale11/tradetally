@@ -21,7 +21,7 @@
 
     <!-- Loading State (initial load only; refreshes keep content mounted) -->
     <div v-if="initialLoading" class="flex justify-center py-12">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      <div class="spinner spinner-md"></div>
     </div>
 
     <!-- Error State -->
@@ -36,14 +36,14 @@
       <!-- Add Account Form -->
       <div class="card mb-8">
         <div class="card-body">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-6">
+          <h3 class="heading-card mb-6">
             {{ editingAccount ? 'Edit Account' : 'Add New Account' }}
           </h3>
 
           <form @submit.prevent="saveAccount" class="space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label for="accountName" class="label">Account Name <span class="text-red-500">*</span></label>
+                <label for="accountName" class="label">Account Name <span class="text-red-600 dark:text-red-400">*</span></label>
                 <input
                   id="accountName"
                   v-model="form.accountName"
@@ -122,7 +122,7 @@
                   <input
                     type="checkbox"
                     v-model="form.isPrimary"
-                    class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    class="checkbox"
                   />
                   <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Set as primary account</span>
                 </label>
@@ -133,7 +133,7 @@
                   <input
                     type="checkbox"
                     v-model="form.includeInReports"
-                    class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    class="checkbox"
                   />
                   <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Include in reports</span>
                 </label>
@@ -172,7 +172,7 @@
         <div class="card-body">
           <div class="flex items-start justify-between gap-4 mb-6">
             <div>
-              <h3 class="text-lg font-medium text-gray-900 dark:text-white">Your Accounts</h3>
+              <h3 class="heading-card">Your Accounts</h3>
               <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 Archived accounts stay available here and retain all linked trades.
               </p>
@@ -195,16 +195,16 @@
               <div class="flex-1">
                 <div class="flex items-center gap-2">
                   <span class="font-medium text-gray-900 dark:text-white">{{ account.accountName }}</span>
-                  <span v-if="account.isPrimary" class="px-2 py-0.5 text-xs font-medium rounded bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300">
+                  <span v-if="account.isPrimary" class="badge-primary">
                     Primary
                   </span>
-                  <span v-if="account.broker" class="px-2 py-0.5 text-xs font-medium rounded bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                  <span v-if="account.broker" class="badge-neutral">
                     {{ formatBroker(account.broker) }}
                   </span>
-                  <span v-if="account.feeProfileName" class="px-2 py-0.5 text-xs font-medium rounded bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300">
+                  <span v-if="account.feeProfileName" class="badge-primary">
                     Fees: {{ account.feeProfileName }}
                   </span>
-                  <span v-if="!account.includeInReports" class="px-2 py-0.5 text-xs font-medium rounded bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                  <span v-if="!account.includeInReports" class="badge-neutral">
                     Excluded from reports
                   </span>
                 </div>
@@ -218,7 +218,7 @@
               <div class="flex gap-2">
                 <button
                   @click="editAccount(account)"
-                  class="p-2 text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400"
+                  class="btn-icon"
                   title="Edit"
                 >
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -227,14 +227,14 @@
                 </button>
                 <button
                   @click="confirmArchive(account)"
-                  class="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:border-primary-500 hover:text-primary-600 dark:hover:text-primary-400"
+                  class="btn-secondary btn-sm"
                   title="Archive account"
                 >
                   Archive
                 </button>
                 <button
                   @click="confirmDelete(account)"
-                  class="p-2 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
+                  class="btn-icon hover:!text-red-600 dark:hover:!text-red-400"
                   title="Delete"
                 >
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -247,7 +247,7 @@
 
           <div v-if="archivedAccounts.length > 0" class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
             <div class="flex items-center justify-between mb-3">
-              <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Archived accounts</h4>
+              <h4 class="heading-sub">Archived accounts</h4>
               <span class="text-xs text-gray-500 dark:text-gray-400">Excluded from active selectors</span>
             </div>
             <div class="space-y-3">
@@ -259,9 +259,9 @@
                 <div class="min-w-0">
                   <div class="flex flex-wrap items-center gap-2">
                     <span class="font-medium text-gray-900 dark:text-white">{{ account.accountName }}</span>
-                    <span class="px-2 py-0.5 text-xs font-medium rounded bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300">Archived</span>
+                    <span class="badge-neutral">Archived</span>
                     <span
-                      class="px-2 py-0.5 text-xs font-medium rounded"
+                      class="badge"
                       :class="account.includeInReports ? 'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300' : 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300'"
                     >
                       {{ account.includeInReports ? 'Included in reports' : 'Excluded from reports' }}
@@ -277,19 +277,19 @@
                   <button
                     v-if="account.accountIdentifier"
                     @click="viewAccountHistory(account)"
-                    class="px-3 py-1.5 text-sm text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-700 rounded-md hover:bg-primary-50 dark:hover:bg-primary-900/20"
+                    class="btn-ghost btn-sm"
                   >
                     View history
                   </button>
                   <button
                     @click="confirmArchive(account)"
-                    class="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:border-primary-500 hover:text-primary-600 dark:hover:text-primary-400"
+                    class="btn-secondary btn-sm"
                   >
                     Restore
                   </button>
                   <button
                     @click="confirmDelete(account)"
-                    class="p-2 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
+                    class="btn-icon hover:!text-red-600 dark:hover:!text-red-400"
                     title="Delete"
                   >
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -305,7 +305,7 @@
       <!-- Unlinked Account Identifiers -->
       <div v-if="unlinkedIdentifiers.length > 0" class="card mt-8">
         <div class="card-body">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Unmanaged Account Identifiers</h3>
+          <h3 class="heading-card mb-2">Unmanaged Account Identifiers</h3>
           <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">
             These account identifiers exist on your trades or investments but don't have a managed account. Add them to set a display name and track cashflow and balances.
           </p>
@@ -318,13 +318,13 @@
             >
               <div>
                 <span class="font-medium text-gray-900 dark:text-white">{{ redactAccountId(item.accountIdentifier) }}</span>
-                <span v-if="item.broker" class="ml-2 px-2 py-0.5 text-xs font-medium rounded bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                <span v-if="item.broker" class="badge-neutral ml-2">
                   {{ formatBroker(item.broker) }}
                 </span>
               </div>
               <button
                 @click="createFromUnlinked(item)"
-                class="btn-secondary text-sm"
+                class="btn-secondary"
               >
                 Add Account
               </button>
@@ -336,12 +336,12 @@
 
     <!-- Archive / restore confirmation modal -->
     <div v-if="showArchiveModal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="archive-modal-title" role="dialog" aria-modal="true">
-      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="showArchiveModal = false"></div>
+      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center ">
+        <div class="modal-backdrop" @click="showArchiveModal = false"></div>
         <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
-        <div class="inline-block align-bottom bg-white dark:bg-gray-900 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+        <div class="modal-panel w-full p-6 max-w-lg">
           <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-            <h3 id="archive-modal-title" class="text-lg leading-6 font-medium text-gray-900 dark:text-white">
+            <h3 id="archive-modal-title" class="modal-title">
               {{ accountToArchive?.isArchived ? 'Restore account' : 'Archive account' }}
             </h3>
             <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
@@ -358,14 +358,14 @@
               type="button"
               @click="updateArchiveState"
               :disabled="saving"
-              class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50"
+              class="btn-primary w-full sm:ml-3 sm:w-auto"
             >
               {{ saving ? 'Saving...' : (accountToArchive?.isArchived ? 'Restore' : 'Archive') }}
             </button>
             <button
               type="button"
               @click="showArchiveModal = false"
-              class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-700 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+              class="btn-secondary mt-3 w-full sm:mt-0 sm:ml-3 sm:w-auto"
             >
               Cancel
             </button>
@@ -376,10 +376,10 @@
 
     <!-- Delete Confirmation Modal -->
     <div v-if="showDeleteModal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="closeDeleteModal()"></div>
+      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center ">
+        <div class="modal-backdrop" @click="closeDeleteModal()"></div>
         <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
-        <div class="inline-block align-bottom bg-white dark:bg-gray-900 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+        <div class="modal-panel w-full p-6 max-w-lg">
           <div class="bg-white dark:bg-gray-900 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
             <div class="sm:flex sm:items-start">
               <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900 sm:mx-0 sm:h-10 sm:w-10">
@@ -388,7 +388,7 @@
                 </svg>
               </div>
               <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title">
+                <h3 class="modal-title" id="modal-title">
                   Delete Account
                 </h3>
                 <div class="mt-2">
@@ -399,7 +399,7 @@
                     <input
                       v-model="deleteTrades"
                       type="checkbox"
-                      class="mt-0.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                      class="checkbox mt-0.5"
                       :disabled="deleting"
                     />
                     <span>Also permanently delete all trades associated with this account.</span>
@@ -416,7 +416,7 @@
               type="button"
               @click="deleteAccount"
               :disabled="deleting"
-              class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50"
+              class="btn-danger w-full justify-center sm:ml-3 sm:w-auto sm:text-sm"
             >
               {{ deleting ? 'Deleting...' : (deleteTrades ? 'Delete Account and Trades' : 'Delete Account') }}
             </button>
@@ -424,7 +424,7 @@
               type="button"
               @click="closeDeleteModal()"
               :disabled="deleting"
-              class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-700 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+              class="btn-secondary mt-3 w-full sm:mt-0 sm:ml-3 sm:w-auto"
             >
               Cancel
             </button>

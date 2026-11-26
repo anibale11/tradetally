@@ -1,15 +1,12 @@
 <template>
   <div
-    :class="[
-      'rounded-lg border p-4',
-      colorClasses
-    ]"
+    :class="[ 'rounded-lg border p-4', colorClasses ]"
   >
     <div class="text-center">
       <p class="text-sm font-medium uppercase tracking-wide" :class="labelClass">
         {{ scenario }}
       </p>
-      <p class="text-2xl font-bold mt-2" :class="valueClass">
+      <p class="stat-value mt-2" :class="valueClass">
         {{ formatCurrency(fairValue) }}
       </p>
       <p
@@ -17,14 +14,14 @@
         class="text-sm mt-2 font-medium"
         :class="mosClass"
       >
-        {{ marginOfSafety >= 0 ? '+' : '' }}{{ formatPercent(marginOfSafety) }} MoS
+        {{ marginOfSafety > 0 ? '+' : '' }}{{ formatPercent(marginOfSafety) }} MoS
       </p>
       <p
         v-if="currentPriceReturn !== null && currentPriceReturn !== undefined"
         class="text-sm mt-1 font-medium"
         :class="returnClass"
       >
-        {{ currentPriceReturn >= 0 ? '+' : '' }}{{ formatPercent(currentPriceReturn) }} / yr
+        {{ currentPriceReturn > 0 ? '+' : '' }}{{ formatPercent(currentPriceReturn) }} / yr
       </p>
       <p class="text-xs mt-1" :class="statusClass">
         {{ statusText }}
@@ -91,7 +88,7 @@ const labelClass = computed(() => {
   if (props.currentPrice !== null && props.currentPrice !== undefined && 
       props.fairValue !== null && props.fairValue !== undefined) {
     if (props.currentPrice <= props.fairValue) {
-      return 'text-green-600 dark:text-green-400'
+      return 'text-green-700 dark:text-green-400'
     } else {
       return 'text-red-600 dark:text-red-400'
     }
@@ -104,9 +101,9 @@ const valueClass = computed(() => {
   if (props.currentPrice !== null && props.currentPrice !== undefined && 
       props.fairValue !== null && props.fairValue !== undefined) {
     if (props.currentPrice <= props.fairValue) {
-      return 'text-green-700 dark:text-green-300'
+      return 'text-green-700 dark:text-green-400'
     } else {
-      return 'text-red-700 dark:text-red-300'
+      return 'text-red-600 dark:text-red-400'
     }
   }
   return 'text-gray-900 dark:text-white'
@@ -114,14 +111,14 @@ const valueClass = computed(() => {
 
 const mosClass = computed(() => {
   if (props.marginOfSafety === null) return 'text-gray-500'
-  if (props.marginOfSafety >= 0.15) return 'text-green-600 dark:text-green-400'
+  if (props.marginOfSafety >= 0.15) return 'text-green-700 dark:text-green-400'
   if (props.marginOfSafety >= 0) return 'text-yellow-600 dark:text-yellow-400'
   return 'text-red-600 dark:text-red-400'
 })
 
 const returnClass = computed(() => {
   if (props.currentPriceReturn === null || props.currentPriceReturn === undefined) return 'text-gray-500'
-  if (props.currentPriceReturn >= 0.10) return 'text-green-600 dark:text-green-400'
+  if (props.currentPriceReturn >= 0.10) return 'text-green-700 dark:text-green-400'
   if (props.currentPriceReturn >= 0) return 'text-yellow-600 dark:text-yellow-400'
   return 'text-red-600 dark:text-red-400'
 })

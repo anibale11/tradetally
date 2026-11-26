@@ -10,7 +10,7 @@
           </p>
           <div
             v-if="selectedAccount"
-            class="mt-2 inline-flex max-w-full items-center rounded-full bg-primary-50 px-3 py-1 text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
+            class="callout-info mt-2 inline-flex max-w-full items-center text-xs font-medium"
           >
             Viewing: <span class="ml-1 truncate">{{ selectedAccountLabel }}</span>
           </div>
@@ -21,9 +21,7 @@
               <div class="flex items-center">
                 <div 
                   class="w-2 h-2 rounded-full mr-2"
-                  :class="[
-                    marketStatus.isOpen ? 'bg-green-500' : 'bg-red-500'
-                  ]"
+                  :class="[ marketStatus.isOpen ? 'bg-green-500' : 'bg-red-500' ]"
                 ></div>
                 <span class="text-gray-600 dark:text-gray-400">
                   {{ marketStatus.status }}
@@ -32,7 +30,7 @@
             </div>
             
             <div v-if="isAutoUpdating" class="text-gray-500 dark:text-gray-400">
-              <span>{{ nextRefreshIn }}s</span>
+              <span>refresh in {{ nextRefreshIn }}s</span>
             </div>
           </div>
         </div>
@@ -44,7 +42,7 @@
           <div class="relative" data-dropdown="timeRange">
             <button
               @click.stop="showTimeRangeDropdown = !showTimeRangeDropdown"
-              class="relative w-10 h-10 inline-flex items-center justify-center rounded-md border bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              class="btn-icon-outline relative"
               type="button"
               :title="`Date range: ${getSelectedTimeRangeText()}`"
               aria-label="Date range filter"
@@ -58,7 +56,7 @@
                 aria-hidden="true"
               />
             </button>
-            <div v-if="showTimeRangeDropdown" class="absolute right-0 z-10 mt-1 w-44 bg-white dark:bg-gray-800 shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
+            <div v-if="showTimeRangeDropdown" class="dropdown-menu absolute right-0 z-10 mt-1 w-44 max-h-60 overflow-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
               <div
                 v-for="option in timeRangeOptions"
                 :key="option.value"
@@ -78,7 +76,7 @@
               v-model="filters.startDate"
               @change="applyFilters"
               @keydown.enter="applyFilters"
-              class="input text-sm"
+              class="input input-sm"
               placeholder="Start Date"
             />
             <input
@@ -86,7 +84,7 @@
               v-model="filters.endDate"
               @change="applyFilters"
               @keydown.enter="applyFilters"
-              class="input text-sm"
+              class="input input-sm"
               placeholder="End Date"
             />
           </div>
@@ -108,9 +106,23 @@
             <span class="hidden sm:inline">Filters</span>
             <span
               v-if="activeAdvancedFilterCount > 0"
-              class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 inline-flex items-center justify-center rounded-full bg-primary-600 text-white text-[10px] font-semibold ring-2 ring-white dark:ring-gray-900"
+              class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 inline-flex items-center justify-center rounded-full bg-primary-700 text-white text-xs font-semibold ring-2 ring-white dark:ring-gray-900"
               aria-hidden="true"
             >{{ activeAdvancedFilterCount }}</span>
+          </button>
+
+          <button
+            data-tour="session-wrap-up"
+            @click="showSessionWrapUp = true"
+            class="h-10 px-3 inline-flex items-center justify-center gap-1.5 rounded-md border bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium"
+            type="button"
+            title="Wrap up today's session in 60 seconds"
+            aria-label="Wrap up today's session"
+          >
+            <svg class="w-4 h-4 text-primary-700 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span class="hidden sm:inline">Wrap up</span>
           </button>
 
           <button
@@ -123,10 +135,8 @@
           </button>
           <button
             @click="isCustomizing = !isCustomizing"
-            class="w-10 h-10 inline-flex items-center justify-center rounded-md border transition-colors"
-            :class="isCustomizing
-              ? 'bg-primary-600 text-white border-primary-600 hover:bg-primary-700'
-              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'"
+            class="btn-icon-outline"
+            :class="isCustomizing ? '!bg-primary-700 !text-white !border-primary-700 hover:!bg-primary-800' : ''"
             :title="isCustomizing ? 'Exit customize mode' : 'Customize dashboard'"
             :aria-label="isCustomizing ? 'Exit customize mode' : 'Customize dashboard'"
           >
@@ -159,13 +169,13 @@
     <!-- Sample data banner: shown when user has sample trades -->
     <div
       v-if="!initialLoading && hasSampleData && authStore.onboardingStep >= 6"
-      class="card bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 mb-6"
+      class="card bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 mb-6"
     >
       <div class="card-body">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm font-medium text-amber-900 dark:text-amber-100">You're exploring with sample data.</p>
-            <p class="mt-0.5 text-sm text-amber-700 dark:text-amber-300">Import your own trades or remove the sample data when you're ready.</p>
+            <p class="text-sm font-medium text-yellow-900 dark:text-yellow-100">You're exploring with sample data.</p>
+            <p class="mt-0.5 text-sm text-yellow-700 dark:text-yellow-300">Import your own trades or remove the sample data when you're ready.</p>
           </div>
           <div class="flex items-center gap-2 flex-shrink-0 ml-4">
             <RouterLink
@@ -176,7 +186,7 @@
             </RouterLink>
             <button
               type="button"
-              class="btn-secondary text-sm text-red-600 dark:text-red-400 border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+              class="btn-secondary text-red-600 dark:text-red-400 border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
               :disabled="removingSampleData"
               @click="removeSampleData"
             >
@@ -195,19 +205,19 @@
       <div class="card-body">
         <div class="flex items-start gap-3">
           <div class="flex-shrink-0 p-2 rounded-lg bg-primary-100 dark:bg-primary-900/40">
-            <svg class="w-5 h-5 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-5 h-5 text-primary-700 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
             </svg>
           </div>
           <div class="flex-1 min-w-0">
-            <h3 class="text-sm font-medium text-primary-900 dark:text-primary-100">Get started with TradeTally</h3>
+            <h3 class="heading-sub text-primary-900 dark:text-primary-100">Get started with TradeTally</h3>
             <p class="mt-1 text-sm text-primary-700 dark:text-primary-300">
               Import your first trades to see your P&L, win rate, and analytics here.
             </p>
             <div class="mt-3 flex flex-wrap gap-2">
               <RouterLink
                 :to="{ name: 'import' }"
-                class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md bg-primary-600 text-white hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600"
+                class="btn-primary btn-sm"
               >
                 Import your first trades
               </RouterLink>
@@ -219,7 +229,7 @@
               </RouterLink>
               <button
                 type="button"
-                class="inline-flex items-center px-3 py-1.5 text-sm text-primary-600 dark:text-primary-400 hover:underline"
+                class="inline-flex items-center px-3 py-1.5 text-sm text-primary-700 dark:text-primary-400 hover:underline"
                 @click="onboardingBannerDismissed = true"
               >
                 Dismiss
@@ -228,7 +238,7 @@
           </div>
           <button
             type="button"
-            class="flex-shrink-0 p-1 rounded text-primary-500 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-200"
+            class="btn-icon p-1"
             aria-label="Dismiss"
             @click="onboardingBannerDismissed = true"
           >
@@ -251,7 +261,7 @@
       <div class="card-body">
         <div class="flex items-center justify-between gap-3">
           <div class="flex items-center gap-3">
-            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-primary-100 text-primary-800 dark:bg-primary-800 dark:text-primary-200">
+            <span class="badge-primary">
               Pro Trial
             </span>
             <span class="text-sm text-primary-800 dark:text-primary-200">
@@ -261,13 +271,13 @@
           <div class="flex items-center gap-2">
             <RouterLink
               :to="{ name: 'billing' }"
-              class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md bg-primary-600 text-white hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600"
+              class="btn-primary btn-sm"
             >
               Upgrade before trial ends
             </RouterLink>
             <button
               type="button"
-              class="p-1 rounded text-primary-500 hover:text-primary-700 dark:text-primary-400"
+              class="btn-icon p-1"
               aria-label="Dismiss"
               @click="trialBannerDismissed = true"
             >
@@ -296,13 +306,13 @@
           <div class="flex items-center gap-2">
             <RouterLink
               :to="{ name: 'billing' }"
-              class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md bg-primary-600 text-white hover:bg-primary-700"
+              class="btn-primary btn-sm"
             >
               View Pro plans
             </RouterLink>
             <button
               type="button"
-              class="p-1 rounded text-gray-500 hover:text-gray-700 dark:text-gray-400"
+              class="btn-icon p-1"
               aria-label="Dismiss"
               @click="postTrialBannerDismissed = true"
             >
@@ -317,7 +327,7 @@
 
     <!-- Full page spinner only on initial load -->
     <div v-if="initialLoading" class="flex justify-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div class="spinner spinner-lg"></div>
     </div>
 
     <!-- Content with optional refresh indicator -->
@@ -401,11 +411,7 @@
         <template #item="{ element }">
           <div
             class="relative"
-            :class="{
-              'opacity-50': isCustomizing && !element.visible,
-              'hidden': getSectionDefinition(element.id)?.location === 'rail'
-                || (!element.visible && !isCustomizing)
-            }"
+            :class="{ 'opacity-50': isCustomizing && !element.visible, 'hidden': getSectionDefinition(element.id)?.location === 'rail' || (!element.visible && !isCustomizing) }"
           >
             <!-- Customize-mode header: drag handle, title, visibility toggle -->
             <div
@@ -430,9 +436,7 @@
               <button
                 type="button"
                 class="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded transition-colors"
-                :class="element.visible
-                  ? 'text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/30'
-                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'"
+                :class="element.visible ? 'text-primary-700 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/30' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'"
                 :title="element.visible ? 'Hide section' : 'Show section'"
                 @click="toggleSectionVisibility(element.id)"
               >
@@ -466,7 +470,17 @@
 
             <!-- AI Insight of the Day -->
             <template v-if="element.id === 'ai-insight'">
+              <div v-if="showProLock" class="card" data-testid="ai-insight-locked">
+                <div class="card-body">
+                  <h3 class="heading-card">AI Insight</h3>
+                  <ProUpgradePrompt
+                    variant="compact"
+                    description="Get a daily AI insight on your trading patterns with TradeTally Pro."
+                  />
+                </div>
+              </div>
               <AiInsightCard
+                v-else-if="isProUser"
                 :insights="aiInsights"
                 :loading="aiInsightLoading"
                 :error="aiInsightError"
@@ -558,44 +572,42 @@
 
             <!-- Today's Journal Entry -->
             <template v-if="element.id === 'journal-entry'">
-              <TodaysJournalEntry />
+              <TodaysJournalEntry :key="journalRefreshKey" />
             </template>
 
             <!-- Open Trades Section -->
             <template v-if="element.id === 'open-positions'">
               <div v-if="openTrades.length > 0" class="card">
                 <div class="card-body">
-                  <div class="flex items-center justify-between mb-4">
+                  <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div class="flex items-center">
                       <h3 class="heading-card">Open Positions</h3>
                       <button 
                         @click="navigateToOpenTrades"
-                        class="ml-3 text-sm text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300"
+                        class="btn-link ml-3"
                       >
                         View all →
                       </button>
                     </div>
-                    <div class="flex flex-wrap items-center justify-end gap-2">
-                      <div class="inline-flex rounded-lg bg-gray-100 p-0.5 dark:bg-gray-700/60" role="group" aria-label="Open positions view">
+                    <div class="flex min-w-0 max-w-full flex-wrap items-center gap-2 sm:justify-end">
+                      <div class="segmented min-w-0" role="group" aria-label="Open positions view">
                         <button
                           v-for="view in OPEN_POSITIONS_VIEWS"
                           :key="view.id"
                           type="button"
                           :aria-pressed="open_positions_view === view.id"
                           @click="set_open_positions_view(view.id)"
-                          class="rounded-md px-2.5 py-1 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
-                          :class="open_positions_view === view.id
-                            ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-800 dark:text-white'
-                            : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'"
+                          class="segment"
+                          :class="open_positions_view === view.id ? 'segment-active' : ''"
                         >
                           {{ view.label }}
                         </button>
                       </div>
                       <div v-if="loading" class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
-                        <div class="animate-spin rounded-full h-3 w-3 border-[1.5px] border-primary-600 border-t-transparent"></div>
+                        <div class="spinner spinner-xs h-3 w-3"></div>
                         <span>Updating...</span>
                       </div>
-                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-400">
+                      <span class="badge-primary">
                         {{ openTrades.length }} {{ openTrades.length === 1 ? 'position' : 'positions' }}
                       </span>
                     </div>
@@ -617,7 +629,7 @@
                     <div v-if="formatOptionContract(position)" class="text-xs text-gray-500 dark:text-gray-400">
                       {{ formatOptionContract(position) }}
                     </div>
-                    <span class="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full mt-1"
+                    <span class="badge mt-1"
                       :class="[
                         position.side === 'long'
                           ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
@@ -632,28 +644,24 @@
                 <div v-if="position.requires_manual_price" class="text-right">
                   <template v-if="getOptionPnL(position).unrealizedPnL !== null">
                     <div class="text-lg font-bold" :class="[
-                      getOptionPnL(position).unrealizedPnL >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                      pnlClass(getOptionPnL(position).unrealizedPnL)
                     ]">
                       {{ formatSignedPositionAmount(getOptionPnL(position).unrealizedPnL, position) }}
                     </div>
-                    <div class="text-xs font-medium" :class="[
-                      getOptionPnL(position).unrealizedPnLPercent >= 0 ? 'text-green-500' : 'text-red-500'
-                    ]">
-                      {{ getOptionPnL(position).unrealizedPnLPercent >= 0 ? '+' : '' }}{{ formatNumber(getOptionPnL(position).unrealizedPnLPercent) }}%
+                    <div class="text-xs font-medium" :class="[ getOptionPnL(position).unrealizedPnLPercent >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400' ]">
+                      {{ formatDecimal(getOptionPnL(position).unrealizedPnLPercent, { digits: 1, showSign: true, nullValue: '0.0' }) }}%
                     </div>
                   </template>
-                  <span v-else class="text-xs text-gray-400">Enter premium below</span>
+                  <span v-else class="text-xs text-gray-500 dark:text-gray-400">Enter premium below</span>
                 </div>
                 <div v-else-if="position.unrealizedPnL !== null" class="text-right">
                   <div class="text-lg font-bold" :class="[
-                    position.unrealizedPnL >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                    pnlClass(position.unrealizedPnL)
                   ]">
                     {{ formatSignedPositionAmount(position.unrealizedPnL, position) }}
                   </div>
-                  <div class="text-xs font-medium" :class="[
-                    position.unrealizedPnLPercent >= 0 ? 'text-green-500' : 'text-red-500'
-                  ]">
-                    {{ position.unrealizedPnLPercent >= 0 ? '+' : '' }}{{ formatNumber(position.unrealizedPnLPercent) }}%
+                  <div class="text-xs font-medium" :class="pnlClass(position.unrealizedPnLPercent)">
+                    {{ formatDecimal(position.unrealizedPnLPercent, { digits: 1, showSign: true }) }}%
                   </div>
                 </div>
               </div>
@@ -674,7 +682,7 @@
                 </div>
                 <div class="table-card-row">
                   <span class="table-card-label">Avg Price</span>
-                  <span class="table-card-value">{{ formatPositionCurrency(position.avgPrice, position) }}</span>
+                  <span class="table-card-value">{{ formatPositionPrice(position.avgPrice, position) }}</span>
                 </div>
                 <div class="table-card-row">
                   <span class="table-card-label">Total Cost</span>
@@ -685,7 +693,7 @@
                   <span class="table-card-value">
                     <template v-if="position.requires_manual_price">
                       <div class="flex items-center space-x-1">
-                        <span class="text-xs text-gray-400">{{ currencySymbol }}</span>
+                        <span class="text-xs text-gray-500 dark:text-gray-400">{{ currencySymbol }}</span>
                         <input
                           type="number"
                           step="0.01"
@@ -693,13 +701,13 @@
                           placeholder="Enter"
                           :value="getManualOptionPrice(position) ?? ''"
                           @input="setManualOptionPrice(position, $event.target.value)"
-                          class="w-20 text-right text-sm font-bold bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-1.5 py-0.5 text-gray-900 dark:text-white focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+                          class="input input-sm w-20 text-right font-bold"
                         />
                       </div>
                     </template>
                     <template v-else>
-                      <span v-if="position.currentPrice !== null">{{ formatPositionCurrency(position.currentPrice, position) }}</span>
-                      <span v-else class="text-xs text-gray-400">-</span>
+                      <span v-if="position.currentPrice !== null">{{ formatPositionPrice(position.currentPrice, position) }}</span>
+                      <span v-else class="text-xs text-gray-500 dark:text-gray-400">-</span>
                     </template>
                   </span>
                 </div>
@@ -707,10 +715,10 @@
 
               <div class="table-card-row mb-3" title="Price change since previous close × current holdings">
                 <span class="table-card-label">Daily P&amp;L</span>
-                <span v-if="daily_position_pnl(position) !== null" class="table-card-value" :class="daily_position_pnl(position) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                <span v-if="daily_position_pnl(position) !== null" class="table-card-value" :class="pnlClass(daily_position_pnl(position))">
                   {{ formatSignedPositionAmount(daily_position_pnl(position), position) }}
                 </span>
-                <span v-else class="text-xs text-gray-400">-</span>
+                <span v-else class="text-xs text-gray-500 dark:text-gray-400">-</span>
               </div>
 
               <div v-if="open_positions_view !== 'basic'" class="mb-3">
@@ -719,7 +727,7 @@
                   v-if="position_bars[getOpenPositionKey(position)]"
                   v-bind="bar_props(position)"
                 />
-                <span v-else class="text-xs text-gray-400">{{ position_bar_empty_text(position) }}</span>
+                <span v-else class="text-xs text-gray-500 dark:text-gray-400">{{ position_bar_empty_text(position) }}</span>
               </div>
 
               <!-- Individual Trades (only show when position has multiple trades) -->
@@ -732,7 +740,7 @@
                        class="flex justify-between items-center text-sm bg-gray-50 dark:bg-gray-900 rounded px-3 py-2">
                     <div class="flex items-center space-x-2">
                       <span class="text-xs text-gray-500">Trade #{{ trade.id }}</span>
-                      <span class="px-1.5 text-xs leading-4 font-medium rounded"
+                      <span class="badge"
                         :class="[
                           trade.side === 'long'
                             ? 'bg-green-50 text-green-700 dark:bg-green-900/10 dark:text-green-400'
@@ -746,7 +754,7 @@
                     </div>
                     <router-link
                       :to="`/trades/${trade.id}`"
-                      class="text-xs text-primary-600 hover:text-primary-900 dark:hover:text-primary-400 font-medium"
+                      class="text-xs text-primary-700 hover:text-primary-900 dark:hover:text-primary-400 font-medium"
                     >
                       View →
                     </router-link>
@@ -757,9 +765,9 @@
               <div v-else class="pt-3 border-t border-gray-200 dark:border-gray-700">
                 <router-link
                   :to="`/trades/${position.trades[0].id}`"
-                  class="text-sm text-primary-600 hover:text-primary-900 dark:hover:text-primary-400 font-medium"
+                  class="text-sm text-primary-700 hover:text-primary-900 dark:hover:text-primary-400 font-medium"
                 >
-                  View Trade →
+                  View →
                 </router-link>
               </div>
             </div>
@@ -773,7 +781,7 @@
                     {{ totalOpenCostLabel }}
                   </div>
                   <div v-if="totalUnrealizedPnLAccount !== null" class="text-sm font-bold" :class="[
-                    totalUnrealizedPnLAccount >= 0 ? 'text-green-600' : 'text-red-600'
+                    pnlClass(totalUnrealizedPnLAccount)
                   ]">
                     {{ totalUnrealizedPnLLabel }}
                   </div>
@@ -781,7 +789,7 @@
               </div>
               <div v-if="total_daily_pnl !== null" class="flex justify-between items-center mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 text-sm">
                 <span class="text-gray-600 dark:text-gray-400">Daily P&amp;L<span v-if="daily_pnl_partial"> (partial)</span></span>
-                <span class="font-bold whitespace-nowrap" :class="total_daily_pnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                <span class="font-bold whitespace-nowrap" :class="pnlClass(total_daily_pnl)">
                   {{ formatSignedCurrency(total_daily_pnl, { currency: accountCurrency }) }}
                 </span>
               </div>
@@ -791,28 +799,28 @@
                   <!-- Desktop Table View -->
                   <div class="hidden lg:block overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead>
-                <tr class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
-                  <th class="px-3 py-2 text-left font-medium">Symbol</th>
-                  <th class="px-3 py-2 text-left font-medium">Side</th>
-                  <th class="px-3 py-2 text-right font-medium">Shares</th>
-                  <th class="px-3 py-2 text-right font-medium">Avg Entry</th>
-                  <th class="px-3 py-2 text-right font-medium">Price</th>
-                  <th v-if="open_positions_view === 'basic'" class="px-3 py-2 text-right font-medium">Cost</th>
-                  <th class="px-3 py-2 text-right font-medium">Value</th>
-                  <th class="px-3 py-2 text-right font-medium">Unrealized P&amp;L</th>
-                  <th class="px-3 py-2 text-right font-medium" title="Price change since previous close × current holdings">Daily P&amp;L</th>
-                  <th v-if="open_positions_view !== 'basic'" class="px-3 py-2 pl-6 text-left font-medium">
+              <thead class="table-head">
+                <tr class="table-th whitespace-nowrap">
+                  <th class="px-3 py-2 text-left table-th">Symbol</th>
+                  <th class="px-3 py-2 text-left table-th">Side</th>
+                  <th class="px-3 py-2 text-right table-th">Shares</th>
+                  <th class="px-3 py-2 text-right table-th">Avg Entry</th>
+                  <th class="px-3 py-2 text-right table-th">Price</th>
+                  <th v-if="open_positions_view === 'basic'" class="px-3 py-2 text-right table-th">Cost</th>
+                  <th class="px-3 py-2 text-right table-th">Value</th>
+                  <th class="px-3 py-2 text-right table-th">Unrealized P&amp;L</th>
+                  <th class="px-3 py-2 text-right table-th" title="Price change since previous close × current holdings">Daily P&amp;L</th>
+                  <th v-if="open_positions_view !== 'basic'" class="px-3 py-2 pl-6 text-left table-th">
                     {{ open_positions_view === 'range' ? '52-week range' : 'Stop → Target' }}
                   </th>
-                  <th class="px-3 py-2"><span class="sr-only">Actions</span></th>
+                  <th class="px-3 py-2 table-th"><span class="sr-only">Actions</span></th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-200 dark:divide-gray-700 text-sm whitespace-nowrap tabular-nums">
                 <template v-for="position in displayedOpenTrades" :key="getOpenPositionKey(position)">
                   <!-- Position Summary Row -->
                   <tr :class="position.trades.length > 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''">
-                    <td class="px-3 py-3">
+                    <td class="px-3 py-2">
                       <div class="flex items-center gap-2.5">
                         <StockLogo
                           :symbol="position.symbol"
@@ -829,8 +837,8 @@
                         </div>
                       </div>
                     </td>
-                    <td class="px-3 py-3">
-                      <span class="px-2 inline-flex text-xs leading-5 font-medium rounded-full"
+                    <td class="px-3 py-2">
+                      <span class="badge"
                         :class="[
                           position.side === 'long'
                             ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
@@ -841,7 +849,7 @@
                         {{ position.side === 'neutral' ? 'hedged' : position.side }}
                       </span>
                     </td>
-                    <td class="px-3 py-3 text-right text-gray-900 dark:text-white">
+                    <td class="text-right text-gray-900 dark:text-white px-3 py-2">
                       {{ position.totalQuantity === 0 ? 'Hedged' : (position.totalQuantity || 0).toLocaleString() }}
                       <div
                         v-if="Number(position.totalSharesTraded) && Number(position.totalSharesTraded) !== Number(position.totalQuantity)"
@@ -850,14 +858,14 @@
                         {{ Number(position.totalSharesTraded).toLocaleString() }} traded
                       </div>
                     </td>
-                    <td class="px-3 py-3 text-right text-gray-900 dark:text-white">
-                      {{ formatPositionCurrency(position.avgPrice, position) }}
+                    <td class="text-right text-gray-900 dark:text-white px-3 py-2">
+                      {{ formatPositionPrice(position.avgPrice, position) }}
                     </td>
-                    <td class="px-3 py-3 text-right">
+                    <td class="text-right px-3 py-2">
                       <!-- Option: manual premium input -->
                       <template v-if="position.requires_manual_price">
                         <div class="flex items-center justify-end space-x-1">
-                          <span class="text-xs text-gray-400">{{ currencySymbol }}</span>
+                          <span class="text-xs text-gray-500 dark:text-gray-400">{{ currencySymbol }}</span>
                           <input
                             type="number"
                             step="0.01"
@@ -865,88 +873,88 @@
                             placeholder="Premium"
                             :value="getManualOptionPrice(position) ?? ''"
                             @input="setManualOptionPrice(position, $event.target.value)"
-                            class="w-20 text-right text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-1.5 py-0.5 text-gray-900 dark:text-white focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+                            class="input input-sm w-20 text-right"
                           />
                         </div>
                       </template>
                       <!-- Stock/Future: quoted price -->
                       <template v-else>
                         <div v-if="position.currentPrice !== null" class="text-gray-900 dark:text-white">
-                          {{ formatPositionCurrency(position.currentPrice, position) }}
+                          {{ formatPositionPrice(position.currentPrice, position) }}
                           <div v-if="position.dayChangePercent !== undefined && position.dayChangePercent !== null" class="text-xs" :class="[
-                            position.dayChangePercent >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                            pnlClass(position.dayChangePercent)
                           ]" :title="position.dayChange !== undefined ? formatSignedPositionCurrency(position.dayChange, position) + ' today' : undefined">
-                            {{ position.dayChangePercent >= 0 ? '+' : '' }}{{ formatNumber(position.dayChangePercent) }}%
+                            {{ formatDecimal(position.dayChangePercent, { digits: 1, showSign: true }) }}%
                           </div>
-                          <div v-if="position.quoteSource === 'alpaca'" class="text-xs text-gray-400">via Alpaca</div>
+                          <div v-if="position.quoteSource === 'alpaca'" class="text-xs text-gray-500 dark:text-gray-400">via Alpaca</div>
                         </div>
-                        <span v-else class="text-xs text-gray-400">-</span>
+                        <span v-else class="text-xs text-gray-500 dark:text-gray-400">-</span>
                       </template>
                     </td>
-                    <td v-if="open_positions_view === 'basic'" class="px-3 py-3 text-right text-gray-900 dark:text-white" :title="nativeAmountTitle(position.totalCost, position)">
+                    <td v-if="open_positions_view === 'basic'" class="text-right text-gray-900 dark:text-white px-3 py-2" :title="nativeAmountTitle(position.totalCost, position)">
                       {{ formatPositionAmount(position.totalCost, position) }}
                     </td>
-                    <td class="px-3 py-3 text-right">
+                    <td class="text-right px-3 py-2">
                       <template v-if="position.requires_manual_price">
                         <span v-if="getOptionPnL(position).currentValue !== null" class="text-gray-900 dark:text-white" :title="nativeAmountTitle(getOptionPnL(position).currentValue, position)">
                           {{ formatPositionAmount(getOptionPnL(position).currentValue, position) }}
                         </span>
-                        <span v-else class="text-xs text-gray-400">-</span>
+                        <span v-else class="text-xs text-gray-500 dark:text-gray-400">-</span>
                       </template>
                       <template v-else>
                         <span v-if="position.currentValue !== null" class="text-gray-900 dark:text-white" :title="nativeAmountTitle(position.currentValue, position)">
                           {{ formatPositionAmount(position.currentValue, position) }}
                         </span>
-                        <span v-else class="text-xs text-gray-400">-</span>
+                        <span v-else class="text-xs text-gray-500 dark:text-gray-400">-</span>
                       </template>
                     </td>
-                    <td class="px-3 py-3 text-right">
+                    <td class="text-right px-3 py-2">
                       <template v-if="position.requires_manual_price">
                         <div v-if="getOptionPnL(position).unrealizedPnL !== null" :title="nativeAmountTitle(getOptionPnL(position).unrealizedPnL, position)">
-                          <div class="font-semibold" :class="getOptionPnL(position).unrealizedPnL >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                          <div class="font-semibold" :class="pnlClass(getOptionPnL(position).unrealizedPnL)">
                             {{ formatSignedPositionAmount(getOptionPnL(position).unrealizedPnL, position) }}
                           </div>
-                          <div class="text-xs" :class="getOptionPnL(position).unrealizedPnLPercent >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
-                            {{ getOptionPnL(position).unrealizedPnLPercent >= 0 ? '+' : '' }}{{ formatNumber(getOptionPnL(position).unrealizedPnLPercent) }}%
+                          <div class="text-xs" :class="pnlClass(getOptionPnL(position).unrealizedPnLPercent)">
+                            {{ formatDecimal(getOptionPnL(position).unrealizedPnLPercent, { digits: 1, showSign: true, nullValue: '0.0' }) }}%
                           </div>
                         </div>
-                        <span v-else class="text-xs text-gray-400">Enter premium</span>
+                        <span v-else class="text-xs text-gray-500 dark:text-gray-400">Enter premium</span>
                       </template>
                       <template v-else>
                         <div v-if="position.unrealizedPnL !== null" :title="nativeAmountTitle(position.unrealizedPnL, position)">
-                          <div class="font-semibold" :class="position.unrealizedPnL >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                          <div class="font-semibold" :class="pnlClass(position.unrealizedPnL)">
                             {{ formatSignedPositionAmount(position.unrealizedPnL, position) }}
                           </div>
-                          <div class="text-xs" :class="position.unrealizedPnLPercent >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
-                            {{ position.unrealizedPnLPercent >= 0 ? '+' : '' }}{{ formatNumber(position.unrealizedPnLPercent) }}%
+                          <div class="text-xs" :class="pnlClass(position.unrealizedPnLPercent)">
+                            {{ formatDecimal(position.unrealizedPnLPercent, { digits: 1, showSign: true }) }}%
                           </div>
                         </div>
-                        <span v-else class="text-xs text-gray-400">-</span>
+                        <span v-else class="text-xs text-gray-500 dark:text-gray-400">-</span>
                       </template>
                     </td>
-                    <td class="px-3 py-3 text-right">
+                    <td class="text-right px-3 py-2">
                       <span
                         v-if="daily_position_pnl(position) !== null"
                         class="font-semibold"
-                        :class="daily_position_pnl(position) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'"
+                        :class="pnlClass(daily_position_pnl(position))"
                         :title="nativeAmountTitle(daily_position_pnl(position), position)"
                       >
                         {{ formatSignedPositionAmount(daily_position_pnl(position), position) }}
                       </span>
-                      <span v-else class="text-xs text-gray-400">-</span>
+                      <span v-else class="text-xs text-gray-500 dark:text-gray-400">-</span>
                     </td>
-                    <td v-if="open_positions_view !== 'basic'" class="px-3 py-3 pl-6 min-w-[220px] w-[260px]">
+                    <td v-if="open_positions_view !== 'basic'" class="pl-6 min-w-[220px] w-[260px] px-3 py-2">
                       <PositionRangeBar
                         v-if="position_bars[getOpenPositionKey(position)]"
                         v-bind="bar_props(position)"
                       />
-                      <span v-else class="text-xs text-gray-400">{{ position_bar_empty_text(position) }}</span>
+                      <span v-else class="text-xs text-gray-500 dark:text-gray-400">{{ position_bar_empty_text(position) }}</span>
                     </td>
-                    <td class="px-3 py-3 text-right">
+                    <td class="text-right px-3 py-2">
                       <router-link
                         v-if="position.trades.length === 1"
                         :to="`/trades/${position.trades[0].id}`"
-                        class="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 font-medium text-xs"
+                        class="text-primary-700 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 font-medium text-xs"
                       >
                         View
                       </router-link>
@@ -960,7 +968,7 @@
                       <span class="ml-1 text-gray-400">{{ formatDate(trade.trade_date) }}</span>
                     </td>
                     <td class="px-3 py-2">
-                      <span class="px-1.5 inline-flex text-xs leading-4 font-medium rounded"
+                      <span class="badge"
                         :class="[
                           trade.side === 'long'
                             ? 'bg-green-50 text-green-700 dark:bg-green-900/10 dark:text-green-400'
@@ -971,18 +979,18 @@
                     </td>
                     <td class="px-3 py-2 text-right">{{ (trade.quantity || 0).toLocaleString() }}</td>
                     <td class="px-3 py-2 text-right">{{ formatPositionCurrency(trade.entry_price, position) }}</td>
-                    <td class="px-3 py-2"></td>
+                    <td class="text-right text-mono-num px-3 py-2"></td>
                     <td v-if="open_positions_view === 'basic'" class="px-3 py-2 text-right" :title="nativeAmountTitle(trade.entry_price * trade.quantity, position)">
                       {{ formatPositionAmount(trade.entry_price * trade.quantity, position) }}
                     </td>
-                    <td class="px-3 py-2"></td>
-                    <td class="px-3 py-2"></td>
-                    <td class="px-3 py-2"></td>
+                    <td class="text-right text-mono-num px-3 py-2"></td>
+                    <td class="text-right text-mono-num px-3 py-2"></td>
+                    <td class="text-right text-mono-num px-3 py-2"></td>
                     <td v-if="open_positions_view !== 'basic'" class="px-3 py-2"></td>
                     <td class="px-3 py-2 text-right">
                       <router-link
                         :to="`/trades/${trade.id}`"
-                        class="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 font-medium text-xs"
+                        class="text-primary-700 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 font-medium text-xs"
                       >
                         View
                       </router-link>
@@ -992,7 +1000,7 @@
               </tbody>
               <tfoot class="border-t-2 border-gray-300 dark:border-gray-600 text-sm whitespace-nowrap tabular-nums">
                 <tr>
-                  <td colspan="5" class="px-3 py-3 text-right font-semibold text-gray-900 dark:text-white">
+                  <td colspan="5" class="text-left font-semibold text-gray-900 dark:text-white px-3 py-2">
                     Total
                     <span
                       v-if="hasMixedCurrencies"
@@ -1004,33 +1012,33 @@
                       ({{ accountCurrency }}<template v-if="totalsArePartial">, partial</template>)
                     </span>
                   </td>
-                  <td v-if="open_positions_view === 'basic'" class="px-3 py-3 text-right font-semibold text-gray-900 dark:text-white">
+                  <td v-if="open_positions_view === 'basic'" class="text-right font-semibold text-gray-900 dark:text-white px-3 py-2">
                     {{ totalOpenCostLabel }}
                   </td>
-                  <td class="px-3 py-3 text-right font-semibold text-gray-900 dark:text-white">
+                  <td class="text-right font-semibold text-gray-900 dark:text-white px-3 py-2">
                     <span v-if="totalCurrentValueLabel">{{ totalCurrentValueLabel }}</span>
-                    <span v-else class="text-xs text-gray-400">-</span>
+                    <span v-else class="text-xs text-gray-500 dark:text-gray-400">-</span>
                   </td>
-                  <td class="px-3 py-3 text-right">
+                  <td class="text-right px-3 py-2">
                     <div v-if="totalUnrealizedPnLAccount !== null">
-                      <div class="font-semibold" :class="totalUnrealizedPnLAccount >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                      <div class="font-semibold" :class="pnlClass(totalUnrealizedPnLAccount)">
                         {{ totalUnrealizedPnLLabel }}
                       </div>
-                      <div class="text-xs" :class="totalUnrealizedPnLPercent >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
-                        {{ totalUnrealizedPnLPercent >= 0 ? '+' : '' }}{{ formatNumber(totalUnrealizedPnLPercent) }}%
+                      <div class="text-xs" :class="pnlClass(totalUnrealizedPnLPercent)">
+                        {{ formatDecimal(totalUnrealizedPnLPercent, { digits: 1, showSign: true }) }}%
                       </div>
                     </div>
-                    <span v-else class="text-xs text-gray-400">-</span>
+                    <span v-else class="text-xs text-gray-500 dark:text-gray-400">-</span>
                   </td>
-                  <td class="px-3 py-3 text-right">
-                    <span v-if="total_daily_pnl !== null" class="font-semibold" :class="total_daily_pnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                  <td class="text-right px-3 py-2">
+                    <span v-if="total_daily_pnl !== null" class="font-semibold" :class="pnlClass(total_daily_pnl)">
                       {{ formatSignedCurrency(total_daily_pnl, { currency: accountCurrency }) }}
                     </span>
-                    <span v-else class="text-xs text-gray-400">-</span>
+                    <span v-else class="text-xs text-gray-500 dark:text-gray-400">-</span>
                     <div v-if="daily_pnl_partial && total_daily_pnl !== null" class="text-xs text-gray-500 dark:text-gray-400">Partial</div>
                   </td>
-                  <td v-if="open_positions_view !== 'basic'" class="px-3 py-3"></td>
-                  <td class="px-3 py-3"></td>
+                  <td v-if="open_positions_view !== 'basic'" class="px-3 py-2"></td>
+                  <td class="px-3 py-2"></td>
                 </tr>
               </tfoot>
             </table>
@@ -1045,7 +1053,7 @@
                   >
                     <button
                       type="button"
-                      class="inline-flex items-center gap-1 text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
+                      class="btn-link"
                       @click="showAllOpenTrades = !showAllOpenTrades"
                     >
                       <template v-if="showAllOpenTrades">
@@ -1069,7 +1077,7 @@
             <!-- Upcoming Earnings Section (Pro Only) -->
             <template v-if="element.id === 'upcoming-earnings'">
               <UpcomingEarningsSection
-                v-if="openTradeSymbols.length > 0 && authStore.user?.tier === 'pro'"
+                v-if="openTradeSymbols.length > 0 && isProUser"
                 :symbols="openTradeSymbols"
               />
             </template>
@@ -1077,7 +1085,7 @@
             <!-- Trade News Section (Pro Only) -->
             <template v-if="element.id === 'trade-news'">
               <TradeNewsSection
-                v-if="openTradeSymbols.length > 0 && authStore.user?.tier === 'pro'"
+                v-if="openTradeSymbols.length > 0 && isProUser"
                 :symbols="openTradeSymbols"
               />
             </template>
@@ -1088,9 +1096,9 @@
               <div v-if="analyticsLoading" class="flex-card-container">
                 <div v-for="n in 4" :key="n" class="card card-mobile-safe flex-1">
                   <div class="card-body">
-                    <div class="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                    <div class="mt-3 h-8 w-28 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                    <div class="mt-3 h-3 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                    <div class="skeleton h-4 w-20"></div>
+                    <div class="skeleton mt-3 h-8 w-28"></div>
+                    <div class="skeleton mt-3 h-3 w-24"></div>
                   </div>
                 </div>
               </div>
@@ -1102,17 +1110,17 @@
                     </dt>
                     <div class="mt-1 space-y-2">
                       <div>
-                        <div class="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400">Gross</div>
-                        <dd class="text-xl sm:text-2xl lg:text-3xl font-semibold whitespace-nowrap" :class="[
-                          dashboardGrossPnl >= 0 ? 'text-green-600' : 'text-red-600'
+                        <div class="text-label">Gross</div>
+                        <dd class="stat-value whitespace-nowrap text-mono-num" :class="[
+                          pnlClass(dashboardGrossPnl)
                         ]">
                           {{ formatCurrency(dashboardGrossPnl) }}
                         </dd>
                       </div>
                       <div>
-                        <div class="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400">Net</div>
+                        <div class="text-label">Net</div>
                         <dd class="text-base sm:text-lg font-semibold whitespace-nowrap" :class="[
-                          dashboardNetPnl >= 0 ? 'text-green-600' : 'text-red-600'
+                          pnlClass(dashboardNetPnl)
                         ]">
                           {{ formatCurrency(dashboardNetPnl) }}
                         </dd>
@@ -1129,8 +1137,8 @@
                     <dt class="text-data-secondary truncate">
                       Win Rate
                     </dt>
-                    <dd class="mt-1 text-xl sm:text-2xl lg:text-3xl font-semibold whitespace-nowrap" :class="[
-                      analytics.summary.winRate >= 50 ? 'text-green-600' : 'text-red-600'
+                    <dd class="mt-1 stat-value whitespace-nowrap" :class="[
+                      winRateClass(analytics.summary.winRate)
                     ]">
                       {{ formatPercent(analytics.summary.winRate) }}%
                     </dd>
@@ -1145,8 +1153,8 @@
                     <dt class="text-data-secondary truncate">
                       Profit Factor
                     </dt>
-                    <dd class="mt-1 text-xl sm:text-2xl lg:text-3xl font-semibold whitespace-nowrap" :class="[
-                      analytics.summary.profitFactor >= 1 ? 'text-green-600' : 'text-red-600'
+                    <dd class="mt-1 stat-value whitespace-nowrap" :class="[
+                      profitFactorClass(analytics.summary.profitFactor)
                     ]">
                       {{ formatNumber(analytics.summary.profitFactor) }}
                     </dd>
@@ -1157,7 +1165,7 @@
                 </div>
 
                 <div
-                  class="card card-mobile-safe flex-1 cursor-pointer hover:shadow-lg transition-shadow focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+                  class="card card-mobile-safe flex-1 cursor-pointer transition-shadow focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
                   role="button"
                   tabindex="0"
                   aria-label="View max drawdown trades"
@@ -1169,7 +1177,7 @@
                     <dt class="text-data-secondary truncate">
                       Max Drawdown
                     </dt>
-                    <dd class="mt-1 text-xl sm:text-2xl lg:text-3xl font-semibold text-red-600 whitespace-nowrap">
+                    <dd class="mt-1 stat-value text-red-600 dark:text-red-400 whitespace-nowrap">
                       {{ formatCurrency(analytics.summary.maxDrawdown, { abs: true }) }}
                     </dd>
                     <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
@@ -1185,14 +1193,14 @@
               <div v-if="analyticsLoading" class="flex-card-container">
                 <div v-for="n in 4" :key="n" class="card card-mobile-safe flex-1">
                   <div class="card-body">
-                    <div class="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                    <div class="mt-3 h-7 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                    <div class="skeleton h-4 w-20"></div>
+                    <div class="skeleton mt-3 h-7 w-24"></div>
                   </div>
                 </div>
               </div>
               <div v-else class="flex-card-container">
                 <div
-                  class="card card-mobile-safe flex-1 cursor-pointer hover:shadow-lg transition-shadow focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+                  class="card card-mobile-safe flex-1 cursor-pointer transition-shadow focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
                   role="button"
                   tabindex="0"
                   :aria-label="`View ${calculationMethod} winning trades`"
@@ -1204,14 +1212,14 @@
                     <dt class="text-data-secondary truncate">
                       {{ calculationMethod }} Win
                     </dt>
-                    <dd class="mt-1 text-lg sm:text-xl lg:text-2xl font-semibold text-green-600 whitespace-nowrap">
+                    <dd class="stat-value stat-value-sm mt-1 text-green-700 dark:text-green-400 whitespace-nowrap">
                       {{ formatCurrency(analytics.summary.avgWin) }}
                     </dd>
                   </div>
                 </div>
 
                 <div
-                  class="card card-mobile-safe flex-1 cursor-pointer hover:shadow-lg transition-shadow focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+                  class="card card-mobile-safe flex-1 cursor-pointer transition-shadow focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
                   role="button"
                   tabindex="0"
                   :aria-label="`View ${calculationMethod} losing trades`"
@@ -1223,14 +1231,14 @@
                     <dt class="text-data-secondary truncate">
                       {{ calculationMethod }} Loss
                     </dt>
-                    <dd class="mt-1 text-lg sm:text-xl lg:text-2xl font-semibold text-red-600 whitespace-nowrap">
+                    <dd class="stat-value stat-value-sm mt-1 text-red-600 dark:text-red-400 whitespace-nowrap">
                       {{ formatCurrency(analytics.summary.avgLoss, { abs: true }) }}
                     </dd>
                   </div>
                 </div>
 
                 <div
-                  class="card card-mobile-safe flex-1 cursor-pointer hover:shadow-lg transition-shadow focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+                  class="card card-mobile-safe flex-1 cursor-pointer transition-shadow focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
                   role="button"
                   tabindex="0"
                   aria-label="View best trade"
@@ -1242,14 +1250,14 @@
                     <dt class="text-data-secondary truncate">
                       Best Trade
                     </dt>
-                    <dd class="mt-1 text-lg sm:text-xl lg:text-2xl font-semibold text-green-600 whitespace-nowrap">
+                    <dd class="stat-value stat-value-sm mt-1 text-green-700 dark:text-green-400 whitespace-nowrap">
                       {{ formatCurrency(analytics.summary.bestTrade) }}
                     </dd>
                   </div>
                 </div>
 
                 <div
-                  class="card card-mobile-safe flex-1 cursor-pointer hover:shadow-lg transition-shadow focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+                  class="card card-mobile-safe flex-1 cursor-pointer transition-shadow focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
                   role="button"
                   tabindex="0"
                   aria-label="View worst trade"
@@ -1261,7 +1269,7 @@
                     <dt class="text-data-secondary truncate">
                       Worst Trade
                     </dt>
-                    <dd class="mt-1 text-lg sm:text-xl lg:text-2xl font-semibold text-red-600 whitespace-nowrap">
+                    <dd class="stat-value stat-value-sm mt-1 text-red-600 dark:text-red-400 whitespace-nowrap">
                       {{ formatCurrency(analytics.summary.worstTrade) }}
                     </dd>
                   </div>
@@ -1276,8 +1284,8 @@
               <div v-if="analyticsLoading" class="grid grid-cols-1 gap-6">
                 <div class="card">
                   <div class="card-body">
-                    <div class="h-4 w-40 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-4"></div>
-                    <div class="h-64 bg-gray-100 dark:bg-gray-800 rounded animate-pulse"></div>
+                    <div class="skeleton h-4 w-40 mb-4"></div>
+                    <div class="skeleton h-64"></div>
                   </div>
                 </div>
               </div>
@@ -1285,7 +1293,7 @@
                 <!-- Win/Loss Distribution -->
                 <div class="card">
                   <div class="card-body">
-                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                    <h3 class="heading-card mb-4">
                       Win/Loss Distribution
                     </h3>
                     <div class="h-64 relative">
@@ -1296,10 +1304,10 @@
                       <!-- Center label below the arc -->
                       <div class="absolute bottom-0 left-0 right-0 flex justify-center pointer-events-none" style="margin-bottom: 0.25rem;">
                         <div class="text-center">
-                          <div class="text-3xl font-bold text-gray-900 dark:text-white">
+                          <div class="stat-value text-gray-900 dark:text-white">
                             {{ computedWinRate }}%
                           </div>
-                          <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          <div class="table-th">
                             Win Rate
                           </div>
                         </div>
@@ -1311,7 +1319,7 @@
                         class="flex items-center gap-1.5 text-sm cursor-pointer hover:opacity-80 transition-opacity"
                         @click="navigateToTradesByPnLType('profit')"
                       >
-                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                        <span class="w-2.5 h-2.5 rounded-full bg-green-500"></span>
                         <span class="text-gray-600 dark:text-gray-400">{{ parseInt(analytics?.summary?.winningTrades) || 0 }} Wins</span>
                       </button>
                       <button
@@ -1339,7 +1347,7 @@
               <div class="grid grid-cols-1 gap-8">
                 <div class="card">
                   <div class="card-body">
-                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                    <h3 class="heading-card mb-4">
                       Daily Win Rate &amp; P/L Ratio
                     </h3>
                     <div class="h-80">
@@ -1357,25 +1365,25 @@
             <template v-if="element.id === 'performance-tables'">
               <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <!-- Performance by Symbol -->
-                <div class="card">
+                <div class="card min-w-0">
                   <div class="card-body">
-                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                    <h3 class="heading-card mb-4">
                       Performance by Symbol
                     </h3>
                     <div class="overflow-x-auto">
                       <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead>
+                        <thead class="table-head">
                           <tr>
-                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            <th class="px-3 py-2 text-left table-th">
                               Symbol
                             </th>
-                            <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            <th class="px-3 py-2 text-right table-th">
                               Trades
                             </th>
-                            <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            <th class="px-3 py-2 text-right table-th">
                               P&L
                             </th>
-                            <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            <th class="px-3 py-2 text-right table-th">
                               Avg
                             </th>
                           </tr>
@@ -1397,7 +1405,7 @@
                               {{ symbol.trades }}
                             </td>
                             <td class="px-3 py-2 text-sm text-right" :class="[
-                              symbol.total_pnl >= 0 ? 'text-green-600' : 'text-red-600'
+                              pnlClass(symbol.total_pnl)
                             ]">
                               {{ formatCurrency(symbol.total_pnl) }}
                             </td>
@@ -1414,13 +1422,13 @@
                 <!-- Best and Worst Trades -->
                 <div class="card">
                   <div class="card-body">
-                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                    <h3 class="heading-card mb-4">
                       Top Trades
                     </h3>
                     
                     <div class="space-y-4">
                       <div>
-                        <h4 class="text-sm font-medium text-green-600 mb-2">Best Trades</h4>
+                        <h4 class="text-label mb-2">Best Trades</h4>
                         <div class="space-y-1">
                           <div v-for="trade in analytics.topTrades.best" :key="`best-${trade.id}-${trade.symbol}-${trade.trade_date}`"
                                @click="navigateToTradesBySymbolAndDate(trade.symbol, trade.trade_date)"
@@ -1428,12 +1436,12 @@
                             <span class="text-gray-900 dark:text-white flex items-center min-w-0">
                               <span class="truncate">{{ trade.symbol }} {{ formatDate(trade.trade_date) }}</span>
                               <span v-if="trade.group_detected_strategy"
-                                class="ml-2 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-400 whitespace-nowrap flex-shrink-0"
+                                class="badge-primary ml-2 flex-shrink-0"
                                 :title="`Auto-detected strategy: ${formatGroupStrategy(trade.group_detected_strategy)} (${trade.group_leg_count}-leg position)`">
                                 {{ formatGroupStrategy(trade.group_detected_strategy) }}
                               </span>
                             </span>
-                            <span class="text-green-600 font-medium">
+                            <span class="text-green-700 dark:text-green-400 font-medium">
                               {{ formatCurrency(trade.pnl) }}
                             </span>
                           </div>
@@ -1441,7 +1449,7 @@
                       </div>
 
                       <div>
-                        <h4 class="text-sm font-medium text-red-600 mb-2">Worst Trades</h4>
+                        <h4 class="text-label mb-2">Worst Trades</h4>
                         <div class="space-y-1">
                           <div v-if="analytics.topTrades.worst && analytics.topTrades.worst.length > 0"
                                v-for="trade in analytics.topTrades.worst" :key="`worst-${trade.id}-${trade.symbol}-${trade.trade_date}`"
@@ -1450,20 +1458,20 @@
                             <span class="text-gray-900 dark:text-white flex items-center min-w-0">
                               <span class="truncate">{{ trade.symbol }} {{ formatDate(trade.trade_date) }}</span>
                               <span v-if="trade.group_detected_strategy"
-                                class="ml-2 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-400 whitespace-nowrap flex-shrink-0"
+                                class="badge-primary ml-2 flex-shrink-0"
                                 :title="`Auto-detected strategy: ${formatGroupStrategy(trade.group_detected_strategy)} (${trade.group_leg_count}-leg position)`">
                                 {{ formatGroupStrategy(trade.group_detected_strategy) }}
                               </span>
                             </span>
                             <span :class="[
-                              trade.pnl >= 0 ? 'text-green-600' : 'text-red-600',
+                              pnlClass(trade.pnl),
                               'font-medium'
                             ]">
                               {{ formatCurrency(trade.pnl) }}
                             </span>
                           </div>
                           <div v-else class="text-sm text-gray-500 dark:text-gray-400 italic py-2 flex items-center">
-                            <MdiIcon :icon="mdiCheckCircle" :size="16" class="mr-1 text-green-500" />
+                            <MdiIcon :icon="mdiCheckCircle" :size="16" class="mr-1 text-green-700 dark:text-green-400" />
                             No losing trades found
                           </div>
                         </div>
@@ -1473,7 +1481,7 @@
                       <div v-if="analytics.topTrades.best?.length && analytics.topTrades.worst?.length" class="border-t border-gray-200 dark:border-gray-600 pt-3">
                         <div class="flex justify-between items-center px-2">
                           <span class="text-sm font-semibold text-gray-900 dark:text-white">Net Difference</span>
-                          <span class="text-sm font-semibold" :class="topTradesNetPnl >= 0 ? 'text-green-600' : 'text-red-600'">
+                          <span class="text-sm font-semibold" :class="pnlClass(topTradesNetPnl)">
                             {{ formatCurrency(topTradesNetPnl) }}
                           </span>
                         </div>
@@ -1488,7 +1496,7 @@
             <template v-if="element.id === 'additional-stats'">
               <div class="card">
                 <div class="card-body">
-                  <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                  <h3 class="heading-card mb-4">
                     Additional Statistics
                   </h3>
                   <!-- Each cell is a flex column with the value pushed to the
@@ -1564,9 +1572,7 @@
               <button
                 type="button"
                 class="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded transition-colors"
-                :class="newsRailUserVisible
-                  ? 'text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/30'
-                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'"
+                :class="newsRailUserVisible ? 'text-primary-700 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/30' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'"
                 :title="newsRailUserVisible ? 'Hide news rail' : 'Show news rail'"
                 @click="toggleSectionVisibility('news-rail')"
               >
@@ -1611,17 +1617,17 @@
     >
       <div class="flex min-h-full items-start justify-center p-4 sm:p-6">
         <div
-          class="fixed inset-0 bg-gray-900/50 transition-opacity"
+          class="modal-backdrop"
           @click="showFiltersModal = false"
         ></div>
-        <div class="relative w-full max-w-5xl bg-white dark:bg-gray-800 rounded-lg shadow-xl">
+        <div class="modal-panel w-full max-w-5xl">
           <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 id="dashboard-filters-modal-title" class="heading-card">Filter dashboard</h3>
+            <h3 id="dashboard-filters-modal-title" class="modal-title">Filter dashboard</h3>
             <div class="flex items-center gap-2">
               <button
                 type="button"
                 @click="showFiltersModal = false"
-                class="rounded-md p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                class="btn-icon p-1"
                 aria-label="Close filters"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1641,13 +1647,19 @@
       </div>
     </div>
 
+    <SessionWrapUpModal v-if="showSessionWrapUp" v-model="showSessionWrapUp" @saved="journalRefreshKey += 1" />
   </div>
 </template>
 
 <script setup>
+import { winRateClass, profitFactorClass, pnlClass } from '@/utils/metricTone'
+import { tradePriceFractionDigits } from '@/composables/useTradePriceFormatter'
 import { resolveDatePreset, monthPresetOptions } from '@/utils/datePresets'
 import { ref, onMounted, nextTick, watch, computed, onUnmounted, defineAsyncComponent } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useProAccess } from '@/composables/useProAccess'
+import { isProTradeFilterKey } from '@/utils/proTradeFilters'
+import ProUpgradePrompt from '@/components/ProUpgradePrompt.vue'
 import { useRouter } from 'vue-router'
 import { format } from 'date-fns'
 import { formatTradeDate, formatLocalDate } from '@/utils/date'
@@ -1675,6 +1687,7 @@ const UpcomingEarningsSection = defineAsyncComponent(() => import('@/components/
 const CalendarHeatmap = defineAsyncComponent(() => import('@/components/dashboard/CalendarHeatmap.vue'))
 const StreakMomentumCard = defineAsyncComponent(() => import('@/components/dashboard/StreakMomentumCard.vue'))
 const BehavioralAlertsCard = defineAsyncComponent(() => import('@/components/dashboard/BehavioralAlertsCard.vue'))
+const SessionWrapUpModal = defineAsyncComponent(() => import('@/components/diary/SessionWrapUpModal.vue'))
 const RecentTradesTimeline = defineAsyncComponent(() => import('@/components/dashboard/RecentTradesTimeline.vue'))
 const WinLossPulse = defineAsyncComponent(() => import('@/components/dashboard/WinLossPulse.vue'))
 const MarketRiskCard = defineAsyncComponent(() => import('@/components/dashboard/MarketRiskCard.vue'))
@@ -1694,6 +1707,7 @@ import { useGlobalAccountFilter } from '@/composables/useGlobalAccountFilter'
 import { useVisibilityPolling } from '@/composables/useVisibilityPolling'
 import { useUserTimezone } from '@/composables/useUserTimezone'
 import { useCurrencyFormatter } from '@/composables/useCurrencyFormatter'
+import { formatDecimal } from '@/utils/formatters'
 import {
   normalizeTradeFiltersForSharedState,
   loadTradeFiltersFromStorage
@@ -1711,6 +1725,7 @@ import { plan_bar, range_bar } from '@/utils/positionRangeBars'
 import draggable from 'vuedraggable'
 
 const authStore = useAuthStore()
+const { isProUser, showProLock } = useProAccess()
 const { formatTime: formatTimeTz } = useUserTimezone()
 const { formatCurrency, currencySymbol, currencyCode, formatSignedCurrency } = useCurrencyFormatter()
 const { selectedAccount, selectedAccountLabel } = useGlobalAccountFilter()
@@ -1721,6 +1736,8 @@ const router = useRouter()
 
 const loading = computed(() => analyticsLoading.value || quotesLoading.value)
 const initialLoading = ref(true) // Track initial load separately to preserve scroll on refresh
+const showSessionWrapUp = ref(false)
+const journalRefreshKey = ref(0)
 const userSettings = ref(null)
 const analytics = ref({
   summary: {},
@@ -1915,7 +1932,7 @@ const position_bars = computed(() => {
         in_profit: bar.in_profit,
         start_label: formatPositionCurrency(bar.low, position),
         end_label: formatPositionCurrency(bar.high, position),
-        caption: bar.at_high ? 'At 52w high' : bar.at_low ? 'At 52w low' : `${bar.below_high_pct.toFixed(1)}% below high`,
+        caption: bar.at_high ? 'At 52w high' : bar.at_low ? 'At 52w low' : `${formatDecimal(bar.below_high_pct, { digits: 1 })}% below high`,
         start_note: '',
         end_note: '',
         show_ends: false
@@ -1994,6 +2011,8 @@ const activeAdvancedFilterCount = computed(() => {
 function appendAdvancedFilterParams(params) {
   for (const [k, v] of Object.entries(appliedFilters.value || {})) {
     if (ADVANCED_FILTER_IGNORE_KEYS.has(k)) continue
+    // Advanced-panel filters are Pro-only; the API ignores them for free users.
+    if (showProLock.value && isProTradeFilterKey(k)) continue
     if (!isActiveAdvancedFilterValue(v)) continue
     params.append(k, Array.isArray(v) ? v.join(',') : String(v))
   }
@@ -2110,6 +2129,12 @@ const aiInsightLoading = ref(false)
 const aiInsightError = ref(null)
 
 async function fetchAiInsight() {
+  // AI insights are a Pro feature; free users see an upgrade prompt instead.
+  if (!isProUser.value) {
+    aiInsights.value = []
+    aiInsightLoading.value = false
+    return
+  }
   aiInsightLoading.value = true
   aiInsightError.value = null
   try {
@@ -2211,7 +2236,7 @@ const newsRailSection = computed(
 const newsRailUserVisible = computed(() => newsRailSection.value?.visible !== false)
 const showNewsRail = computed(() => {
   if (openTradeSymbols.value.length === 0) return false
-  if (authStore.user?.tier !== 'pro') return false
+  if (!isProUser.value) return false
   // While customizing, keep the rail mounted so the toggle/header is visible.
   return newsRailUserVisible.value || isCustomizing.value
 })
@@ -2488,6 +2513,14 @@ function formatPositionCurrency(value, position) {
   return formatCurrency(value, { currency: positionCurrency(position) })
 }
 
+// Quotes follow the trade price precision rule (cents; 4dp under $1; 6dp forex).
+function formatPositionPrice(value, position) {
+  return formatCurrency(value, {
+    currency: positionCurrency(position),
+    maximumFractionDigits: tradePriceFractionDigits({ symbol: position?.symbol, instrument_type: position?.instrument_type ?? position?.instrumentType }, value)
+  })
+}
+
 function formatSignedPositionCurrency(value, position) {
   return formatSignedCurrency(value, { currency: positionCurrency(position) })
 }
@@ -2584,7 +2617,7 @@ const computedWinRate = computed(() => {
   const be = parseInt(summary.breakevenTrades) || 0
   const total = wins + losses + be
   if (total === 0) return '0'
-  return ((wins / total) * 100).toFixed(1)
+  return formatDecimal((wins / total) * 100, { digits: 1 })
 })
 
 const topTradesNetPnl = computed(() => {
@@ -2598,12 +2631,12 @@ const dashboardGrossPnl = computed(() => parseFloat(analytics.value?.summary?.to
 const dashboardAvgNetPnl = computed(() => parseFloat(analytics.value?.summary?.avgNetPnL ?? analytics.value?.summary?.avgPnL ?? 0) || 0)
 function formatNumber(num) {
   if (!num && num !== 0) return '0.00'
-  return parseFloat(num).toFixed(2)
+  return formatDecimal(parseFloat(num))
 }
 
 function formatPercent(num) {
   if (!num && num !== 0) return '0.0'
-  return parseFloat(num).toFixed(1)
+  return formatDecimal(parseFloat(num), { digits: 1 })
 }
 
 function formatDate(dateStr) {
@@ -3170,6 +3203,11 @@ function navigateToTradesByPnLType(type) {
 }
 
 // Watch for changes to timeRange and save immediately
+// Tier can resolve after mount (slow /auth/me); load the Pro AI insight then.
+watch(isProUser, (is_pro, was_pro) => {
+  if (is_pro && !was_pro) fetchAiInsight()
+})
+
 watch(() => filters.value.timeRange, (newRange) => {
   saveFiltersToStorage()
   // If switching to custom, restore saved dates if available

@@ -1,32 +1,22 @@
 <template>
-  <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-4">
+  <div class="card p-4">
     <!-- Header -->
     <div class="flex items-center justify-between mb-3">
-      <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300">
+      <h4 class="heading-sub">
         Target Hit Analysis
       </h4>
       <div class="flex items-center space-x-2">
         <!-- Mode Toggle -->
         <div class="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5">
-          <button
+          <button class="btn-link"
             @click="setMode('auto')"
-            :class="[
-              'px-2 py-1 text-xs font-medium rounded-md transition-colors',
-              mode === 'auto'
-                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-            ]"
+            :class="[ 'px-2 py-1 text-xs font-medium rounded-md transition-colors', mode === 'auto' ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300' ]"
           >
             Auto (API)
           </button>
-          <button
+          <button class="btn-link"
             @click="setMode('manual')"
-            :class="[
-              'px-2 py-1 text-xs font-medium rounded-md transition-colors',
-              mode === 'manual'
-                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-            ]"
+            :class="[ 'px-2 py-1 text-xs font-medium rounded-md transition-colors', mode === 'manual' ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300' ]"
           >
             Manual
           </button>
@@ -35,7 +25,7 @@
         <button
           v-if="mode === 'auto' && analysis"
           @click="runAnalysis"
-          class="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+          class="btn-ghost btn-sm"
           title="Refresh analysis"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -63,7 +53,7 @@
             <input
               :checked="target.status === 'hit'"
               type="checkbox"
-              class="rounded border-gray-300 text-green-600 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-700"
+              class="checkbox"
               :disabled="saving"
               @change="toggleTarget('tp', index, $event.target.checked)"
             />
@@ -71,11 +61,11 @@
             <span class="text-sm text-gray-700 dark:text-gray-300">
               TP{{ index + 1 }} ({{ currencySymbol }}{{ formatPrice(target.price) }})
             </span>
-            <span v-if="target.rValue" class="text-xs text-primary-600 dark:text-primary-400 font-medium">
-              {{ target.rValue }}R
+            <span v-if="target.rValue" class="text-xs text-primary-700 dark:text-primary-400 font-medium">
+              {{ formatR(Number(target.rValue)) }}
             </span>
           </label>
-          <span v-if="target.status === 'hit'" class="px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+          <span v-if="target.status === 'hit'" class="badge-success">
             Hit
           </span>
         </div>
@@ -89,7 +79,7 @@
             <input
               :checked="slHit"
               type="checkbox"
-              class="rounded border-gray-300 text-red-600 focus:ring-red-500 dark:border-gray-600 dark:bg-gray-700"
+              class="checkbox"
               :disabled="saving"
               @change="toggleTarget('sl', 0, $event.target.checked)"
             />
@@ -98,7 +88,7 @@
               Stop Loss ({{ currencySymbol }}{{ formatPrice(trade.stop_loss) }})
             </span>
           </label>
-          <span v-if="slHit" class="px-2 py-0.5 text-xs font-medium rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+          <span v-if="slHit" class="badge-danger">
             Hit
           </span>
         </div>
@@ -112,7 +102,7 @@
           </span>
           <!-- Saving indicator overlaid on result -->
           <div v-if="saving" class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 ml-auto">
-            <div class="animate-spin rounded-full h-3 w-3 border-2 border-primary-600 border-t-transparent"></div>
+            <div class="spinner spinner-xs"></div>
             Saving...
           </div>
         </div>
@@ -120,7 +110,7 @@
 
       <!-- Saving indicator when no result yet -->
       <div v-else-if="saving" class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-        <div class="animate-spin rounded-full h-3 w-3 border-2 border-primary-600 border-t-transparent"></div>
+        <div class="spinner spinner-xs"></div>
         Saving...
       </div>
 
@@ -129,8 +119,7 @@
         v-if="hasAnySelection"
         @click="clearAllSelections"
         :disabled="saving"
-        class="w-full px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400
-               hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+        class="w-full px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
       >
         Clear all selections
       </button>
@@ -139,13 +128,13 @@
     <!-- Auto Mode -->
     <div v-else>
       <!-- Loading State -->
-      <div v-if="loading" class="flex items-center justify-center py-4">
-        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"></div>
+      <div v-if="initialLoading" class="flex items-center justify-center py-4">
+        <div class="spinner spinner-sm"></div>
         <span class="ml-2 text-sm text-gray-500 dark:text-gray-400">Analyzing chart data...</span>
       </div>
 
       <!-- Error State -->
-      <div v-else-if="error" class="py-3 px-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+      <div v-else-if="error" class="callout-warning">
         <div class="flex items-start">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-500 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -166,14 +155,14 @@
       <div v-else-if="!analysis && !trade.manual_target_hit_first" class="text-center py-4">
         <button
           @click="runAnalysis"
-          class="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+          class="btn-link"
         >
           Analyze with API
         </button>
-        <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
           Requires Alpha Vantage API access
         </p>
-        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
           Or switch to "Manual" mode to set manually
         </p>
       </div>
@@ -186,7 +175,7 @@
           </span>
           <span class="text-xs text-gray-500 dark:text-gray-400">(Manual)</span>
         </div>
-        <p class="text-xs text-gray-400 dark:text-gray-500">
+        <p class="text-xs text-gray-500 dark:text-gray-400">
           Manual value set. Switch to "Manual" mode to change.
         </p>
       </div>
@@ -232,7 +221,7 @@
               <span class="text-sm text-gray-700 dark:text-gray-300">{{ tp.label }} ({{ currencySymbol }}{{ formatPrice(tp.price) }})</span>
             </div>
             <div class="text-right">
-              <span v-if="tp.was_crossed" class="text-xs text-green-600 dark:text-green-400">
+              <span v-if="tp.was_crossed" class="text-xs text-green-700 dark:text-green-400">
                 Reached
               </span>
               <span v-else class="text-xs text-gray-400 dark:text-gray-500">
@@ -246,7 +235,7 @@
         <div
           v-if="analysis.analysis_result?.conclusion &&
                 !analysis.analysis_result.conclusion.includes('Neither stop loss nor take profit')"
-          class="p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg"
+          class="callout-info"
         >
           <p class="text-sm text-primary-800 dark:text-primary-200">
             {{ analysis.analysis_result.conclusion }}
@@ -268,6 +257,8 @@ import { ref, computed, onMounted, watch } from 'vue'
 import api from '@/services/api'
 import { useUserTimezone } from '@/composables/useUserTimezone'
 import { useCurrencyFormatter } from '@/composables/useCurrencyFormatter'
+import { formatDecimal } from '@/utils/formatters'
+import { formatR } from '@/utils/rFormat'
 
 const { formatTime: formatTimeTz } = useUserTimezone()
 const { currencySymbol } = useCurrencyFormatter()
@@ -286,6 +277,7 @@ const props = defineProps({
 const emit = defineEmits(['updated'])
 
 const loading = ref(false)
+const initialLoading = ref(true)
 const saving = ref(false)
 const error = ref('')
 const dataUnavailable = ref(false)
@@ -584,11 +576,12 @@ async function runAnalysis() {
     }
   } finally {
     loading.value = false
+    initialLoading.value = false
   }
 }
 
 function formatPrice(value) {
   if (!value) return '-'
-  return parseFloat(value).toFixed(2)
+  return formatDecimal(value)
 }
 </script>

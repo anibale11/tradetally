@@ -1,7 +1,7 @@
 <template>
-  <div class="mt-6 bg-white dark:bg-gray-800 shadow-sm rounded-lg">
+  <div class="card mt-6">
     <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-      <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+      <h3 class="heading-card">
         Set Risk Levels for {{ trade.symbol }}
       </h3>
       <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -29,7 +29,7 @@
           <div
             :class="[
               'text-lg font-medium capitalize',
-              trade.side === 'long' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+              trade.side === 'long' ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'
             ]"
           >
             {{ trade.side }}
@@ -40,7 +40,7 @@
           <div
             :class="[
               'text-lg font-medium',
-              parseFloat(trade.pnl) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+              pnlClass(parseFloat(trade.pnl))
             ]"
           >
             {{ formatCurrency(trade.pnl) }}
@@ -54,7 +54,7 @@
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Stop Loss Price
-            <span class="text-red-500">*</span>
+            <span class="text-red-600 dark:text-red-400">*</span>
           </label>
           <div class="relative">
             <span class="absolute left-3 top-2 text-gray-500 dark:text-gray-400">{{ currencySymbol }}</span>
@@ -64,7 +64,7 @@
               step="0.01"
               required
               :placeholder="stopLossPlaceholder"
-              class="w-full pl-7 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+              class="input pl-7"
             />
           </div>
           <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
@@ -78,27 +78,17 @@
         <!-- Take Profit Mode Toggle -->
         <div class="flex items-center space-x-4 mb-2">
           <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Take Profit Mode:</span>
-          <button
+          <button class="btn-link"
             type="button"
             @click="useMultipleTargets = false"
-            :class="[
-              'px-3 py-1 text-sm rounded',
-              !useMultipleTargets
-                ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400'
-                : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
-            ]"
+            :class="[ 'px-3 py-1 text-sm rounded', !useMultipleTargets ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400' ]"
           >
             Single
           </button>
-          <button
+          <button class="btn-link"
             type="button"
             @click="useMultipleTargets = true"
-            :class="[
-              'px-3 py-1 text-sm rounded',
-              useMultipleTargets
-                ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400'
-                : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
-            ]"
+            :class="[ 'px-3 py-1 text-sm rounded', useMultipleTargets ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400' ]"
           >
             Multiple Targets
           </button>
@@ -117,7 +107,7 @@
               type="number"
               step="0.01"
               :placeholder="takeProfitPlaceholder"
-              class="w-full pl-7 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+              class="input pl-7"
             />
           </div>
           <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
@@ -147,7 +137,7 @@
             Setting this enables Management R calculation to measure trade execution quality.
           </p>
           <div class="flex space-x-3">
-            <button
+            <button class="btn-link"
               type="button"
               @click="targetHitFirst = targetHitFirst === 'take_profit' ? '' : 'take_profit'"
               :class="[
@@ -159,47 +149,14 @@
             >
               TP Hit First
             </button>
-            <button
+            <button class="btn-link"
               type="button"
               @click="targetHitFirst = targetHitFirst === 'stop_loss' ? '' : 'stop_loss'"
               :class="[
                 'flex-1 px-4 py-2 text-sm font-medium rounded-lg border-2 transition-colors',
                 targetHitFirst === 'stop_loss'
                   ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 dark:border-red-600'
-                  : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500'
-              ]"
-            >
-              SL Hit First
-            </button>
-          </div>
-        </div>
-
-        <!-- Quick Set Buttons -->
-        <div class="pt-2">
-          <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Quick set stop loss:</p>
-          <div class="flex flex-wrap gap-2">
-            <button
-              v-for="pct in [1, 2, 3, 5]"
-              :key="pct"
-              type="button"
-              @click="setStopLossPercent(pct)"
-              class="px-3 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
-            >
-              {{ pct }}% risk
-            </button>
-          </div>
-        </div>
-
-        <!-- API Error -->
-        <div v-if="apiError" class="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-          <p class="text-sm text-red-700 dark:text-red-300">{{ apiError }}</p>
-        </div>
-
-        <!-- Actions -->
-        <div class="flex justify-end space-x-4 pt-4">
-          <button
-            type="button"
-            @click="$emit('cancel')"
+                  : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500']" > SL Hit First </button> </div> </div> <!-- Quick Set Buttons --> <div class="pt-2"> <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Quick set stop loss:</p> <div class="flex flex-wrap gap-2"> <button v-for="pct in [1, 2, 3, 5]" :key="pct" type="button" @click="setStopLossPercent(pct)" class="btn-secondary btn-sm" > {{ pct }}% risk </button> </div> </div> <!-- API Error --> <div v-if="apiError" class="callout-danger"> <p class="text-sm text-red-600 dark:text-red-300">{{ apiError }}</p> </div> <!-- Actions --> <div class="flex justify-end space-x-4 pt-4"> <button type="button" @click="$emit('cancel')"
             class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
           >
             Cancel
@@ -219,6 +176,8 @@
 </template>
 
 <script setup>
+import { pnlClass } from '@/utils/metricTone'
+import { formatDecimal } from '@/utils/formatters'
 import { ref, computed, watch } from 'vue'
 import api from '@/services/api'
 import { useCurrencyFormatter } from '@/composables/useCurrencyFormatter'
@@ -342,7 +301,7 @@ async function saveLevels() {
 
 function formatPrice(value) {
   if (!value) return '-'
-  return parseFloat(value).toFixed(2)
+  return formatDecimal(value)
 }
 
 // Reset form when trade changes

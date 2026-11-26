@@ -229,6 +229,8 @@ class User {
       averagePositionSize: 'average_position_size',
       tradingGoals: 'trading_goals',
       preferredSectors: 'preferred_sectors',
+      aboutTrading: 'about_trading',
+      aiMemoryNotes: 'ai_memory_notes',
       postExitExcursionWindowMode: 'post_exit_excursion_window_mode',
       postExitExcursionWindowMinutes: 'post_exit_excursion_window_minutes',
       statisticsCalculation: 'statistics_calculation',
@@ -261,13 +263,15 @@ class User {
       if (key !== 'user_id' && key !== 'id') {
         const dbColumn = columnMapping[key] || key;
         // For JSONB columns, ensure proper casting and JSON serialization
-        if (dbColumn === 'analytics_chart_layout' || dbColumn === 'dashboard_layout' || dbColumn === 'ui_preferences' || dbColumn === 'breakeven_tolerance_ticks_by_underlying') {
+        if (dbColumn === 'analytics_chart_layout' || dbColumn === 'dashboard_layout' || dbColumn === 'ui_preferences' || dbColumn === 'ai_memory_notes' || dbColumn === 'breakeven_tolerance_ticks_by_underlying' || dbColumn === 'default_stop_loss_points_by_underlying') {
           fields.push(`${dbColumn} = $${paramCount}::jsonb`);
           // PostgreSQL JSONB requires JSON string, not JavaScript object.
           // ui_preferences is NOT NULL DEFAULT '{}', so coerce null/undefined to an empty object.
           const jsonValue = dbColumn === 'ui_preferences'
             ? JSON.stringify(value ?? {})
-            : (value ? JSON.stringify(value) : null);
+            : dbColumn === 'ai_memory_notes'
+              ? JSON.stringify(Array.isArray(value) ? value : [])
+              : (value ? JSON.stringify(value) : null);
           values.push(jsonValue);
         } else {
           fields.push(`${dbColumn} = $${paramCount}`);
@@ -536,6 +540,45 @@ class User {
     const result = await db.query(query, [userId, step]);
     settingsCache.invalidate(userId);
     return result.rows[0];
+  }
+
+  /**
+   * Completed / dismissed new-feature tours for a user, keyed by tour id.
+   * @returns {Promise<Object<string, {status: string, updated_at: string}>>}
+   */
+  static async getFeatureTours(userId) {
+    const result = await db.query(
+      `SELECT tour_id, status, updated_at
+       FROM user_feature_tours
+       WHERE user_id = $1`,
+      [userId]
+    );
+    const tours = {};
+    for (const row of result.rows) {
+      tours[row.tour_id] = { status: row.status, updated_at: row.updated_at };
+    }
+    return tours;
+  }
+
+  static async setFeatureTourStatus(userId, tourId, status, lastStep = null) {
+    const result = await db.query(
+      `INSERT INTO user_feature_tours (user_id, tour_id, status, last_step)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (user_id, tour_id) DO UPDATE
+         SET status = EXCLUDED.status,
+             last_step = EXCLUDED.last_step,
+             updated_at = NOW()
+       RETURNING tour_id, status, updated_at`,
+      [userId, tourId, status, lastStep]
+    );
+    return result.rows[0];
+  }
+
+  static async resetFeatureTour(userId, tourId) {
+    await db.query(
+      'DELETE FROM user_feature_tours WHERE user_id = $1 AND tour_id = $2',
+      [userId, tourId]
+    );
   }
 
   static async getUserCount() {

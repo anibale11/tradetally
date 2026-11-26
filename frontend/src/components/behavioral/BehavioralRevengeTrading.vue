@@ -6,7 +6,7 @@
                     >
                         <div>
                             <h3
-                                class="text-lg font-medium text-gray-900 dark:text-white"
+                                class="heading-card"
                             >
                                 Revenge Trading Detection
                             </h3>
@@ -15,20 +15,20 @@
                             >
                                 <span
                                     v-if="revengeFreshness.calculationVersion"
-                                    class="rounded-full bg-gray-100 px-2 py-1 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                                    class="badge bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
                                 >
                                     Version
                                     {{ revengeFreshness.calculationVersion }}
                                 </span>
                                 <span
                                     v-if="revengeFreshness.latestRunAt"
-                                    class="rounded-full bg-gray-100 px-2 py-1 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                                    class="badge bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
                                 >
                                     Last run
                                     {{ formatDate(revengeFreshness.latestRunAt) }}
                                 </span>
                                 <span
-                                    class="rounded-full px-2 py-1"
+                                    class="badge"
                                     :class="
                                         revengeFreshness.hasStaleResults
                                             ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300'
@@ -79,7 +79,7 @@
                             class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 dark:bg-green-900/20"
                         >
                             <svg
-                                class="h-6 w-6 text-green-600 dark:text-green-400"
+                                class="h-6 w-6 text-green-700 dark:text-green-400"
                                 fill="none"
                                 viewBox="0 0 24 24"
                                 stroke="currentColor"
@@ -93,7 +93,7 @@
                             </svg>
                         </div>
                         <h3
-                            class="mt-2 text-sm font-medium text-gray-900 dark:text-white"
+                            class="heading-sub mt-2"
                         >
                             No Revenge Trading Detected
                         </h3>
@@ -126,7 +126,7 @@
                                 <div class="flex-1">
                                     <div class="flex items-center space-x-2">
                                         <span
-                                            class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
+                                            class="badge"
                                             :class="{
                                                 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400':
                                                     event.outcome_type ===
@@ -150,13 +150,13 @@
                                     <!-- Trigger Trade Information -->
                                     <div
                                         v-if="event.trigger_trade"
-                                        class="mt-3 p-4 bg-red-50 dark:bg-red-900/10 rounded-lg border-l-4 border-red-500"
+                                        class="callout-danger mt-3"
                                     >
                                         <div
                                             class="flex items-center justify-between mb-3"
                                         >
                                             <h4
-                                                class="text-sm font-semibold text-red-800 dark:text-red-400"
+                                                class="heading-sub text-red-800 dark:text-red-400"
                                             >
                                                 <MdiIcon
                                                     :icon="mdiTrendingDown"
@@ -232,12 +232,7 @@
                                                     >Entry:</span
                                                 >
                                                 <span class="ml-1"
-                                                    >${{
-                                                        parseFloat(
-                                                            event.trigger_trade
-                                                                .entry_price,
-                                                        ).toFixed(2)
-                                                    }}</span
+                                                    >{{ price(event.trigger_trade.entry_price) }}</span
                                                 >
                                             </div>
                                             <div>
@@ -246,12 +241,7 @@
                                                     >Exit:</span
                                                 >
                                                 <span class="ml-1"
-                                                    >${{
-                                                        parseFloat(
-                                                            event.trigger_trade
-                                                                .exit_price,
-                                                        ).toFixed(2)
-                                                    }}</span
+                                                    >{{ price(event.trigger_trade.exit_price) }}</span
                                                 >
                                             </div>
                                             <div>
@@ -262,11 +252,7 @@
                                                 <span
                                                     class="ml-1 font-medium text-red-600 dark:text-red-400"
                                                 >
-                                                    ${{
-                                                        getPnLValue(
-                                                            event.trigger_trade,
-                                                        ).toFixed(2)
-                                                    }}
+                                                    {{ moneySigned(getPnLValue(event.trigger_trade)) }}
                                                 </span>
                                             </div>
                                             <div
@@ -298,7 +284,7 @@
                                                 class="flex items-center space-x-2"
                                             >
                                                 <h4
-                                                    class="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center"
+                                                    class="heading-sub flex items-center"
                                                 >
                                                     <MdiIcon
                                                         :icon="mdiLightningBolt"
@@ -341,12 +327,7 @@
                                                 }}</span>
                                                 <svg
                                                     class="w-3 h-3 transition-transform"
-                                                    :class="{
-                                                        'rotate-180':
-                                                            expandedEvents.has(
-                                                                event.id,
-                                                            ),
-                                                    }"
+                                                    :class="{ 'rotate-180': expandedEvents.has( event.id, ), }"
                                                     fill="none"
                                                     stroke="currentColor"
                                                     viewBox="0 0 24 24"
@@ -376,15 +357,8 @@
                                                 :key="
                                                     pattern.pattern_type + index
                                                 "
-                                                class="p-3 rounded-lg border-l-4 cursor-pointer transition-colors"
-                                                :class="{
-                                                    'bg-orange-50 dark:bg-orange-900/10 hover:bg-orange-100 dark:hover:bg-orange-900/20 border-orange-400':
-                                                        pattern.pattern_type ===
-                                                        'same_symbol_revenge',
-                                                    'bg-purple-50 dark:bg-purple-900/10 hover:bg-purple-100 dark:hover:bg-purple-900/20 border-purple-400':
-                                                        pattern.pattern_type ===
-                                                        'emotional_reactive_trading',
-                                                }"
+                                                class="p-3 rounded-lg border cursor-pointer transition-colors"
+                                                :class="{ 'bg-yellow-50 dark:bg-yellow-900/10 hover:bg-yellow-100 dark:hover:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800': pattern.pattern_type === 'same_symbol_revenge', 'bg-primary-50 dark:bg-primary-900/10 hover:bg-primary-100 dark:hover:bg-primary-900/20 border-primary-200 dark:border-primary-800': pattern.pattern_type === 'emotional_reactive_trading', }"
                                                 @click="
                                                     $emit('open-trade', pattern.trade_id)
                                                 "
@@ -400,7 +374,7 @@
                                                                 pattern.pattern_type ===
                                                                 'same_symbol_revenge'
                                                             "
-                                                            class="text-sm font-medium text-orange-800 dark:text-orange-400 flex items-center"
+                                                            class="text-sm font-medium text-yellow-800 dark:text-yellow-400 flex items-center"
                                                         >
                                                             <MdiIcon
                                                                 :icon="
@@ -413,7 +387,7 @@
                                                         </span>
                                                         <span
                                                             v-else
-                                                            class="text-sm font-medium text-purple-800 dark:text-purple-400 flex items-center"
+                                                            class="text-sm font-medium text-primary-800 dark:text-primary-400 flex items-center"
                                                         >
                                                             <MdiIcon
                                                                 :icon="
@@ -425,7 +399,7 @@
                                                             Emotional Spillover
                                                         </span>
                                                         <span
-                                                            class="px-2 py-0.5 text-xs rounded"
+                                                            class="badge"
                                                             :class="{
                                                                 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400':
                                                                     pattern.severity ===
@@ -433,7 +407,7 @@
                                                                 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400':
                                                                     pattern.severity ===
                                                                     'medium',
-                                                                'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400':
+                                                                'bg-primary-100 text-primary-700 dark:bg-primary-900/20 dark:text-primary-400':
                                                                     pattern.severity ===
                                                                     'low',
                                                             }"
@@ -445,7 +419,7 @@
                                                         </span>
                                                     </div>
                                                     <button
-                                                        class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                                                        class="btn-secondary btn-sm"
                                                     >
                                                         View Trade
                                                     </button>
@@ -515,9 +489,7 @@
                                                             class="text-gray-600 dark:text-gray-400"
                                                             >Quantity:</span
                                                         >
-                                                        <span class="ml-1">{{
-                                                            pattern.quantity
-                                                        }}</span>
+                                                        <span class="ml-1">{{ formatQuantity(pattern.quantity) }}</span>
                                                     </div>
                                                     <div>
                                                         <span
@@ -542,11 +514,7 @@
                                                             >Entry:</span
                                                         >
                                                         <span class="ml-1"
-                                                            >${{
-                                                                parseFloat(
-                                                                    pattern.entry_price,
-                                                                ).toFixed(2)
-                                                            }}</span
+                                                            >{{ price(pattern.entry_price) }}</span
                                                         >
                                                     </div>
                                                     <div>
@@ -555,11 +523,7 @@
                                                             >Exit:</span
                                                         >
                                                         <span class="ml-1"
-                                                            >${{
-                                                                parseFloat(
-                                                                    pattern.exit_price,
-                                                                ).toFixed(2)
-                                                            }}</span
+                                                            >{{ price(pattern.exit_price) }}</span
                                                         >
                                                     </div>
                                                     <div>
@@ -569,11 +533,7 @@
                                                         >
                                                         <span
                                                             class="ml-1 font-medium"
-                                                            >${{
-                                                                parseFloat(
-                                                                    pattern.total_cost,
-                                                                ).toLocaleString()
-                                                            }}</span
+                                                            >{{ money(pattern.total_cost) }}</span
                                                         >
                                                     </div>
                                                     <div>
@@ -582,12 +542,7 @@
                                                             >Fees:</span
                                                         >
                                                         <span class="ml-1"
-                                                            >${{
-                                                                parseFloat(
-                                                                    pattern.total_fees ||
-                                                                        0,
-                                                                ).toFixed(2)
-                                                            }}</span
+                                                            >{{ money(pattern.total_fees || 0) }}</span
                                                         >
                                                     </div>
                                                 </div>
@@ -604,7 +559,7 @@
                                                         <span
                                                             class="ml-1 font-medium"
                                                             :class="{
-                                                                'text-green-600 dark:text-green-400':
+                                                                'text-green-700 dark:text-green-400':
                                                                     parseFloat(
                                                                         pattern.gross_pnl,
                                                                     ) > 0,
@@ -618,11 +573,7 @@
                                                                     ) === 0,
                                                             }"
                                                         >
-                                                            ${{
-                                                                parseFloat(
-                                                                    pattern.gross_pnl,
-                                                                ).toFixed(2)
-                                                            }}
+                                                            {{ moneySigned(pattern.gross_pnl) }}
                                                         </span>
                                                     </div>
                                                     <div>
@@ -633,7 +584,7 @@
                                                         <span
                                                             class="ml-1 font-medium"
                                                             :class="{
-                                                                'text-green-600 dark:text-green-400':
+                                                                'text-green-700 dark:text-green-400':
                                                                     parseFloat(
                                                                         pattern.pnl,
                                                                     ) > 0,
@@ -647,11 +598,7 @@
                                                                     ) === 0,
                                                             }"
                                                         >
-                                                            ${{
-                                                                parseFloat(
-                                                                    pattern.pnl,
-                                                                ).toFixed(2)
-                                                            }}
+                                                            {{ moneySigned(pattern.pnl) }}
                                                         </span>
                                                     </div>
                                                     <div>
@@ -662,7 +609,7 @@
                                                         <span
                                                             class="ml-1 font-medium"
                                                             :class="{
-                                                                'text-green-600 dark:text-green-400':
+                                                                'text-green-700 dark:text-green-400':
                                                                     parseFloat(
                                                                         pattern.return_percent,
                                                                     ) > 0,
@@ -677,10 +624,10 @@
                                                             }"
                                                         >
                                                             {{
-                                                                parseFloat(
+                                                                formatPercent(
                                                                     pattern.return_percent,
-                                                                ).toFixed(2)
-                                                            }}%
+                                                                )
+                                                            }}
                                                         </span>
                                                         <span
                                                             v-if="
@@ -699,14 +646,7 @@
 
                                                 <div
                                                     class="text-xs"
-                                                    :class="{
-                                                        'text-orange-600 dark:text-orange-400':
-                                                            pattern.pattern_type ===
-                                                            'same_symbol_revenge',
-                                                        'text-purple-600 dark:text-purple-400':
-                                                            pattern.pattern_type ===
-                                                            'emotional_reactive_trading',
-                                                    }"
+                                                    :class="{ 'text-yellow-600 dark:text-yellow-400': pattern.pattern_type === 'same_symbol_revenge', 'text-primary-700 dark:text-primary-400': pattern.pattern_type === 'emotional_reactive_trading', }"
                                                 >
                                                     <span
                                                         v-if="
@@ -746,7 +686,7 @@
                                                         v-if="
                                                             pattern.cross_symbol_qualifier
                                                         "
-                                                        class="mt-1 inline-flex rounded bg-primary-50 px-2 py-0.5 text-[11px] font-medium text-primary-700 dark:bg-primary-900/20 dark:text-primary-300"
+                                                        class="badge mt-1 bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300"
                                                     >
                                                         Qualified by
                                                         {{
@@ -763,15 +703,7 @@
                                     <!-- Outcome Summary -->
                                     <div
                                         class="mt-4 p-3 rounded-lg border-t border-gray-200 dark:border-gray-600 pt-4"
-                                        :class="{
-                                            'bg-red-50 dark:bg-red-900/10':
-                                                event.outcome_type === 'loss',
-                                            'bg-green-50 dark:bg-green-900/10':
-                                                event.outcome_type === 'profit',
-                                            'bg-gray-50 dark:bg-gray-900/10':
-                                                event.outcome_type ===
-                                                'neutral',
-                                        }"
+                                        :class="{ 'bg-red-50 dark:bg-red-900/10': event.outcome_type === 'loss', 'bg-green-50 dark:bg-green-900/10': event.outcome_type === 'profit', 'bg-gray-50 dark:bg-gray-900/10': event.outcome_type === 'neutral', }"
                                     >
                                         <div
                                             class="flex items-center justify-between mb-2"
@@ -787,7 +719,7 @@
                                                 Revenge Trading Outcome
                                             </h5>
                                             <span
-                                                class="inline-flex px-3 py-1 text-sm font-semibold rounded-full"
+                                                class="badge"
                                                 :class="{
                                                     'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400':
                                                         event.outcome_type ===
@@ -895,7 +827,7 @@
                                                             parseFloat(
                                                                 event.total_additional_loss,
                                                             ) > 0,
-                                                        'text-green-600 dark:text-green-400':
+                                                        'text-green-700 dark:text-green-400':
                                                             parseFloat(
                                                                 event.total_additional_loss,
                                                             ) < 0,
@@ -912,21 +844,10 @@
                                                             ) < 0
                                                         "
                                                     >
-                                                        ${{
-                                                            Math.abs(
-                                                                parseFloat(
-                                                                    event.total_additional_loss,
-                                                                ),
-                                                            ).toFixed(2)
-                                                        }}
+                                                        {{ money(Math.abs(Number(event.total_additional_loss))) }}
                                                     </span>
                                                     <span v-else>
-                                                        ${{
-                                                            parseFloat(
-                                                                event.total_additional_loss ||
-                                                                    0,
-                                                            ).toFixed(2)
-                                                        }}
+                                                        {{ money(event.total_additional_loss || 0) }}
                                                     </span>
                                                 </span>
                                             </div>
@@ -973,13 +894,7 @@
                                                 <span
                                                     >The revenge trading made
                                                     the situation worse by
-                                                    adding ${{
-                                                        Math.abs(
-                                                            parseFloat(
-                                                                event.total_additional_loss,
-                                                            ),
-                                                        ).toFixed(2)
-                                                    }}
+                                                    adding {{ money(Math.abs(Number(event.total_additional_loss))) }}
                                                     in additional losses</span
                                                 >
                                             </span>
@@ -998,13 +913,7 @@
                                                 <span
                                                     >The revenge trading
                                                     actually worked this time,
-                                                    recovering ${{
-                                                        Math.abs(
-                                                            parseFloat(
-                                                                event.total_additional_loss,
-                                                            ),
-                                                        ).toFixed(2)
-                                                    }}</span
+                                                    recovering {{ money(Math.abs(Number(event.total_additional_loss))) }}</span
                                                 >
                                             </span>
                                             <span
@@ -1037,14 +946,14 @@
                                 <button
                                     @click="$emit('prev-page')"
                                     :disabled="!pagination.hasPreviousPage"
-                                    class="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700"
+                                    class="btn-secondary relative"
                                 >
                                     Previous
                                 </button>
                                 <button
                                     @click="$emit('next-page')"
                                     :disabled="!pagination.hasNextPage"
-                                    class="relative ml-3 inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700"
+                                    class="btn-secondary relative ml-3"
                                 >
                                     Next
                                 </button>
@@ -1115,11 +1024,7 @@
                                         >
                                             <button
                                                 @click="$emit('go-to-page', page)"
-                                                :class="[
-                                                    page === pagination.page
-                                                        ? 'relative z-10 inline-flex items-center bg-primary-600 px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600'
-                                                        : 'relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 dark:text-gray-300 dark:ring-gray-600 dark:hover:bg-gray-700',
-                                                ]"
+                                                :class="[ page === pagination.page ? 'relative z-10 inline-flex items-center bg-primary-700 px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600' : 'relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 dark:text-gray-300 dark:ring-gray-600 dark:hover:bg-gray-700', ]"
                                             >
                                                 {{ page }}
                                             </button>
@@ -1157,6 +1062,8 @@
 import { ref, computed } from "vue";
 import MdiIcon from "@/components/MdiIcon.vue";
 import { useUserTimezone } from "@/composables/useUserTimezone";
+import { useCurrencyFormatter } from "@/composables/useCurrencyFormatter";
+import { formatPercent } from "@/utils/formatters";
 import {
     formatDate,
     getTimeBetweenTrades,
@@ -1184,6 +1091,13 @@ const props = defineProps({
 defineEmits(["rerun", "open-trade", "prev-page", "next-page", "go-to-page"]);
 
 const { formatTime: formatTimeTz } = useUserTimezone();
+const { formatCurrency: _fmtCurrency, formatSignedCurrency: _fmtSigned } = useCurrencyFormatter();
+// Money follows the user's display currency (the API converts it). Quote
+// prices stay in the instrument's currency, as they do in trade views.
+const money = (v, o = {}) => _fmtCurrency(Number(v) || 0, o);
+const price = (v, o = {}) => _fmtCurrency(Number(v) || 0, { currency: "USD", ...o });
+const moneySigned = (v, o = {}) => _fmtSigned(Number(v) || 0, o);
+const formatQuantity = (q) => Number(q).toLocaleString("en-US", { maximumFractionDigits: 4 });
 const formatTime = (dateString) => formatTimeTz(dateString);
 
 // Track which revenge trade events are expanded (local UI state)

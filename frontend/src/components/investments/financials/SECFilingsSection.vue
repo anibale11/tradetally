@@ -4,7 +4,7 @@
     <div class="mb-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h4 class="text-sm font-medium text-gray-900 dark:text-white">SEC EDGAR Filings</h4>
+          <h4 class="heading-sub">SEC EDGAR Filings</h4>
           <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
             View official SEC filings for {{ symbol }}
           </p>
@@ -15,7 +15,7 @@
             :href="secEdgar10KUrl"
             target="_blank"
             rel="noopener noreferrer"
-            class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
+            class="btn-primary"
           >
             View 10-K Filings
             <svg class="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -27,7 +27,7 @@
             :href="secEdgar10QUrl"
             target="_blank"
             rel="noopener noreferrer"
-            class="inline-flex items-center px-3 py-2 text-sm font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 rounded-md hover:bg-primary-100 dark:hover:bg-primary-900/30"
+            class="inline-flex items-center px-3 py-2 text-sm font-medium text-primary-700 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 rounded-md hover:bg-primary-100 dark:hover:bg-primary-900/30"
           >
             View 10-Q Filings
             <svg class="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -65,12 +65,7 @@
           <div class="flex items-center space-x-4">
             <!-- Form Type Badge -->
             <span
-              :class="[
-                'px-2 py-1 text-xs font-bold rounded',
-                filing.formType === '10-K'
-                  ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
-                  : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
-              ]"
+              :class="[ 'px-2 py-1 text-xs font-bold rounded', filing.formType === '10-K' ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' ]"
             >
               {{ filing.formType }}
             </span>
@@ -95,7 +90,7 @@
               target="_blank"
               rel="noopener noreferrer"
               @click.stop
-              class="text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300"
+              class="text-primary-700 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300"
               title="View on SEC EDGAR"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -131,10 +126,7 @@
             <div>
               <p class="text-xs text-gray-500 dark:text-gray-400">Net Income</p>
               <p
-                :class="[
-                  'text-sm font-medium',
-                  getValueClass(filing.highlights?.netIncome)
-                ]"
+                :class="[ 'text-sm font-medium', getValueClass(filing.highlights?.netIncome) ]"
               >
                 {{ formatLargeNumber(filing.highlights?.netIncome) }}
               </p>
@@ -154,10 +146,7 @@
             <div>
               <p class="text-xs text-gray-500 dark:text-gray-400">Operating Cash Flow</p>
               <p
-                :class="[
-                  'text-sm font-medium',
-                  getValueClass(filing.highlights?.operatingCashFlow)
-                ]"
+                :class="[ 'text-sm font-medium', getValueClass(filing.highlights?.operatingCashFlow) ]"
               >
                 {{ formatLargeNumber(filing.highlights?.operatingCashFlow) }}
               </p>
@@ -170,7 +159,7 @@
               :href="filing.secEdgarUrl"
               target="_blank"
               rel="noopener noreferrer"
-              class="text-sm text-primary-600 dark:text-primary-400 hover:underline inline-flex items-center"
+              class="text-sm text-primary-700 dark:text-primary-400 hover:underline inline-flex items-center"
             >
               View full {{ filing.formType }} filing on SEC EDGAR
               <svg class="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

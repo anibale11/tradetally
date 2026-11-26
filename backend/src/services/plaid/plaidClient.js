@@ -119,6 +119,14 @@ class PlaidClient {
         body.transactions = {
           days_requested: 730
         };
+        // Liabilities (credit cards, mortgages, student loans) feed the
+        // retirement affordability check. Opt-in: the Plaid client must be
+        // enabled for the product or /link/token/create rejects the request,
+        // and most self-hosted installs never use it. Optional so Link still
+        // succeeds at institutions that do not support the product.
+        if (process.env.PLAID_ENABLE_LIABILITIES === 'true') {
+          body.optional_products = ['liabilities'];
+        }
       }
     }
 
@@ -140,6 +148,16 @@ class PlaidClient {
   async exchangePublicToken(publicToken) {
     return this.post('/item/public_token/exchange', {
       public_token: publicToken
+    });
+  }
+
+  /**
+   * Permanently remove an Item at Plaid. Stops per-Item billing for every
+   * product attached to it; the access token is invalid afterwards.
+   */
+  async removeItem(accessToken) {
+    return this.post('/item/remove', {
+      access_token: accessToken
     });
   }
 
@@ -165,6 +183,12 @@ class PlaidClient {
   async getWebhookVerificationKey(keyId) {
     return this.post('/webhook_verification_key/get', {
       key_id: keyId
+    });
+  }
+
+  async getLiabilities(accessToken) {
+    return this.post('/liabilities/get', {
+      access_token: accessToken
     });
   }
 

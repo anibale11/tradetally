@@ -1,23 +1,18 @@
 <template>
     <div v-if="charts && charts.length > 0" class="space-y-4">
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white">
-            TradingView Charts
+        <h3 class="heading-card">
+            Chart Links
         </h3>
 
         <!-- Charts display - responsive grid -->
         <div
-            :class="[
-                'grid gap-6',
-                charts.length === 1
-                    ? 'grid-cols-1 max-w-4xl mx-auto'
-                    : 'grid-cols-1 md:grid-cols-2',
-            ]"
+            :class="[ 'grid gap-6', charts.length === 1 ? 'grid-cols-1 max-w-4xl mx-auto' : 'grid-cols-1 md:grid-cols-2', ]"
         >
             <div v-for="chart in charts" :key="chart.id" class="relative group">
                 <!-- Chart title if provided -->
                 <h4
                     v-if="chart.chartTitle || chart.chart_title"
-                    class="text-md font-medium text-gray-800 dark:text-gray-200 mb-2"
+                    class="heading-card mb-2"
                 >
                     {{ chart.chartTitle || chart.chart_title }}
                 </h4>
@@ -36,13 +31,13 @@
                             <img
                                 v-if="
                                     hasResolvedImage(chart) &&
-                                    !chart._imageError
+                                    !hasImageError(chart)
                                 "
                                 :src="getResolvedImageUrl(chart)"
                                 :alt="
                                     chart.chartTitle ||
                                     chart.chart_title ||
-                                    'TradingView Chart'
+                                    'Chart'
                                 "
                                 class="w-full h-auto cursor-pointer hover:opacity-95 transition-opacity duration-200"
                                 @error="(e) => handleChartImageError(e, chart)"
@@ -52,26 +47,34 @@
                             <div
                                 v-else-if="
                                     getDirectImageUrl(chart) &&
-                                    !chart._imageError &&
+                                    !hasImageError(chart) &&
                                     !authedImage.hasError(chart)
                                 "
                                 class="w-full aspect-video flex items-center justify-center bg-gray-100 dark:bg-gray-700"
                             >
-                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                                <div class="spinner spinner-md"></div>
                             </div>
                             <!-- If image fails, show nice preview card -->
                             <div
                                 v-else
-                                class="w-full p-12 flex flex-col items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 dark:from-gray-800 dark:to-gray-700 rounded-lg border-2 border-primary-200 dark:border-gray-600 hover:border-primary-400 dark:hover:border-gray-500 transition-colors cursor-pointer"
+                                class="w-full p-12 flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900/40 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 hover:border-primary-400 dark:hover:border-primary-500 transition-colors cursor-pointer"
                                 @click.prevent="openInNewTab(chart)"
                             >
                                 <svg
-                                    class="h-16 w-16 mb-4 text-primary-600 dark:text-primary-400"
+                                    class="h-16 w-16 mb-4 text-primary-700 dark:text-primary-400"
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"
                                 >
                                     <path
+                                        v-if="isVideoLink(chart)"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M8 5v14l11-7L8 5z"
+                                    />
+                                    <path
+                                        v-else
                                         stroke-linecap="round"
                                         stroke-linejoin="round"
                                         stroke-width="2"
@@ -81,17 +84,17 @@
                                 <p
                                     class="text-lg font-medium text-gray-900 dark:text-white mb-2"
                                 >
-                                    TradingView Chart
+                                    {{ isVideoLink(chart) ? 'YouTube Video' : 'Chart Preview Unavailable' }}
                                 </p>
                                 <p
                                     class="text-sm text-gray-600 dark:text-gray-300 mb-4 text-center max-w-md"
                                 >
-                                    Click to view this chart on TradingView
+                                    {{ isVideoLink(chart) ? 'Open this video on YouTube' : 'Open this chart in a new tab' }}
                                 </p>
                                 <div
-                                    class="flex items-center space-x-2 text-primary-600 dark:text-primary-400 font-medium"
+                                    class="flex items-center space-x-2 text-primary-700 dark:text-primary-400 font-medium"
                                 >
-                                    <span>Open Chart</span>
+                                    <span>{{ isVideoLink(chart) ? 'Watch Video' : 'Open Chart' }}</span>
                                     <svg
                                         class="h-4 w-4"
                                         fill="none"
@@ -131,13 +134,13 @@
                             :href="chart.chartUrl || chart.chart_url"
                             target="_blank"
                             rel="noopener noreferrer"
-                            class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 text-sm truncate"
+                            class="text-primary-700 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 text-sm truncate"
                         >
                             {{ chart.chartUrl || chart.chart_url }}
                         </a>
                         <button
                             @click="copyChartUrl(chart)"
-                            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 flex-shrink-0"
+                            class="btn-ghost btn-sm flex-shrink-0"
                             title="Copy link"
                         >
                             <svg
@@ -182,7 +185,7 @@
         <!-- Chart modal -->
         <div
             v-if="selectedChart"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4"
+            class="modal-overlay flex items-center justify-center p-4"
             @click="closeChart"
         >
             <div class="relative max-w-6xl w-full" @click.stop>
@@ -190,13 +193,13 @@
                 <img
                     v-if="
                         hasResolvedImage(selectedChart) &&
-                        !selectedChart._imageError
+                        !hasImageError(selectedChart)
                     "
                     :src="getResolvedImageUrl(selectedChart)"
                     :alt="
                         selectedChart.chartTitle ||
                         selectedChart.chart_title ||
-                        'TradingView Chart'
+                        'Chart'
                     "
                     class="max-w-full max-h-[90vh] object-contain mx-auto rounded"
                 />
@@ -206,7 +209,7 @@
                     class="bg-white dark:bg-gray-800 rounded-lg p-12 text-center max-w-2xl mx-auto"
                 >
                     <svg
-                        class="h-24 w-24 mx-auto mb-6 text-blue-500 dark:text-blue-400"
+                        class="h-24 w-24 mx-auto mb-6 text-primary-700 dark:text-primary-400"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -219,23 +222,22 @@
                         />
                     </svg>
                     <h3
-                        class="text-2xl font-bold text-gray-900 dark:text-white mb-4"
+                        class="heading-section mb-4"
                     >
                         {{
                             selectedChart.chartTitle ||
                             selectedChart.chart_title ||
-                            "TradingView Chart"
+                            "Chart"
                         }}
                     </h3>
                     <p class="text-gray-600 dark:text-gray-300 mb-8">
-                        This chart cannot be displayed inline due to
-                        TradingView's security settings.
+                        A preview is unavailable for this link. Open the chart in a new tab to view it.
                     </p>
                     <button
                         @click="openInNewTab(selectedChart)"
-                        class="inline-flex items-center space-x-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors"
+                        class="btn-primary space-x-2"
                     >
-                        <span>Open Chart on TradingView</span>
+                        <span>Open Chart</span>
                         <svg
                             class="h-5 w-5"
                             fill="none"
@@ -275,7 +277,7 @@
                 <div
                     v-if="
                         hasResolvedImage(selectedChart) &&
-                        !selectedChart._imageError
+                        !hasImageError(selectedChart)
                     "
                     class="absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-4 py-2 rounded"
                 >
@@ -299,7 +301,7 @@
                         rel="noopener noreferrer"
                         class="text-xs opacity-75 hover:opacity-100 underline"
                     >
-                        View on TradingView
+                        Open Chart
                     </a>
                 </div>
             </div>
@@ -312,10 +314,10 @@
             @click="cancelDelete"
         >
             <div
-                class="flex min-h-screen items-end justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0"
+                class="flex min-h-screen items-end justify-center px-4 pt-4 pb-20 text-center "
             >
                 <div
-                    class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+                    class="modal-backdrop"
                 ></div>
 
                 <span
@@ -324,8 +326,8 @@
                     >&#8203;</span
                 >
 
-                <div
-                    class="relative inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6"
+                <div role="dialog" aria-modal="true"
+                    class="modal-panel w-full p-6 max-w-lg"
                     @click.stop
                 >
                     <div class="sm:flex sm:items-start">
@@ -350,7 +352,7 @@
                             class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left"
                         >
                             <h3
-                                class="text-lg leading-6 font-medium text-gray-900 dark:text-white"
+                                class="heading-card leading-6"
                             >
                                 Delete Chart
                             </h3>
@@ -368,14 +370,14 @@
                         <button
                             type="button"
                             @click="confirmDelete"
-                            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
+                            class="btn-danger w-full justify-center sm:ml-3 sm:w-auto sm:text-sm"
                         >
                             Delete
                         </button>
                         <button
                             type="button"
                             @click="cancelDelete"
-                            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-700 text-base font-medium text-gray-700 dark:text-gray-300 hover:text-gray-500 dark:hover:text-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:w-auto sm:text-sm"
+                            class="btn-secondary mt-3 w-full sm:mt-0 sm:w-auto"
                         >
                             Cancel
                         </button>
@@ -391,6 +393,7 @@ import { ref, toRef } from "vue";
 import { useNotification } from "@/composables/useNotification";
 import { useAuthedImage } from "@/composables/useAuthedImage";
 import api from "@/services/api";
+import { isYouTubeLink } from "@/utils/chartLinks";
 
 const props = defineProps({
     tradeId: {
@@ -429,29 +432,30 @@ function getTradingViewSnapshotProxyUrl(snapshotId) {
     return `${apiBasePath}/trades/tradingview/snapshot/${snapshotId}`;
 }
 
-function isTradingViewUrl(chart) {
-    const chartUrl = chart.chartUrl || chart.chart_url;
-    return chartUrl && chartUrl.match(/tradingview\.com\/x\/([a-zA-Z0-9]+)/i);
+function isVideoLink(chart) {
+    return isYouTubeLink(chart.chart_url ?? chart.chartUrl);
 }
 
 function getDirectImageUrl(chart) {
-    const chartUrl = chart.chartUrl || chart.chart_url;
-    if (!chartUrl) return null;
+    if (isVideoLink(chart)) return null;
+    const chart_url = chart.chart_url ?? chart.chartUrl;
+    let url;
+    try {
+        url = new URL(chart_url);
+    } catch {
+        return null;
+    }
+    if (!["http:", "https:"].includes(url.protocol)) return null;
 
-    // Try S3 image URL for TradingView
-    const snapshotMatch = chartUrl.match(
-        /tradingview\.com\/x\/([a-zA-Z0-9]+)/i,
-    );
-    if (snapshotMatch) {
-        return getTradingViewSnapshotProxyUrl(snapshotMatch[1]);
+    // TradingView snapshots still need the authenticated image proxy.
+    const snapshot_match = url.pathname.match(/^\/x\/([a-zA-Z0-9]+)\/?$/i);
+    if (/(^|\.)tradingview\.com$/i.test(url.hostname) && snapshot_match) {
+        return getTradingViewSnapshotProxyUrl(snapshot_match[1]);
     }
 
-    // Check if it's already an image URL
-    if (chartUrl.match(/\.(png|jpg|jpeg|gif|webp)(\?.*)?$/i)) {
-        return chartUrl;
-    }
-
-    return null;
+    // Image hosts can serve images without a filename extension. Let the
+    // browser load the URL as an image and show the link fallback on error.
+    return chart_url;
 }
 
 // Fetch /api/-served chart images via axios (sends Authorization header) and
@@ -471,22 +475,6 @@ function hasResolvedImage(chart) {
     return !!authedImage.urlFor(chart);
 }
 
-function getTradingViewImageUrl(chart) {
-    // Return the embed URL for iframe
-    const chartUrl = chart.chartUrl || chart.chart_url;
-    if (!chartUrl) return null;
-
-    // Return TradingView page URL for iframe embedding
-    const snapshotMatch = chartUrl.match(
-        /tradingview\.com\/x\/([a-zA-Z0-9]+)/i,
-    );
-    if (snapshotMatch) {
-        return `https://www.tradingview.com/x/${snapshotMatch[1]}/`;
-    }
-
-    return chartUrl;
-}
-
 function openChart(chart) {
     selectedChart.value = chart;
 }
@@ -502,9 +490,14 @@ function openInNewTab(chart) {
     }
 }
 
+const failed_image_urls = ref(new Set());
+
+function hasImageError(chart) {
+    return failed_image_urls.value.has(getDirectImageUrl(chart));
+}
+
 function handleChartImageError(event, chart) {
-    // Set error flag on the chart object to show placeholder
-    chart._imageError = true;
+    failed_image_urls.value.add(getDirectImageUrl(chart));
 }
 
 async function copyChartUrl(chart) {

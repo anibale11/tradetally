@@ -8,7 +8,7 @@
       <button
         @click="handleAddToWatchlist"
         :disabled="addingToWatchlist"
-        class="p-0.5 rounded hover:bg-primary-200 dark:hover:bg-primary-700 transition-colors disabled:opacity-50"
+        class="btn-icon p-0.5"
         title="Add to main watchlist"
       >
         <PlusCircleIcon class="w-3.5 h-3.5" />
@@ -17,7 +17,7 @@
       <!-- Create Price Alert Button -->
       <button
         @click="handleCreateAlert"
-        class="p-0.5 rounded hover:bg-primary-200 dark:hover:bg-primary-700 transition-colors"
+        class="btn-icon p-0.5"
         title="Create price alert"
       >
         <BellAlertIcon class="w-3.5 h-3.5" />
@@ -29,11 +29,11 @@
   <Teleport to="body">
     <div
       v-if="showAlertModal"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      class="modal-overlay flex items-center justify-center p-4"
       @click.self="showAlertModal = false"
     >
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      <div role="dialog" aria-modal="true" class="modal-panel max-w-md w-full p-6">
+        <h3 class="modal-title mb-4">
           Create Price Alert for {{ symbol }}
         </h3>
 
@@ -47,73 +47,7 @@
               v-model="alertForm.alertType"
               :options="[
                 { value: 'above', label: 'Above' },
-                { value: 'below', label: 'Below' }
-              ]"
-            />
-          </div>
-
-          <!-- Target Price -->
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Target Price
-            </label>
-            <input
-              v-model.number="alertForm.targetPrice"
-              type="number"
-              step="0.01"
-              min="0"
-              class="input"
-              placeholder="0.00"
-              required
-            />
-            <p v-if="currentPrice" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Current price: ${{ currentPrice.toFixed(2) }}
-            </p>
-          </div>
-
-          <!-- Notification Methods -->
-          <div class="mb-4 space-y-2">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Notification Methods
-            </label>
-            <label class="flex items-center">
-              <input
-                v-model="alertForm.emailEnabled"
-                type="checkbox"
-                class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-              />
-              <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Email</span>
-            </label>
-            <label class="flex items-center">
-              <input
-                v-model="alertForm.browserEnabled"
-                type="checkbox"
-                class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-              />
-              <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Browser Push</span>
-            </label>
-          </div>
-
-          <!-- Error Message -->
-          <div v-if="alertError" class="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-            <p class="text-sm text-red-800 dark:text-red-200">{{ alertError }}</p>
-          </div>
-
-          <!-- Actions -->
-          <div class="flex items-center justify-end gap-3">
-            <button
-              type="button"
-              @click="showAlertModal = false"
-              class="btn-secondary"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              :disabled="creatingAlert || (!alertForm.emailEnabled && !alertForm.browserEnabled)"
-              class="btn-primary"
-            >
-              {{ creatingAlert ? 'Creating...' : 'Create Alert' }}
+                { value: 'below', label: 'Below'} ]" /> </div> <!-- Target Price --> <div class="mb-4"> <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"> Target Price </label> <input v-model.number="alertForm.targetPrice" type="number" step="0.01" min="0" class="input" placeholder="0.00" required /> <p v-if="currentPrice" class="text-xs text-gray-500 dark:text-gray-400 mt-1"> Current price: {{ usd(currentPrice) }} </p> </div> <!-- Notification Methods --> <div class="mb-4 space-y-2"> <label class="block text-sm font-medium text-gray-700 dark:text-gray-300"> Notification Methods </label> <label class="flex items-center"> <input v-model="alertForm.emailEnabled" type="checkbox" class="checkbox" /> <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Email</span> </label> <label class="flex items-center"> <input v-model="alertForm.browserEnabled" type="checkbox" class="checkbox" /> <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Browser Push</span> </label> </div> <!-- Error Message --> <div v-if="alertError" class="callout-danger mb-4"> <p class="text-sm text-red-600 dark:text-red-200">{{ alertError }}</p> </div> <!-- Actions --> <div class="flex items-center justify-end gap-3"> <button type="button" @click="showAlertModal = false" class="btn-secondary" > Cancel </button> <button type="submit" :disabled="creatingAlert || (!alertForm.emailEnabled && !alertForm.browserEnabled)" class="btn-primary" > {{ creatingAlert ?'Creating...' : 'Create Alert' }}
             </button>
           </div>
         </form>
@@ -127,6 +61,12 @@ import { ref } from 'vue'
 import { PlusCircleIcon, BellAlertIcon } from '@heroicons/vue/24/outline'
 import api from '@/services/api'
 import BaseSelect from '@/components/common/BaseSelect.vue'
+import { useCurrencyFormatter } from '@/composables/useCurrencyFormatter'
+
+const { formatCurrency: _fmtCurrency, formatSignedCurrency: _fmtSigned } = useCurrencyFormatter()
+// Behavioral, alert and market-data values arrive in USD (not converted to the display currency).
+const usd = (v, o = {}) => _fmtCurrency(Number(v) || 0, { currency: 'USD', ...o })
+const usdSigned = (v, o = {}) => _fmtSigned(Number(v) || 0, { currency: 'USD', ...o })
 
 const props = defineProps({
   symbol: {

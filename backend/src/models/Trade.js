@@ -10,6 +10,8 @@ const { buildTradeDateRangeClause } = require('../utils/tradeDateFilter');
 const OptionStrategyGroupingService = require('../services/optionStrategyGroupingService');
 const { getPublicTradeSqlColumns } = require('../utils/publicTrade');
 const BrokerTradeExclusions = require('../services/brokerTradeExclusions');
+const AppError = require('../utils/AppError');
+const { convertExcursionInputs } = require('../utils/excursionUnits');
 /**
  * Round a numeric value to fit database precision
  * DECIMAL(20, 8) allows up to 12 integer digits and 8 decimal places
@@ -32,6 +34,40 @@ function normalizeUnderlyingSymbol(value) {
   if (value === null || value === undefined) return null;
   const normalized = String(value).trim().toUpperCase();
   return normalized || null;
+}
+
+// OCC option symbol: root (1-6 letters, optionally space padded), YYMMDD,
+// C/P, strike * 1000 as 8 digits. e.g. "AAPL  260117C00200000".
+const OCC_SYMBOL_PATTERN = /^([A-Z]{1,6})\s*(\d{2})(\d{2})(\d{2})([CP])(\d{8})$/i;
+function parseOccSymbol(symbol) {
+  const match = String(symbol || '').trim().toUpperCase().match(OCC_SYMBOL_PATTERN);
+  if (!match) return null;
+  const [, root, yy, mm, dd, type, strike] = match;
+  return {
+    underlyingSymbol: root,
+    expirationDate: `20${yy}-${mm}-${dd}`,
+    optionType: type === 'C' ? 'call' : 'put',
+    strikePrice: Number(strike) / 1000
+  };
+}
+
+// Mirror of the trades.check_options_fields constraint, so a bad option
+// payload is rejected with a 400 instead of a Postgres error (500).
+function missingOptionFields({ strikePrice, expirationDate, optionType, underlyingSymbol }) {
+  const missing = [];
+  if (strikePrice === undefined || strikePrice === null || strikePrice === '') missing.push('strikePrice');
+  if (!expirationDate) missing.push('expirationDate');
+  if (!optionType) missing.push('optionType');
+  if (!underlyingSymbol) missing.push('underlyingSymbol');
+  return missing;
+}
+
+function optionFieldsError(missing) {
+  return new AppError(400, {
+    error: 'Validation Error',
+    message: `Option trades require ${missing.join(', ')}`,
+    missing_fields: missing
+  });
 }
 
 function normalizeInstrumentType(instrumentType, symbol = null) {
@@ -119,7 +155,7 @@ class Trade {
       originalPnlCurrency, original_pnl_currency, originalCommissionCurrency, original_commission_currency,
       originalFeesCurrency, original_fees_currency,
       stopLoss, takeProfit, takeProfitTargets, chartUrl,
-      brokerConnectionId, accountIdentifier, account_identifier,
+      brokerConnectionId, accountIdentifier, account_identifier, broker_trade_id,
       conid, manualTargetHitFirst,
       postExitWindowOverrideMinutes, post_exit_window_override_minutes,
       postExitMae, postExitMfe, post_exit_mae, post_exit_mfe
@@ -155,6 +191,28 @@ class Trade {
         cleanExpirationDate = `20${expMatch[1]}-${expMatch[2]}-${expMatch[3]}`;
         console.log(`[WARNING] Fixed 2-digit year in expirationDate: "${expirationDate}" -> "${cleanExpirationDate}"`);
       }
+    }
+
+    // Options must carry strike/expiration/type/underlying (check_options_fields).
+    // Fill gaps from an OCC-formatted symbol when possible, otherwise reject.
+    let finalStrikePrice = strikePrice;
+    let finalOptionType = optionType || null;
+    let finalUnderlyingSymbol = underlyingSymbol;
+    if (String(instrumentType || '').trim().toLowerCase() === 'option') {
+      const occ = parseOccSymbol(symbol);
+      if (occ) {
+        if (finalStrikePrice === undefined || finalStrikePrice === null || finalStrikePrice === '') finalStrikePrice = occ.strikePrice;
+        if (!cleanExpirationDate) cleanExpirationDate = occ.expirationDate;
+        if (!finalOptionType) finalOptionType = occ.optionType;
+        if (!finalUnderlyingSymbol) finalUnderlyingSymbol = occ.underlyingSymbol;
+      }
+      const missing = missingOptionFields({
+        strikePrice: finalStrikePrice,
+        expirationDate: cleanExpirationDate,
+        optionType: finalOptionType,
+        underlyingSymbol: finalUnderlyingSymbol
+      });
+      if (missing.length) throw optionFieldsError(missing);
     }
 
     // Handle case where entryTime is null but tradeDate is provided (e.g., from imports)
@@ -494,6 +552,11 @@ class Trade {
                 console.log(`[STOP LOSS] Applied default ${stopLossPercent}% stop loss for ${side} position: $${finalStopLoss}`);
               }
             }
+          } else if (stopLossType === 'points') {
+            finalStopLoss = this.calculateDefaultStopLossFromSettings({
+              symbol, side, entry_price: entryPrice, quantity,
+              instrument_type: instrumentType, underlying_asset: finalUnderlyingAsset || underlyingAsset
+            }, userSettings);
           } else if (stopLossType === 'dollar' && userSettings?.default_stop_loss_dollars > 0 && quantity > 0) {
             // Dollar-based stop loss: fixed risk per trade (e.g., $100 per trade)
             // Uses same multipliers as calculatePnL: stocks 1, options contractSize (100), futures pointValue
@@ -624,6 +687,13 @@ class Trade {
       logger.info(`[TP TARGETS] Using ${aggregatedTakeProfitTargets.length} take profit targets (from ${hasExecutionTargets ? 'executions' : 'trade level'})`);
     }
 
+    const excursion_values = convertExcursionInputs(tradeData, {
+      symbol, side, entry_price: computedEntryPrice, stop_loss: finalStopLoss,
+      quantity: computedQuantity, instrument_type: instrumentType,
+      contract_size: contractSize, point_value: finalPointValue,
+      underlying_asset: finalUnderlyingAsset
+    });
+
     const query = `
       INSERT INTO trades (
         user_id, symbol, trade_date, entry_time, exit_time, entry_price, exit_price,
@@ -636,9 +706,9 @@ class Trade {
         original_currency, exchange_rate, original_entry_price_currency, original_exit_price_currency,
         original_pnl_currency, original_commission_currency, original_fees_currency,
         stop_loss, take_profit, take_profit_targets, r_value, chart_url, broker_connection_id, account_identifier, conid, manual_target_hit_first,
-        post_exit_window_override_minutes, post_exit_mae, post_exit_mfe
+        post_exit_window_override_minutes, post_exit_mae, post_exit_mfe, broker_trade_id
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57, $58, $59, $60, $61, $62, $63, $64)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57, $58, $59, $60, $61, $62, $63, $64, $65)
       RETURNING *
     `;
 
@@ -649,11 +719,11 @@ class Trade {
       roundToDbPrecision(computedCommission) || 0, roundToDbPrecision(entryCommission) || 0, roundToDbPrecision(exitCommission) || 0,
       roundToDbPrecision(computedFees) || 0, roundToDbPrecision(pnl), roundToDbPrecision(pnlPercent), notes, isPublic || false,
       broker, finalStrategy, setup, tags || [], JSON.stringify(annotatedExecutions),
-      roundToDbPrecision(mae), roundToDbPrecision(mfe), confidence || 5,
+      roundToDbPrecision(excursion_values.mae ?? mae), roundToDbPrecision(excursion_values.mfe ?? mfe), confidence || 5,
       strategyConfidence, classificationMethod, JSON.stringify(classificationMetadata), manualOverride,
       JSON.stringify(newsData.newsEvents || []), newsData.hasNews || false, newsData.sentiment, newsData.checkedAt,
-      instrumentType || 'stock', roundToDbPrecision(strikePrice), cleanExpirationDate, optionType || null,
-      contractSize || (instrumentType === 'option' ? 100 : null), normalizeUnderlyingSymbol(underlyingSymbol),
+      instrumentType || 'stock', roundToDbPrecision(finalStrikePrice), cleanExpirationDate, finalOptionType,
+      contractSize || (instrumentType === 'option' ? 100 : null), normalizeUnderlyingSymbol(finalUnderlyingSymbol),
       contractMonth || null, contractYear || null, roundToDbPrecision(finalTickSize), roundToDbPrecision(finalPointValue), finalUnderlyingAsset || null,
       importId || null,
       String(finalOriginalCurrency).toUpperCase(), roundToDbPrecision(finalExchangeRate) || 1.0,
@@ -667,8 +737,8 @@ class Trade {
       conid || null,
       manualTargetHitFirst || null,
       finalPostExitWindowOverrideMinutes,
-      roundToDbPrecision(finalPostExitMae),
-      roundToDbPrecision(finalPostExitMfe)
+      roundToDbPrecision(excursion_values.post_exit_mae ?? excursion_values.postExitMae ?? finalPostExitMae),
+      roundToDbPrecision(excursion_values.post_exit_mfe ?? excursion_values.postExitMfe ?? finalPostExitMfe), broker_trade_id || null
     ];
 
     let createdTrade;
@@ -687,16 +757,16 @@ class Trade {
         side,
         commission: roundToDbPrecision(computedCommission) || 0,
         fees: roundToDbPrecision(computedFees) || 0,
-        strike_price: roundToDbPrecision(strikePrice),
+        strike_price: roundToDbPrecision(finalStrikePrice),
         expiration_date: cleanExpirationDate,
-        option_type: optionType || null,
+        option_type: finalOptionType,
         contract_size: contractSize || (instrumentType === 'option' ? 100 : null),
         contract_month: contractMonth || null,
         contract_year: contractYear || null,
         point_value: roundToDbPrecision(finalPointValue),
         original_currency: String(finalOriginalCurrency).toUpperCase(),
         conid: conid || null,
-        underlying_symbol: normalizeUnderlyingSymbol(underlyingSymbol),
+        underlying_symbol: normalizeUnderlyingSymbol(finalUnderlyingSymbol),
         underlying_asset: finalUnderlyingAsset || null
       });
       if (result.duplicate) return result;
@@ -1270,6 +1340,13 @@ class Trade {
   }
 
   static async update(id, userId, updates, options = {}) {
+    // Accept the canonical API names without emitting duplicate SQL assignments.
+    for (const [field, legacy] of [['post_exit_mae', 'postExitMae'], ['post_exit_mfe', 'postExitMfe']]) {
+      if (updates[field] !== undefined) {
+        updates[legacy] = updates[field];
+        delete updates[field];
+      }
+    }
     // Round all numeric fields to fit database precision (DECIMAL(20,8))
     const numericFields = [
       'entryPrice', 'exitPrice', 'quantity', 'commission', 'entryCommission', 'exitCommission',
@@ -1362,6 +1439,26 @@ class Trade {
       }
     }
 
+    // An update that makes (or keeps) the trade an option must leave every
+    // check_options_fields column populated; reject with 400 before the UPDATE.
+    if (instrumentType === 'option') {
+      const merged = (camel, snake) => (updates[camel] !== undefined ? updates[camel] : currentTrade[snake]);
+      const occ = parseOccSymbol(updates.symbol || currentTrade.symbol);
+      const missing = missingOptionFields({
+        strikePrice: merged('strikePrice', 'strike_price') ?? occ?.strikePrice,
+        expirationDate: merged('expirationDate', 'expiration_date') || occ?.expirationDate,
+        optionType: merged('optionType', 'option_type') || occ?.optionType,
+        underlyingSymbol: merged('underlyingSymbol', 'underlying_symbol') || occ?.underlyingSymbol
+      });
+      if (missing.length) throw optionFieldsError(missing);
+      if (occ) {
+        if (merged('strikePrice', 'strike_price') == null || merged('strikePrice', 'strike_price') === '') updates.strikePrice = occ.strikePrice;
+        if (!merged('expirationDate', 'expiration_date')) updates.expirationDate = occ.expirationDate;
+        if (!merged('optionType', 'option_type')) updates.optionType = occ.optionType;
+        if (!merged('underlyingSymbol', 'underlying_symbol')) updates.underlyingSymbol = occ.underlyingSymbol;
+      }
+    }
+
     // Apply default stop loss/take profit if not provided and user has defaults configured
     // This ensures defaults are applied on updates as well as creates
     const entryPrice = updates.entryPrice || currentTrade.entry_price;
@@ -1440,6 +1537,12 @@ class Trade {
                 console.log(`[STOP LOSS UPDATE] Applied fallback ${stopLossPercent}% stop loss: $${updates.stopLoss}`);
               }
             }
+          } else if (stopLossType === 'points') {
+            updates.stopLoss = this.calculateDefaultStopLossFromSettings({
+              symbol, side, entry_price: entryPrice, quantity: quantityForDefaults,
+              instrument_type: updates.instrumentType ?? currentTrade.instrument_type,
+              underlying_asset: updates.underlyingAsset ?? currentTrade.underlying_asset
+            }, userSettings);
           } else if (stopLossType === 'dollar' && userSettings?.default_stop_loss_dollars > 0 && quantityForDefaults > 0) {
             // Dollar-based stop loss (same multipliers as calculatePnL for options/futures)
             const stopLossDollars = parseFloat(userSettings.default_stop_loss_dollars);
@@ -1797,6 +1900,18 @@ class Trade {
       console.log(`[TRADE UPDATE] takeProfitTargets in updates:`, JSON.stringify(updates.takeProfitTargets));
     }
 
+    // Convert after execution aggregation, using the effective updated position.
+    if (updates.excursion_unit !== undefined) {
+      const excursion_trade = { ...currentTrade };
+      for (const [key, value] of Object.entries(updates)) excursion_trade[toSnakeCase(key)] = value;
+      Object.assign(updates, convertExcursionInputs(updates, excursion_trade));
+      delete updates.excursion_unit;
+      // Conversion can produce values with more precision than the database.
+      for (const field of ['mae', 'mfe', 'post_exit_mae', 'post_exit_mfe', 'postExitMae', 'postExitMfe']) {
+        if (updates[field] !== undefined) updates[field] = roundToDbPrecision(updates[field]);
+      }
+    }
+
     // Process all other fields
     Object.entries(updates).forEach(([key, value]) => {
       if (key !== 'id' && key !== 'user_id' && key !== 'created_at') {
@@ -2136,8 +2251,8 @@ class Trade {
     // Determine the multiplier based on instrument type
     let multiplier;
     if (instrumentType === 'future') {
-      // For futures, use point value (e.g., $5 per point for ES, $2 for MNQ)
-      multiplier = pointValue || 1;
+      if (!Number.isFinite(Number(pointValue)) || Number(pointValue) <= 0) return null;
+      multiplier = Number(pointValue);
     } else if (instrumentType === 'option') {
       // For options, use contract size (typically 100 shares per contract)
       multiplier = contractSize || 100;
@@ -2166,6 +2281,7 @@ class Trade {
   static calculatePnLPercent(entryPrice, exitPrice, side, pnl = null, quantity = null, instrumentType = 'stock', pointValue = null, contractSize = null) {
     // Note: exitPrice === 0 is valid for expired worthless options, so use explicit null checks
     if (exitPrice == null || entryPrice == null || entryPrice <= 0) return null;
+    if (instrumentType === 'future' && !(Number(pointValue) > 0)) return null;
 
     let pnlPercent;
 
@@ -2246,6 +2362,7 @@ class Trade {
         finalPointValue = getFuturesPointValue(underlying);
       }
 
+      if (!Number.isFinite(finalPointValue) || finalPointValue <= 0) return null;
       multiplier = finalPointValue;
     } else if (normalizedInstrumentType === 'option') {
       const parsedContractSize = contractSize ? parseFloat(contractSize) : null;
@@ -2276,7 +2393,8 @@ class Trade {
     if (!defaultStopLossDollars || defaultStopLossDollars <= 0 || !quantity || quantity <= 0) return null;
     let multiplier;
     if (instrumentType === 'future') {
-      multiplier = pointValue || 1;
+      if (!Number.isFinite(Number(pointValue)) || Number(pointValue) <= 0) return null;
+      multiplier = Number(pointValue);
     } else if (instrumentType === 'option') {
       multiplier = contractSize || 100;
     } else {
@@ -2502,6 +2620,18 @@ class Trade {
       } else if (side === 'short' || side === 'sell') {
         stopLoss = entryPrice * (1 + stopLossPercent / 100);
       }
+    } else if (stopLossType === 'points') {
+      const instrument_type = normalizeInstrumentType(trade.instrument_type || trade.instrumentType || 'stock', trade.symbol);
+      const underlying = String(instrument_type === 'future'
+        ? (trade.underlying_asset || trade.underlyingAsset || extractUnderlyingFromFuturesSymbol(trade.symbol))
+        : trade.symbol || '').trim().toUpperCase();
+      const overrides = settings?.default_stop_loss_points_by_underlying ?? settings?.defaultStopLossPointsByUnderlying ?? {};
+      const points = Number(Object.prototype.hasOwnProperty.call(overrides, underlying)
+        ? overrides[underlying]
+        : (settings?.default_stop_loss_points ?? settings?.defaultStopLossPoints));
+      if (!Number.isFinite(points) || points <= 0) return null;
+      if (side === 'long' || side === 'buy') stopLoss = entryPrice - points;
+      else if (side === 'short' || side === 'sell') stopLoss = entryPrice + points;
     } else if (stopLossType === 'dollar') {
       const stopLossDollars = parseFloat(this.getSettingValue(settings, 'default_stop_loss_dollars', 'defaultStopLossDollars'));
       if (!isFinite(stopLossDollars) || stopLossDollars <= 0 || !isFinite(quantity) || quantity <= 0) return null;
@@ -2946,14 +3076,18 @@ class Trade {
       }
       if (!Array.isArray(executions) || executions.length === 0) continue;
 
-      const side = trade.side;
+      const side = String(trade.side || 'long').toLowerCase();
       const entryPrice = parseFloat(trade.entry_price);
       if (isNaN(entryPrice)) continue;
 
-      // Separate exit fills using same logic as recalculateFromFills
-      const exitFills = executions.filter(e =>
-        (side === 'long' && e.action === 'sell') || (side === 'short' && e.action === 'buy')
-      );
+      // Separate exit fills using case-insensitive action/side rules, as
+      // recalculateFromFills does.
+      const exitFills = executions.filter((e) => {
+        const rawAction = String(e?.action || '').trim();
+        const rawSide = String(e?.side || '').trim();
+        const act = (rawAction || rawSide).toLowerCase();
+        return (side === 'long' && act === 'sell') || (side === 'short' && (act === 'buy' || act === 'cover'));
+      });
 
       // Must have at least 2 exit fills to be included
       if (exitFills.length < 2) continue;

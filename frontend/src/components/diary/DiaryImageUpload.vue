@@ -32,7 +32,7 @@
             <button
               type="button"
               @click="$refs.fileInput.click()"
-              class="text-primary-600 hover:text-primary-500 font-medium"
+              class="btn-link"
             >
               Choose files
             </button>
@@ -46,13 +46,13 @@
     </div>
 
     <!-- Pending files info for new entries -->
-    <div v-if="!diaryEntryId && pendingFiles.length > 0" class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-sm text-blue-800 dark:text-blue-200">
+    <div v-if="!diaryEntryId && pendingFiles.length > 0" class="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-3 text-sm text-primary-800 dark:text-primary-200">
       {{ pendingFiles.length }} image{{ pendingFiles.length > 1 ? 's' : '' }} will be uploaded when you save the entry.
     </div>
 
     <!-- Selected/Pending files preview -->
     <div v-if="pendingFiles.length > 0" class="space-y-2">
-      <h4 class="text-sm font-medium text-gray-900 dark:text-white">
+      <h4 class="heading-sub">
         {{ diaryEntryId ? 'Selected Files' : 'Pending Images' }}
       </h4>
       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
@@ -97,7 +97,7 @@
 
     <!-- Existing images -->
     <div v-if="existingImages.length > 0" class="space-y-2">
-      <h4 class="text-sm font-medium text-gray-900 dark:text-white">Uploaded Images</h4>
+      <h4 class="heading-sub">Uploaded Images</h4>
       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
         <div
           v-for="image in existingImages"
@@ -115,7 +115,7 @@
               v-else-if="!authedImage.urlFor(image)"
               class="w-full h-full flex items-center justify-center"
             >
-              <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"></div>
+              <div class="spinner spinner-sm"></div>
             </div>
             <img
               v-else
@@ -142,10 +142,7 @@
             <svg v-if="deleting !== image.id" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
             </svg>
-            <svg v-else class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
+            <span v-else class="spinner spinner-xs spinner-current mr-2"></span>
           </button>
         </div>
       </div>
@@ -153,7 +150,7 @@
 
     <!-- Upload results -->
     <div v-if="uploadResults.length > 0" class="space-y-2">
-      <h4 class="text-sm font-medium text-gray-900 dark:text-white">Upload Results</h4>
+      <h4 class="heading-sub">Upload Results</h4>
       <div class="space-y-1">
         <div
           v-for="result in uploadResults"
@@ -164,7 +161,7 @@
           <span class="truncate">{{ result.file_name || result.filename }}</span>
           <div class="flex items-center space-x-2 ml-2">
             <span v-if="!result.error && result.compressionRatio" class="text-xs">
-              {{ result.compressionRatio.toFixed(1) }}% compressed
+              {{ formatPercent(result.compressionRatio) }} compressed
             </span>
             <span v-if="result.error" class="text-xs">{{ result.error }}</span>
             <svg v-if="!result.error" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -181,7 +178,7 @@
     <!-- Image Preview Modal -->
     <div
       v-if="previewImage"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75"
+      class="modal-overlay flex items-center justify-center"
       @click="previewImage = null"
     >
       <div class="relative max-w-4xl max-h-[90vh] p-4">
@@ -209,6 +206,7 @@ import { ref, computed, watch, onMounted, onBeforeUnmount, toRef } from 'vue'
 import { useNotification } from '@/composables/useNotification'
 import { useAuthedImage } from '@/composables/useAuthedImage'
 import api from '@/services/api'
+import { formatPercent } from '@/utils/formatters'
 
 const props = defineProps({
   diaryEntryId: {
@@ -425,9 +423,5 @@ defineExpose({
 <style scoped>
 .label {
   @apply block text-sm font-medium text-gray-700 dark:text-gray-300;
-}
-
-.btn-primary {
-  @apply bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
 }
 </style>

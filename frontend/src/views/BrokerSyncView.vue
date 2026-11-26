@@ -11,12 +11,12 @@
     <IBKRNoticeBanner />
 
     <!-- Broker sync is becoming a Pro feature: grace-period notice for existing free connections -->
-    <div v-if="showGraceBanner" class="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+    <div v-if="showGraceBanner" class="callout-warning mb-6">
       <div class="flex">
-        <svg class="h-5 w-5 text-amber-400 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+        <svg class="h-5 w-5 text-yellow-400 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
           <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
         </svg>
-        <div class="ml-3 text-sm text-amber-700 dark:text-amber-300">
+        <div class="ml-3 text-sm text-yellow-700 dark:text-yellow-300">
           <strong>Broker sync is becoming a Pro feature.</strong>
           Your connected brokers will keep syncing until <strong>{{ graceEndsAtFormatted }}</strong>.
           <router-link :to="pricingLink" class="font-medium underline">Upgrade to Pro</router-link>
@@ -26,12 +26,12 @@
     </div>
 
     <!-- Grace window ended: sync paused for free users -->
-    <div v-else-if="showSyncPausedBanner" class="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+    <div v-else-if="showSyncPausedBanner" class="callout-warning mb-6">
       <div class="flex">
-        <svg class="h-5 w-5 text-amber-400 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+        <svg class="h-5 w-5 text-yellow-400 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
           <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
         </svg>
-        <div class="ml-3 text-sm text-amber-700 dark:text-amber-300">
+        <div class="ml-3 text-sm text-yellow-700 dark:text-yellow-300">
           <strong>Broker sync is paused.</strong>
           Automatic syncing is now a Pro feature.
           <router-link :to="pricingLink" class="font-medium underline">Upgrade to Pro</router-link>
@@ -41,18 +41,18 @@
     </div>
 
     <!-- Success/Error Messages -->
-    <div v-if="successMessage" class="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+    <div v-if="successMessage" class="callout-success mb-6">
       <div class="flex">
-        <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+        <svg class="h-5 w-5 text-green-700 dark:text-green-400" viewBox="0 0 20 20" fill="currentColor">
           <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
         </svg>
         <p class="ml-3 text-sm text-green-700 dark:text-green-300">{{ successMessage }}</p>
       </div>
     </div>
 
-    <div v-if="store.error" class="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+    <div v-if="store.error" class="callout-danger mb-6">
       <div class="flex">
-        <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+        <svg class="h-5 w-5 text-red-600 dark:text-red-400" viewBox="0 0 20 20" fill="currentColor">
           <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
         </svg>
         <p class="ml-3 text-sm text-red-700 dark:text-red-300">{{ store.error }}</p>
@@ -60,15 +60,15 @@
     </div>
 
     <!-- Loading State -->
-    <div v-if="store.loading && !store.hasConnections" class="flex items-center justify-center py-12">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+    <div v-if="initial_loading" class="flex items-center justify-center py-12">
+      <div class="spinner spinner-md"></div>
     </div>
 
     <!-- Main Content -->
     <div v-else class="space-y-8">
       <!-- Connected Brokers -->
       <div v-if="store.hasConnections" class="space-y-4">
-        <h2 class="text-lg font-medium text-gray-900 dark:text-white">Connected Brokers</h2>
+        <h2 class="heading-card">Connected Brokers</h2>
 
         <div class="grid gap-4 md:grid-cols-2">
           <BrokerConnectionCard
@@ -89,7 +89,7 @@
       <!-- Add New Connection (Pro only) -->
       <div v-if="canCreate" class="card">
         <div class="card-body">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-6">Add Broker Connection</h3>
+          <h3 class="heading-card mb-6">Add Broker Connection</h3>
 
           <div class="grid gap-6 md:grid-cols-2">
             <!-- IBKR Card -->
@@ -102,7 +102,7 @@
                   <span class="text-red-600 dark:text-red-400 font-bold text-lg">IB</span>
                 </div>
                 <div>
-                  <h4 class="font-medium text-gray-900 dark:text-white">Interactive Brokers</h4>
+                  <h4 class="heading-card">Interactive Brokers</h4>
                   <p class="text-sm text-gray-500 dark:text-gray-400">
                     {{ store.ibkrConnections.length > 0 ? 'Add another IBKR account' : 'Connect via Flex Query' }}
                   </p>
@@ -113,22 +113,16 @@
             <!-- Schwab Card -->
             <div
               class="p-6 border-2 rounded-lg transition-colors"
-              :class="[
-                store.schwabConnection
-                  ? 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 opacity-50 cursor-not-allowed'
-                  : schwabConnecting
-                    ? 'border-primary-300 dark:border-primary-700 bg-primary-50/50 dark:bg-primary-900/10 cursor-wait'
-                    : 'border-dashed border-gray-300 dark:border-gray-600 hover:border-primary-500 dark:hover:border-primary-400 cursor-pointer'
-              ]"
+              :class="[ store.schwabConnection ? 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 opacity-50 cursor-not-allowed' : schwabConnecting ? 'border-primary-300 dark:border-primary-700 bg-primary-50/50 dark:bg-primary-900/10 cursor-wait' : 'border-dashed border-gray-300 dark:border-gray-600 hover:border-primary-500 dark:hover:border-primary-400 cursor-pointer' ]"
               @click="!store.schwabConnection && !schwabConnecting && handleSchwabConnect()"
             >
               <div class="flex items-center space-x-4">
                 <div class="flex-shrink-0 w-12 h-12 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center">
-                  <div v-if="schwabConnecting" class="animate-spin h-6 w-6 rounded-full border-2 border-primary-200 border-t-primary-600"></div>
-                  <span v-else class="text-primary-600 dark:text-primary-400 font-bold text-lg">CS</span>
+                  <div v-if="schwabConnecting" class="spinner spinner-sm"></div>
+                  <span v-else class="text-primary-700 dark:text-primary-400 font-bold text-lg">CS</span>
                 </div>
                 <div>
-                  <h4 class="font-medium text-gray-900 dark:text-white">Charles Schwab</h4>
+                  <h4 class="heading-card">Charles Schwab</h4>
                   <p class="text-sm text-gray-500 dark:text-gray-400">
                     {{ store.schwabConnection ? 'Already connected' : schwabConnecting ? 'Connecting...' : 'Connect via OAuth' }}
                   </p>
@@ -136,20 +130,25 @@
               </div>
             </div>
 
+            <button type="button" class="rounded-lg border-2 border-dashed border-gray-300 p-6 text-left transition-colors hover:border-primary-500 dark:border-gray-600 dark:hover:border-primary-400" @click="reconnecting_oanda = null; show_oanda_modal = true">
+              <span class="flex items-center gap-4">
+                <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-lg font-bold text-primary-700 dark:bg-primary-900/30 dark:text-primary-400">OA</span>
+                <span><span class="block font-medium text-gray-900 dark:text-white">OANDA</span><span class="block text-sm text-gray-500 dark:text-gray-400">Connect a practice or live v20 account</span></span>
+              </span>
+            </button>
+
             <!-- Trading 212 Card -->
             <div
               class="rounded-lg border-2 p-6 transition-colors"
-              :class="canAddTrading212
-                ? 'cursor-pointer border-dashed border-gray-300 hover:border-primary-500 dark:border-gray-600 dark:hover:border-primary-400'
-                : 'cursor-not-allowed border-gray-200 bg-gray-50 opacity-50 dark:border-gray-700 dark:bg-gray-800'"
+              :class="canAddTrading212 ? 'cursor-pointer border-dashed border-gray-300 hover:border-primary-500 dark:border-gray-600 dark:hover:border-primary-400' : 'cursor-not-allowed border-gray-200 bg-gray-50 opacity-50 dark:border-gray-700 dark:bg-gray-800'"
               @click="canAddTrading212 && openTrading212Modal()"
             >
               <div class="flex items-center space-x-4">
                 <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-primary-100 dark:bg-primary-900/30">
-                  <span class="text-lg font-bold text-primary-600 dark:text-primary-400">T2</span>
+                  <span class="text-lg font-bold text-primary-700 dark:text-primary-400">T2</span>
                 </div>
                 <div>
-                  <h4 class="font-medium text-gray-900 dark:text-white">Trading 212</h4>
+                  <h4 class="heading-card">Trading 212</h4>
                   <p class="text-sm text-gray-500 dark:text-gray-400">
                     {{ store.trading212Connections.length > 0 ? 'Add another environment' : 'Connect with an API key' }}
                   </p>
@@ -164,12 +163,12 @@
               @click="canConnectBroker('tradestation') && handleBrokerOAuthConnect('tradestation')"
             >
               <div class="flex items-center space-x-4">
-                <div class="flex-shrink-0 w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center">
-                  <div v-if="brokerConnecting.tradestation" class="animate-spin h-6 w-6 rounded-full border-2 border-emerald-200 border-t-emerald-600"></div>
-                  <span v-else class="text-emerald-600 dark:text-emerald-400 font-bold text-lg">TS</span>
+                <div class="flex-shrink-0 w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                  <div v-if="brokerConnecting.tradestation" class="spinner spinner-sm"></div>
+                  <span v-else class="text-green-700 dark:text-green-400 font-bold text-lg">TS</span>
                 </div>
                 <div>
-                  <h4 class="font-medium text-gray-900 dark:text-white">TradeStation</h4>
+                  <h4 class="heading-card">TradeStation</h4>
                   <p class="text-sm text-gray-500 dark:text-gray-400">
                     {{ brokerConnection('tradestation') ? 'Already connected' : brokerConnecting.tradestation ? 'Connecting...' : 'Connect via OAuth' }}
                   </p>
@@ -181,18 +180,16 @@
             <div
               v-if="tradovateAvailable"
               class="p-6 border-2 rounded-lg transition-colors"
-              :class="brokerConnecting.tradovate
-                ? 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 opacity-50 cursor-not-allowed'
-                : 'border-dashed border-gray-300 dark:border-gray-600 hover:border-primary-500 dark:hover:border-primary-400 cursor-pointer'"
+              :class="brokerConnecting.tradovate ? 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 opacity-50 cursor-not-allowed' : 'border-dashed border-gray-300 dark:border-gray-600 hover:border-primary-500 dark:hover:border-primary-400 cursor-pointer'"
               @click="!brokerConnecting.tradovate && handleBrokerOAuthConnect('tradovate')"
             >
               <div class="flex items-center space-x-4">
                 <div class="flex-shrink-0 w-12 h-12 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center">
-                  <div v-if="brokerConnecting.tradovate" class="animate-spin h-6 w-6 rounded-full border-2 border-primary-200 border-t-primary-600"></div>
-                  <span v-else class="text-primary-600 dark:text-primary-400 font-bold text-lg">TV</span>
+                  <div v-if="brokerConnecting.tradovate" class="spinner spinner-sm"></div>
+                  <span v-else class="text-primary-700 dark:text-primary-400 font-bold text-lg">TV</span>
                 </div>
                 <div>
-                  <h4 class="font-medium text-gray-900 dark:text-white">Tradovate</h4>
+                  <h4 class="heading-card">Tradovate</h4>
                   <p class="text-sm text-gray-500 dark:text-gray-400">
                     {{ brokerConnecting.tradovate ? 'Connecting...' : brokerConnection('tradovate') ? 'Connect another login' : 'Futures & prop firms via OAuth' }}
                   </p>
@@ -207,12 +204,12 @@
               @click="canConnectBroker('alpaca', 'live') && handleBrokerOAuthConnect('alpaca', { environment: 'live' })"
             >
               <div class="flex items-center space-x-4">
-                <div class="flex-shrink-0 w-12 h-12 bg-cyan-100 dark:bg-cyan-900/30 rounded-lg flex items-center justify-center">
-                  <div v-if="brokerConnecting.alpacaLive" class="animate-spin h-6 w-6 rounded-full border-2 border-cyan-200 border-t-cyan-600"></div>
-                  <span v-else class="text-cyan-600 dark:text-cyan-400 font-bold text-lg">AL</span>
+                <div class="flex-shrink-0 w-12 h-12 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center">
+                  <div v-if="brokerConnecting.alpacaLive" class="spinner spinner-sm"></div>
+                  <span v-else class="text-primary-700 dark:text-primary-400 font-bold text-lg">AL</span>
                 </div>
                 <div>
-                  <h4 class="font-medium text-gray-900 dark:text-white">Alpaca Live</h4>
+                  <h4 class="heading-card">Alpaca Live</h4>
                   <p class="text-sm text-gray-500 dark:text-gray-400">
                     {{ brokerConnection('alpaca', 'live') ? 'Already connected' : brokerConnecting.alpacaLive ? 'Connecting...' : 'Connect via OAuth' }}
                   </p>
@@ -227,12 +224,12 @@
               @click="canConnectBroker('alpaca', 'paper') && handleBrokerOAuthConnect('alpaca', { environment: 'paper' })"
             >
               <div class="flex items-center space-x-4">
-                <div class="flex-shrink-0 w-12 h-12 bg-sky-100 dark:bg-sky-900/30 rounded-lg flex items-center justify-center">
-                  <div v-if="brokerConnecting.alpacaPaper" class="animate-spin h-6 w-6 rounded-full border-2 border-sky-200 border-t-sky-600"></div>
-                  <span v-else class="text-sky-600 dark:text-sky-400 font-bold text-lg">AP</span>
+                <div class="flex-shrink-0 w-12 h-12 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center">
+                  <div v-if="brokerConnecting.alpacaPaper" class="spinner spinner-sm"></div>
+                  <span v-else class="text-primary-700 dark:text-primary-400 font-bold text-lg">AP</span>
                 </div>
                 <div>
-                  <h4 class="font-medium text-gray-900 dark:text-white">Alpaca Paper</h4>
+                  <h4 class="heading-card">Alpaca Paper</h4>
                   <p class="text-sm text-gray-500 dark:text-gray-400">
                     {{ brokerConnection('alpaca', 'paper') ? 'Already connected' : brokerConnecting.alpacaPaper ? 'Connecting...' : 'Connect via OAuth' }}
                   </p>
@@ -248,11 +245,11 @@
             >
               <div class="flex items-center space-x-4">
                 <div class="flex-shrink-0 w-12 h-12 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center">
-                  <div v-if="brokerConnecting.webull" class="animate-spin h-6 w-6 rounded-full border-2 border-primary-200 border-t-primary-600"></div>
-                  <span v-else class="text-primary-600 dark:text-primary-400 font-bold text-lg">WB</span>
+                  <div v-if="brokerConnecting.webull" class="spinner spinner-sm"></div>
+                  <span v-else class="text-primary-700 dark:text-primary-400 font-bold text-lg">WB</span>
                 </div>
                 <div>
-                  <h4 class="font-medium text-gray-900 dark:text-white">Webull</h4>
+                  <h4 class="heading-card">Webull</h4>
                   <p class="text-sm text-gray-500 dark:text-gray-400">
                     {{ brokerConnection('webull') ? 'Already connected' : brokerConnecting.webull ? 'Connecting...' : 'Connect via OAuth' }}
                   </p>
@@ -262,8 +259,8 @@
           </div>
 
           <!-- Schwab Note -->
-          <div class="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-            <p class="text-xs text-amber-700 dark:text-amber-300">
+          <div class="callout-warning mt-4">
+            <p class="text-xs text-yellow-700 dark:text-yellow-300">
               <strong>Note for former TD Ameritrade users:</strong> The Schwab API only returns trades made natively on Schwab. Historical TD Ameritrade trades are not available via API sync. Use CSV import for complete trade history.
             </p>
           </div>
@@ -274,17 +271,17 @@
       <ProUpgradePrompt
         v-else-if="showUpgradeGate"
         variant="card"
-        description="Broker sync is a Pro feature. Connect Interactive Brokers, Schwab, Trading 212, TradeStation, Alpaca, Tradovate, or Webull to import your trades automatically. Free accounts can still import via CSV (up to 100 trades per import)."
+        description="Broker sync is a Pro feature. Connect Interactive Brokers, Schwab, Trading 212, TradeStation, Alpaca, Tradovate, OANDA, or Webull to import your trades automatically. Free accounts can still import via CSV (up to 100 trades per import)."
       />
 
       <div class="card" v-if="excludedTrades.length">
         <div class="card-body">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white">Trades excluded from IBKR sync</h3>
+          <h3 class="heading-card">Trades excluded from IBKR sync</h3>
           <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Deleted trades stay excluded from future syncs. Restore eligibility to import one again on the next sync.</p>
           <div class="mt-4 max-h-64 overflow-auto divide-y divide-gray-200 dark:divide-gray-700">
             <div v-for="entry in excludedTrades" :key="entry.id" class="flex items-center justify-between gap-3 py-2 text-sm">
               <span class="text-gray-800 dark:text-gray-200">{{ entry.symbol }} · {{ entry.side }}<template v-if="entry.account_identifier"> · {{ entry.account_identifier }}</template> · {{ formatDate(entry.entry_time) }}</span>
-              <button type="button" class="text-primary-600 hover:text-primary-700 dark:text-primary-400"
+              <button type="button" class="btn-link"
                 :disabled="restoringExclusion === entry.id" @click="restoreExclusion(entry.id)">
                 {{ restoringExclusion === entry.id ? 'Restoring…' : 'Allow future import' }}
               </button>
@@ -297,10 +294,11 @@
       <div class="card">
         <div class="card-body">
           <div class="flex items-center justify-between mb-6">
-            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Sync History</h3>
+            <div><h3 class="heading-card">Sync History</h3><p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Automatic IBKR confirmation checks are grouped by day. Failed syncs and entries needing review stay separate.</p></div>
             <button
               @click="refreshLogs"
-              class="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+              :disabled="history_loading"
+              class="btn-link"
             >
               Refresh
             </button>
@@ -312,72 +310,83 @@
 
           <div v-else class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead>
+              <thead class="table-head">
                 <tr>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Broker</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Imported</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Duplicates</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Review</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+                  <th class="text-left table-th px-4 py-2">Broker</th>
+                  <th class="text-left table-th px-4 py-2">Type</th>
+                  <th class="text-left table-th px-4 py-2">Status</th>
+                  <th class="text-left table-th px-4 py-2">Imported</th>
+                  <th class="text-left table-th px-4 py-2">Duplicates</th>
+                  <th class="text-left table-th px-4 py-2">Review</th>
+                  <th class="text-left table-th px-4 py-2">Date</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                <tr v-for="log in store.syncLogs" :key="log.id">
-                  <td class="px-4 py-3 whitespace-nowrap">
-                    <span class="font-medium text-gray-900 dark:text-white uppercase">{{ log.brokerType }}</span>
-                  </td>
-                  <td class="px-4 py-3 whitespace-nowrap text-gray-500 dark:text-gray-400 capitalize">
-                    {{ log.syncType }}
-                  </td>
-                  <td class="px-4 py-3 whitespace-nowrap">
-                    <span
-                      class="px-2 py-1 text-xs rounded-full"
-                      :class="getStatusClass(log)"
-                    >
-                      {{ getStatusLabel(log) }}
-                    </span>
-                    <details
-                      v-if="warningsFromSyncLog(log).length > 0"
-                      class="mt-2 max-w-xs text-xs text-amber-800 dark:text-amber-300"
-                    >
-                      <summary class="cursor-pointer font-medium focus:outline-none focus:ring-2 focus:ring-primary-500 rounded">
-                        View {{ warningsFromSyncLog(log).length }} warning{{ warningsFromSyncLog(log).length === 1 ? '' : 's' }}
-                      </summary>
-                      <ul class="mt-2 space-y-1 list-disc pl-4 whitespace-normal">
-                        <li v-for="(warning, warningIndex) in warningsFromSyncLog(log)" :key="warningIndex">
-                          {{ warning }}
-                        </li>
-                      </ul>
-                    </details>
-                  </td>
-                  <td class="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-white">
-                    {{ log.tradesImported || 0 }}
-                    <span v-if="log.syncDetails?.excluded_trade_count" class="block text-xs text-gray-500 dark:text-gray-400">
-                      {{ log.syncDetails.excluded_trade_count }} excluded by you
-                    </span>
-                  </td>
-                  <td class="px-4 py-3 whitespace-nowrap text-gray-500 dark:text-gray-400">
-                    {{ log.duplicatesDetected || 0 }}
-                  </td>
-                  <td class="px-4 py-3 whitespace-nowrap">
-                    <button
-                      v-if="manualReviewItemsFromSyncLog(log).length > 0"
-                      type="button"
-                      class="text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
-                      @click="openManualReviewFromSyncLog(log, true)"
-                    >
-                      Review {{ manualReviewItemsFromSyncLog(log).length }}
-                    </button>
-                    <span v-else class="text-sm text-gray-500 dark:text-gray-400">-</span>
-                  </td>
-                  <td class="px-4 py-3 whitespace-nowrap text-gray-500 dark:text-gray-400">
-                    {{ formatDate(log.startedAt) }}
-                  </td>
-                </tr>
+                <template v-for="log in store.syncLogs" :key="log.id">
+                  <tr>
+                    <td class="whitespace-nowrap px-4 py-3">
+                      <span class="font-medium text-gray-900 dark:text-white uppercase">{{ log.brokerType }}</span>
+                      <span v-if="log.account_label" class="block text-xs text-gray-500 dark:text-gray-400">{{ log.account_label }}</span>
+                      <button v-if="log.daily_summary" type="button" class="btn-link block mt-1 text-xs" :aria-expanded="expanded_history.has(log.id)" :aria-controls="`checks-${log.id}`" @click="toggleHistoryDay(log.id)">{{ expanded_history.has(log.id) ? 'Hide checks' : 'Show checks' }}</button>
+                    </td>
+                    <td class="whitespace-nowrap text-gray-500 dark:text-gray-400 capitalize px-4 py-3">
+                      {{ log.daily_summary ? 'Daily summary' : log.syncType === 'ibkr_confirmation' ? 'Scheduled' : log.syncType }}
+                      <span v-if="log.daily_summary" class="block text-xs">{{ log.sync_count }} checks<span v-if="log.warning_count"> · {{ log.warning_count }} with warnings</span></span>
+                      <span v-if="log.syncDetails?.report_type" class="block text-xs">{{ log.syncDetails.report_type === 'trade_confirmation' ? 'Trade Confirmation' : 'Activity' }}</span>
+                    </td>
+                    <td class="whitespace-nowrap px-4 py-3">
+                      <span
+                        class="badge"
+                        :class="getStatusClass(log)"
+                      >
+                        {{ getStatusLabel(log) }}
+                      </span>
+                      <p v-if="log.errorMessage" class="mt-2 max-w-xs whitespace-normal text-xs text-gray-600 dark:text-gray-300">{{ log.errorMessage }}</p>
+                      <details
+                        v-if="warningsFromSyncLog(log).length > 0"
+                        class="mt-2 max-w-xs text-xs text-yellow-800 dark:text-yellow-300"
+                      >
+                        <summary class="cursor-pointer font-medium focus:outline-none focus:ring-2 focus:ring-primary-500 rounded">
+                          View {{ warningsFromSyncLog(log).length }} warning{{ warningsFromSyncLog(log).length === 1 ? '' : 's' }}
+                        </summary>
+                        <ul class="mt-2 space-y-1 list-disc pl-4 whitespace-normal">
+                          <li v-for="(warning, warningIndex) in warningsFromSyncLog(log)" :key="warningIndex">
+                            {{ warning }}
+                          </li>
+                        </ul>
+                      </details>
+                    </td>
+                    <td class="whitespace-nowrap text-gray-900 dark:text-white px-4 py-3">
+                      {{ log.tradesImported || 0 }}
+                      <span v-if="log.syncDetails?.updated_count" class="block text-xs text-gray-500 dark:text-gray-400">{{ log.syncDetails.updated_count }} updated</span>
+                      <span v-if="log.syncDetails?.pending_reconciliation_count" class="block text-xs text-gray-500 dark:text-gray-400">{{ log.syncDetails.pending_reconciliation_count }} awaiting Activity reconciliation</span>
+                      <span v-if="log.syncDetails?.excluded_trade_count" class="block text-xs text-gray-500 dark:text-gray-400">
+                        {{ log.syncDetails.excluded_trade_count }} excluded by you
+                      </span>
+                    </td>
+                    <td class="whitespace-nowrap text-gray-500 dark:text-gray-400 px-4 py-3">
+                      {{ log.duplicatesDetected || 0 }}
+                    </td>
+                    <td class="whitespace-nowrap px-4 py-3">
+                      <button
+                        v-if="manualReviewItemsFromSyncLog(log).length > 0"
+                        type="button"
+                        class="text-sm font-medium text-primary-700 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300"
+                        @click="openManualReviewFromSyncLog(log, true)"
+                      >
+                        Review {{ manualReviewItemsFromSyncLog(log).length }}
+                      </button>
+                      <span v-else class="text-sm text-gray-500 dark:text-gray-400">-</span>
+                    </td>
+                    <td class="whitespace-nowrap text-gray-500 dark:text-gray-400 px-4 py-3">
+                      <template v-if="log.daily_summary">{{ log.local_date }}</template><template v-else>{{ formatDate(log.startedAt) }}</template>
+                    </td>
+                  </tr>
+                  <tr v-if="log.daily_summary && expanded_history.has(log.id)" :id="`checks-${log.id}`"><td colspan="7" class="px-4 py-3 bg-gray-50 dark:bg-gray-900/30"><ConfirmationSyncDay :group="log" /></td></tr>
+                </template>
               </tbody>
             </table>
+            <div v-if="store.history_has_more" class="flex justify-center pt-4"><button type="button" class="btn-secondary btn-sm" :disabled="history_loading" @click="fetchHistoryLogs(true)">{{ history_loading ? 'Loading…' : 'Load older history' }}</button></div>
           </div>
         </div>
       </div>
@@ -386,6 +395,7 @@
     <!-- IBKR Connection Modal -->
     <IBKRConnectionModal
       v-if="showIBKRModal"
+      :reconnecting="reconnectingIbkr"
       @close="closeIBKRModal"
       @save="handleIBKRSave"
       :loading="store.loading"
@@ -400,6 +410,8 @@
       @close="closeTrading212Modal"
       @save="handleTrading212Save"
     />
+
+    <OandaConnectionModal v-if="show_oanda_modal" :reconnecting="reconnecting_oanda" @close="show_oanda_modal = false" @connected="handle_oanda_connected" />
 
     <!-- Settings Modal -->
     <ConnectionSettingsModal
@@ -437,7 +449,9 @@ import api from '@/services/api'
 import BrokerConnectionCard from '@/components/broker-sync/BrokerConnectionCard.vue'
 import IBKRConnectionModal from '@/components/broker-sync/IBKRConnectionModal.vue'
 import Trading212ConnectionModal from '@/components/broker-sync/Trading212ConnectionModal.vue'
+import OandaConnectionModal from '@/components/broker-sync/OandaConnectionModal.vue'
 import ConnectionSettingsModal from '@/components/broker-sync/ConnectionSettingsModal.vue'
+import ConfirmationSyncDay from '@/components/broker-sync/ConfirmationSyncDay.vue'
 import IBKRNoticeBanner from '@/components/broker-sync/IBKRNoticeBanner.vue'
 import ManualTradeReviewModal from '@/components/import/ManualTradeReviewModal.vue'
 import ProUpgradePrompt from '@/components/ProUpgradePrompt.vue'
@@ -478,7 +492,13 @@ const graceEndsAtFormatted = computed(() => {
 const pricingLink = computed(() => `/pricing?redirect=${encodeURIComponent(route.fullPath)}`)
 
 const showIBKRModal = ref(false)
+const reconnectingIbkr = ref(null)
 const showTrading212Modal = ref(false)
+const show_oanda_modal = ref(false)
+const reconnecting_oanda = ref(null)
+const initial_loading = ref(true)
+const expanded_history = ref(new Set())
+const history_loading = ref(false)
 const showSettingsModal = ref(false)
 const selectedConnection = ref(null)
 const schwabAccounts = ref([])
@@ -606,7 +626,7 @@ async function consumeOAuthCallbackState(query) {
 
   await Promise.all([
     store.fetchConnections(),
-    store.fetchSyncLogs()
+    fetchHistoryLogs()
   ])
 
   if (query.success === 'schwab') {
@@ -641,13 +661,15 @@ async function consumeOAuthCallbackState(query) {
 onMounted(async () => {
   reset_oauth_connecting_state()
   window.addEventListener('pageshow', handle_oauth_page_show)
-  await Promise.all([
-    store.fetchConnections(),
-    store.fetchSyncLogs(),
-    fetchExcludedTrades(),
-    store.fetchProviders()
-  ])
-  await consumeOAuthCallbackState(route.query)
+  try {
+    await Promise.all([
+      store.fetchConnections(),
+      fetchHistoryLogs(),
+      fetchExcludedTrades(),
+      store.fetchProviders()
+    ])
+    await consumeOAuthCallbackState(route.query)
+  } finally { initial_loading.value = false }
 })
 
 onUnmounted(() => {
@@ -661,12 +683,14 @@ watch(() => route.query, async (newQuery) => {
 
 function openIBKRModal() {
   store.clearError()
+  reconnectingIbkr.value = null
   showIBKRModal.value = true
 }
 
 function closeIBKRModal() {
   store.clearError()
   showIBKRModal.value = false
+  reconnectingIbkr.value = null
 }
 
 function openTrading212Modal() {
@@ -710,13 +734,25 @@ async function refreshSchwabAccounts() {
 }
 
 async function handleIBKRSave(credentials) {
+  const wasReconnect = Boolean(reconnectingIbkr.value)
   try {
+    // Same query ID upserts the existing row with the new token and clears
+    // the expired state, so a reconnect is just a re-submit of credentials.
     await store.addIBKRConnection(credentials)
     showIBKRModal.value = false
-    scheduleSuccessMessage('IBKR connection added successfully!')
+    reconnectingIbkr.value = null
+    scheduleSuccessMessage(wasReconnect
+      ? 'IBKR connection updated. Automatic sync will resume on the next schedule.'
+      : 'IBKR connection added successfully!')
   } catch (error) {
     // Error is handled by store
   }
+}
+
+async function handle_oanda_connected() {
+  show_oanda_modal.value = false
+  await Promise.all([store.fetchConnections(), fetchHistoryLogs()])
+  scheduleSuccessMessage('OANDA account connected. Select Sync Now to import trades.')
 }
 
 async function handleTrading212Save(connection) {
@@ -745,6 +781,19 @@ async function handleSchwabConnect() {
 }
 
 async function handleReconnect(connection) {
+  if (connection.brokerType === 'oanda') {
+    reconnecting_oanda.value = connection
+    show_oanda_modal.value = true
+    return
+  }
+  if (connection.brokerType === 'ibkr') {
+    // Flex tokens are user-managed: reconnecting means pasting a fresh token
+    // for the same query ID, not an OAuth round trip.
+    store.clearError()
+    reconnectingIbkr.value = connection
+    showIBKRModal.value = true
+    return
+  }
   if (connection.brokerType !== 'schwab') return
   await handleSchwabConnect()
 }
@@ -763,14 +812,14 @@ async function handleBrokerOAuthConnect(broker, options = {}) {
   }
 }
 
-async function handleSync(connection) {
+async function handleSync(connection, report_type) {
   // Broker sync is a Pro feature; once the grace window ends, free users can't sync.
   if (!canSync.value) {
     store.error = 'Broker sync is a Pro feature. Upgrade to Pro to resume syncing, or use CSV import.'
     return
   }
   try {
-    await store.triggerSync(connection.id)
+    await store.triggerSync(connection.id, report_type ? { report_type } : {})
     scheduleSuccessMessage('Sync started. Check the history below for results.')
 
     // Poll for updates until sync completes
@@ -782,7 +831,7 @@ async function handleSync(connection) {
       attempts++
       await Promise.all([
         store.fetchConnections(),
-        store.fetchSyncLogs()
+        fetchHistoryLogs()
       ])
 
       const inProgressStatuses = ['started', 'fetching', 'parsing', 'importing']
@@ -916,8 +965,22 @@ async function handleDeleteTrades(connection) {
   )
 }
 
+function toggleHistoryDay(id) {
+  const next = new Set(expanded_history.value)
+  if (next.has(id)) next.delete(id)
+  else next.add(id)
+  expanded_history.value = next
+}
+
+async function fetchHistoryLogs(append = false) {
+  history_loading.value = true
+  try {
+    await store.fetchSyncLogs(null, 20, { group_by: 'day', offset: append ? store.syncLogs.length : 0, append })
+  } finally { history_loading.value = false }
+}
+
 async function refreshLogs() {
-  await store.fetchSyncLogs()
+  await fetchHistoryLogs()
 }
 
 async function fetchExcludedTrades() {
@@ -953,7 +1016,7 @@ function getStatusLabel(log) {
 
 function getStatusClass(log) {
   if (syncCompletedWithWarnings(log)) {
-    return 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300'
+    return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
   }
   switch (log?.status) {
     case 'completed':

@@ -3,7 +3,7 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">News Sentiment Analytics</h2>
+        <h2 class="heading-section">News Sentiment Analytics</h2>
         <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
           Analyze your trading patterns in correlation with news sentiment
         </p>
@@ -11,7 +11,7 @@
       <button
         @click="refreshAnalytics"
         :disabled="loading"
-        class="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+        class="btn-secondary btn-sm"
       >
         <MdiIcon :icon="refreshIcon" :size="16" :class="{ 'animate-spin': loading }" class="mr-2" />
         Refresh
@@ -19,15 +19,15 @@
     </div>
 
     <!-- Loading State -->
-    <div v-if="loading" class="flex justify-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+    <div v-if="initialLoading" class="flex justify-center py-12">
+      <div class="spinner spinner-lg"></div>
     </div>
 
     <!-- Error State -->
     <div v-else-if="error" class="card">
       <div class="card-body text-center py-8">
-        <MdiIcon :icon="alertIcon" :size="48" class="mx-auto text-red-500 mb-4" />
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Unable to Load Analytics</h3>
+        <MdiIcon :icon="alertIcon" :size="48" class="mx-auto text-red-600 dark:text-red-400 mb-4" />
+        <h3 class="heading-card mb-2">Unable to Load Analytics</h3>
         <p class="text-gray-600 dark:text-gray-400 mb-4">{{ error }}</p>
         <button
           @click="fetchAnalytics"
@@ -42,7 +42,7 @@
     <div v-else-if="!enabled" class="card">
       <div class="card-body text-center py-8">
         <MdiIcon :icon="lockIcon" :size="48" class="mx-auto text-gray-400 mb-4" />
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Pro Feature</h3>
+        <h3 class="heading-card mb-2">Pro Feature</h3>
         <p class="text-gray-600 dark:text-gray-400 mb-4">
           News sentiment correlation analytics is available for Pro users and self-hosters.
         </p>
@@ -54,25 +54,17 @@
       <!-- Insights Section -->
       <div v-if="analytics.insights && analytics.insights.length > 0" class="card">
         <div class="card-body">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
-            <MdiIcon :icon="bulbIcon" :size="20" class="mr-2 text-yellow-500" />
-            Key Insights
-          </h3>
-          <div class="space-y-3">
+          <h3 class="heading-card">Key insights</h3>
+          <dl class="mt-3 divide-y divide-gray-200 dark:divide-gray-700">
             <div
               v-for="(insight, index) in analytics.insights"
               :key="index"
-              class="p-4 rounded-lg border-l-4"
-              :class="{
-                'bg-green-50 border-green-400 dark:bg-green-900/20': insight.level === 'positive',
-                'bg-blue-50 border-blue-400 dark:bg-blue-900/20': insight.level === 'info',
-                'bg-yellow-50 border-yellow-400 dark:bg-yellow-900/20': insight.level === 'warning'
-              }"
+              class="py-3 sm:grid sm:grid-cols-[11rem_minmax(0,1fr)] sm:gap-4"
             >
-              <h4 class="font-medium text-gray-900 dark:text-white">{{ insight.title }}</h4>
-              <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ insight.description }}</p>
+              <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ insight.title }}</dt>
+              <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0">{{ insight.description }}</dd>
             </div>
-          </div>
+          </dl>
         </div>
       </div>
 
@@ -81,18 +73,14 @@
         <!-- Sentiment Performance -->
         <div class="card">
           <div class="card-body">
-            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Performance by Sentiment</h3>
+            <h3 class="heading-card mb-4">Performance by Sentiment</h3>
             <div class="space-y-4">
               <div v-for="(data, sentiment) in analytics.overall_performance.by_sentiment" :key="sentiment" class="border rounded-lg p-4 dark:border-gray-700">
                 <div class="flex items-center justify-between mb-3">
                   <div class="flex items-center">
                     <div 
                       class="w-3 h-3 rounded-full mr-2"
-                      :class="{
-                        'bg-green-500': sentiment === 'positive',
-                        'bg-red-500': sentiment === 'negative',
-                        'bg-gray-500': sentiment === 'neutral'
-                      }"
+                      :class="{ 'bg-green-500': sentiment === 'positive', 'bg-red-500': sentiment === 'negative', 'bg-gray-500': sentiment === 'neutral' }"
                     ></div>
                     <span class="font-medium text-gray-900 dark:text-white capitalize">{{ sentiment }}</span>
                   </div>
@@ -106,13 +94,13 @@
                   </div>
                   <div>
                     <div class="text-gray-500 dark:text-gray-400">Avg P&L</div>
-                    <div class="font-medium" :class="data.avg_pnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                    <div class="font-medium" :class="pnlClass(data.avg_pnl)">
                       {{ formatCurrency(data.avg_pnl) }}
                     </div>
                   </div>
                   <div>
                     <div class="text-gray-500 dark:text-gray-400">Total P&L</div>
-                    <div class="font-medium" :class="data.total_pnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                    <div class="font-medium" :class="pnlClass(data.total_pnl)">
                       {{ formatCurrency(data.total_pnl) }}
                     </div>
                   </div>
@@ -144,7 +132,7 @@
         <!-- Direction Bias -->
         <div class="card">
           <div class="card-body">
-            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Direction Bias</h3>
+            <h3 class="heading-card mb-4">Direction Bias</h3>
             <div class="space-y-4">
               <div v-for="(data, sentiment) in analytics.direction_bias" :key="sentiment" class="border rounded-lg p-4 dark:border-gray-700">
                 <div class="flex items-center justify-between mb-3">
@@ -169,8 +157,8 @@
                     ></div>
                   </div>
                   <div class="flex justify-between text-sm font-medium text-gray-900 dark:text-white mt-1">
-                    <span>{{ data.long_percentage }}%</span>
-                    <span>{{ data.short_percentage }}%</span>
+                    <span>{{ formatPercent(data.long_percentage) }}</span>
+                    <span>{{ formatPercent(data.short_percentage) }}</span>
                   </div>
                 </div>
 
@@ -188,30 +176,30 @@
       <!-- Top Performers -->
       <div v-if="analytics.top_performers && analytics.top_performers.length > 0" class="card">
         <div class="card-body">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Top Performing Combinations</h3>
+          <h3 class="heading-card mb-4">Top Performing Combinations</h3>
           <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead>
+              <thead class="table-head">
                 <tr>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th class="text-left table-th px-4 py-2">
                     Symbol
                   </th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th class="text-left table-th px-4 py-2">
                     Sentiment
                   </th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th class="text-left table-th px-4 py-2">
                     Side
                   </th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th class="text-left table-th px-4 py-2">
                     Trades
                   </th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th class="text-left table-th px-4 py-2">
                     Win Rate
                   </th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th class="text-left table-th px-4 py-2">
                     Total P&L
                   </th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th class="text-left table-th px-4 py-2">
                     Avg Return
                   </th>
                 </tr>
@@ -223,12 +211,12 @@
                   class="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"
                   @click="showPerformerDetails(performer)"
                 >
-                  <td class="px-4 py-4 whitespace-nowrap font-medium text-gray-900 dark:text-white">
+                  <td class="whitespace-nowrap font-medium text-gray-900 dark:text-white px-4 py-3">
                     {{ performer.symbol }}
                   </td>
-                  <td class="px-4 py-4 whitespace-nowrap">
+                  <td class="whitespace-nowrap px-4 py-3">
                     <span 
-                      class="px-2 py-1 text-xs font-semibold rounded-full"
+                      class="badge"
                       :class="{
                         'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400': performer.news_sentiment === 'positive',
                         'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400': performer.news_sentiment === 'negative',
@@ -238,24 +226,24 @@
                       {{ performer.news_sentiment }}
                     </span>
                   </td>
-                  <td class="px-4 py-4 whitespace-nowrap">
+                  <td class="whitespace-nowrap px-4 py-3">
                     <span 
-                      class="px-2 py-1 text-xs font-semibold rounded-full"
+                      class="badge"
                       :class="performer.side === 'long' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'"
                     >
                       {{ performer.side }}
                     </span>
                   </td>
-                  <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                  <td class="whitespace-nowrap text-sm text-gray-900 dark:text-white px-4 py-3">
                     {{ performer.trade_count }}
                   </td>
-                  <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                  <td class="whitespace-nowrap text-sm text-gray-900 dark:text-white px-4 py-3">
                     {{ performer.win_rate }}%
                   </td>
-                  <td class="px-4 py-4 whitespace-nowrap text-sm font-medium" :class="performer.total_pnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                  <td class="whitespace-nowrap text-sm font-medium px-4 py-3" :class="pnlClass(performer.total_pnl)">
                     {{ formatCurrency(performer.total_pnl) }}
                   </td>
-                  <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                  <td class="whitespace-nowrap text-sm text-gray-900 dark:text-white px-4 py-3">
                     {{ performer.avg_return_pct }}%
                   </td>
                 </tr>
@@ -268,7 +256,7 @@
       <!-- Metadata -->
       <div v-if="analytics.metadata" class="card">
         <div class="card-body">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Analysis Summary</h3>
+          <h3 class="heading-card mb-4">Analysis Summary</h3>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div>
               <div class="text-gray-500 dark:text-gray-400">Trades Analyzed</div>
@@ -295,7 +283,7 @@
     <div v-else class="card">
       <div class="card-body text-center py-8">
         <MdiIcon :icon="chartIcon" :size="48" class="mx-auto text-gray-400 mb-4" />
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">No Data Available</h3>
+        <h3 class="heading-card mb-2">No Data Available</h3>
         <p class="text-gray-600 dark:text-gray-400">
           No completed trades with news data found. Trade some stocks with news to see analytics.
         </p>
@@ -303,13 +291,13 @@
     </div>
 
     <!-- Performer Details Modal -->
-    <div v-if="selectedPerformer" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click="closePerformerDetails">
-      <div class="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto" @click.stop>
+    <div v-if="selectedPerformer" class="modal-overlay flex items-center justify-center" @click="closePerformerDetails">
+      <div role="dialog" aria-modal="true" class="modal-panel max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto" @click.stop>
         <div class="p-6">
           <!-- Modal Header -->
           <div class="flex items-center justify-between mb-6">
             <div>
-              <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+              <h3 class="modal-title">
                 {{ selectedPerformer.symbol }} - News & Trade Details
               </h3>
               <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
@@ -318,7 +306,7 @@
             </div>
             <button
               @click="closePerformerDetails"
-              class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              class="btn-ghost btn-sm"
             >
               <MdiIcon :icon="closeIcon" :size="24" />
             </button>
@@ -336,7 +324,7 @@
             </div>
             <div>
               <div class="text-sm text-gray-500 dark:text-gray-400">Total P&L</div>
-              <div class="text-lg font-semibold" :class="selectedPerformer.total_pnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+              <div class="text-lg font-semibold" :class="pnlClass(selectedPerformer.total_pnl)">
                 {{ formatCurrency(selectedPerformer.total_pnl) }}
               </div>
             </div>
@@ -348,7 +336,7 @@
 
           <!-- Loading/Error States -->
           <div v-if="performerDetailsLoading" class="flex justify-center py-8">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+            <div class="spinner spinner-md"></div>
           </div>
 
           <div v-else-if="performerDetailsError" class="text-center py-8">
@@ -358,7 +346,7 @@
 
           <!-- Trades and News Details -->
           <div v-else-if="performerDetails" class="space-y-4">
-            <h4 class="text-lg font-medium text-gray-900 dark:text-white">Individual Trades</h4>
+            <h4 class="heading-card">Individual Trades</h4>
             <div class="space-y-3">
               <div
                 v-for="trade in performerDetails"
@@ -371,13 +359,13 @@
                     <span class="font-medium text-gray-900 dark:text-white">
                       {{ formatDate(trade.trade_date) }}
                     </span>
-                    <span class="px-2 py-1 text-xs font-semibold rounded-full"
+                    <span class="badge"
                       :class="trade.pnl >= 0 ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'">
                       {{ formatCurrency(trade.pnl) }}
                     </span>
                   </div>
                   <div class="text-sm text-gray-500 dark:text-gray-400">
-                    {{ trade.quantity }} shares @ {{ formatCurrency(trade.entry_price) }} → {{ formatCurrency(trade.exit_price) }}
+                    {{ formatQuantity(trade.quantity) }} shares @ {{ formatCurrency(trade.entry_price) }} → {{ formatCurrency(trade.exit_price) }}
                   </div>
                 </div>
 
@@ -388,7 +376,7 @@
                     <div
                       v-for="(headline, index) in trade.news_headlines"
                       :key="index"
-                      class="text-sm text-gray-600 dark:text-gray-400 p-2 bg-gray-50 dark:bg-gray-700 rounded border-l-2 border-blue-400"
+                      class="text-sm text-gray-600 dark:text-gray-400 p-2 bg-gray-50 dark:bg-gray-700 rounded"
                     >
                       {{ headline }}
                     </div>
@@ -409,13 +397,15 @@
 </template>
 
 <script setup>
+import { pnlClass } from '@/utils/metricTone'
 import { ref, onMounted } from 'vue'
 import { format } from 'date-fns'
 import { formatTradeDate } from '@/utils/date'
 import { useCurrencyFormatter } from '@/composables/useCurrencyFormatter'
 import MdiIcon from '@/components/MdiIcon.vue'
-import { mdiRefresh, mdiAlertCircle, mdiLock, mdiLightbulb, mdiChartLine, mdiClose } from '@mdi/js'
+import { mdiRefresh, mdiAlertCircle, mdiLock, mdiChartLine, mdiClose } from '@mdi/js'
 import api from '@/services/api'
+import { formatQuantity, formatPercent } from '@/utils/formatters'
 
 const { formatCurrency } = useCurrencyFormatter()
 
@@ -423,13 +413,13 @@ const { formatCurrency } = useCurrencyFormatter()
 const refreshIcon = mdiRefresh
 const alertIcon = mdiAlertCircle
 const lockIcon = mdiLock
-const bulbIcon = mdiLightbulb
 const chartIcon = mdiChartLine
 const closeIcon = mdiClose
 
 // Data
 const analytics = ref(null)
 const loading = ref(false)
+const initialLoading = ref(true)
 const error = ref(null)
 const enabled = ref(false)
 
@@ -471,6 +461,7 @@ async function fetchAnalytics() {
     }
   } finally {
     loading.value = false
+    initialLoading.value = false
   }
 }
 

@@ -1,9 +1,9 @@
 <template>
-  <div class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[calc(100vh-2rem)] flex flex-col">
+  <div class="modal-overlay flex items-center justify-center">
+    <div role="dialog" aria-modal="true" class="modal-panel max-w-md w-full mx-4 max-h-[calc(100vh-2rem)] flex flex-col">
       <!-- Header -->
       <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Add Position</h3>
+        <h3 class="modal-title">Add Position</h3>
         <p class="text-sm text-gray-500 dark:text-gray-400">Track a long-term investment position</p>
       </div>
 
@@ -33,7 +33,7 @@
             step="any"
             min="0.000001"
             placeholder="e.g., 100"
-            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+            class="input"
           />
         </div>
 
@@ -51,7 +51,7 @@
               step="0.0001"
               min="0.0001"
               placeholder="e.g., 150.00"
-              class="w-full pl-7 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+              class="input pl-7"
             />
           </div>
         </div>
@@ -65,7 +65,7 @@
             v-model="form.purchaseDate"
             type="date"
             required
-            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+            class="input"
           />
         </div>
 
@@ -84,54 +84,7 @@
             @change="handleAccountChange"
           />
           <p v-if="accountsWithoutIdentifiers" class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            {{ accountsWithoutIdentifiers }} account{{ accountsWithoutIdentifiers === 1 ? '' : 's' }} need an account identifier before holdings can be linked.
-          </p>
-        </div>
-
-        <!-- Broker (optional) -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Broker or custodian (optional)
-          </label>
-          <input
-            v-model="form.broker"
-            type="text"
-            placeholder="e.g., Cold storage, Schwab"
-            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-          />
-        </div>
-
-        <!-- Notes (optional) -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Notes (optional)
-          </label>
-          <textarea
-            v-model="form.notes"
-            rows="2"
-            placeholder="Any notes about this position..."
-            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-          ></textarea>
-        </div>
-
-        <!-- Total Cost Display -->
-        <div v-if="totalCost" class="bg-gray-50 dark:bg-gray-700 rounded-md p-3">
-          <div class="flex justify-between text-sm">
-            <span class="text-gray-600 dark:text-gray-400">Total Cost</span>
-            <span class="font-medium text-gray-900 dark:text-white">{{ formatCurrency(totalCost) }}</span>
-          </div>
-        </div>
-
-        <!-- Error -->
-        <div v-if="error" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
-          <p class="text-sm text-red-700 dark:text-red-400">{{ error }}</p>
-        </div>
-
-        <!-- Actions -->
-        <div class="flex justify-end space-x-3 pt-4">
-          <button
-            type="button"
-            @click="$emit('close')"
+            {{ accountsWithoutIdentifiers }} account{{ accountsWithoutIdentifiers === 1 ? '' : 's'}} need an account identifier before holdings can be linked. </p> </div> <!-- Broker (optional) --> <div> <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"> Broker or custodian (optional) </label> <input v-model="form.broker" type="text" placeholder="e.g., Cold storage, Schwab" class="input" /> </div> <!-- Notes (optional) --> <div> <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"> Notes (optional) </label> <textarea v-model="form.notes" rows="2" placeholder="Any notes about this position..." class="input" ></textarea> </div> <!-- Total Cost Display --> <div v-if="totalCost" class="bg-gray-50 dark:bg-gray-700 rounded-md p-3"> <div class="flex justify-between text-sm"> <span class="text-gray-600 dark:text-gray-400">Total Cost</span> <span class="font-medium text-gray-900 dark:text-white">{{ formatCurrency(totalCost) }}</span> </div> </div> <!-- Error --> <div v-if="error" class="callout-danger"> <p class="text-sm text-red-600 dark:text-red-400">{{ error }}</p> </div> <!-- Actions --> <div class="modal-footer"> <button type="button" @click="$emit('close')"
             class="btn-secondary"
           >
             Cancel

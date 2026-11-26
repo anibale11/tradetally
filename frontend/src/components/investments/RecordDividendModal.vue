@@ -1,9 +1,9 @@
 <template>
-  <div class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
+  <div class="modal-overlay flex items-center justify-center">
+    <div role="dialog" aria-modal="true" class="modal-panel max-w-md w-full mx-4">
       <!-- Header -->
       <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Record Dividend</h3>
+        <h3 class="modal-title">Record Dividend</h3>
         <p class="text-sm text-gray-500 dark:text-gray-400">Track dividend income for this holding</p>
       </div>
 
@@ -23,7 +23,7 @@
               step="0.01"
               min="0.01"
               placeholder="e.g., 125.00"
-              class="w-full pl-7 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+              class="input pl-7"
             />
           </div>
         </div>
@@ -47,7 +47,7 @@
             v-model="form.paymentDate"
             type="date"
             required
-            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+            class="input"
           />
         </div>
 
@@ -62,34 +62,7 @@
               { value: 'regular', label: 'Regular Dividend' },
               { value: 'special', label: 'Special Dividend' },
               { value: 'qualified', label: 'Qualified Dividend' },
-              { value: 'return_of_capital', label: 'Return of Capital' },
-            ]"
-          />
-        </div>
-
-        <!-- Notes (optional) -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Notes (optional)
-          </label>
-          <input
-            v-model="form.notes"
-            type="text"
-            placeholder="e.g., Q4 2025 dividend"
-            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-          />
-        </div>
-
-        <!-- Error -->
-        <div v-if="error" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
-          <p class="text-sm text-red-700 dark:text-red-400">{{ error }}</p>
-        </div>
-
-        <!-- Actions -->
-        <div class="flex justify-end space-x-3 pt-4">
-          <button
-            type="button"
-            @click="$emit('close')"
+              { value: 'return_of_capital', label: 'Return of Capital'}, ]" /> </div> <!-- Notes (optional) --> <div> <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"> Notes (optional) </label> <input v-model="form.notes" type="text" placeholder="e.g., Q4 2025 dividend" class="input" /> </div> <!-- Error --> <div v-if="error" class="callout-danger"> <p class="text-sm text-red-600 dark:text-red-400">{{ error }}</p> </div> <!-- Actions --> <div class="modal-footer"> <button type="button" @click="$emit('close')"
             class="btn-secondary"
           >
             Cancel

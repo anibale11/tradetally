@@ -10,7 +10,7 @@
 
     <!-- Loading State -->
     <div v-if="loading && !hasAccounts" class="flex justify-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div class="spinner spinner-lg"></div>
     </div>
 
     <!-- Main Content -->
@@ -61,39 +61,39 @@
         <!-- Cashflow Summary Cards -->
         <div v-if="cashflow" class="grid gap-4 grid-cols-1 sm:grid-cols-3">
           <!-- YTD Deposits / Withdrawals -->
-          <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm p-5 flex flex-col gap-4">
+          <div class="card card-body flex flex-col gap-4">
             <div>
-              <div class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">YTD Deposits</div>
-              <div class="mt-1 text-lg font-bold tabular-nums tracking-tight whitespace-nowrap text-green-600 dark:text-green-400">
+              <div class="text-label">YTD Deposits</div>
+              <div class="mt-1 text-lg font-bold tabular-nums tracking-tight whitespace-nowrap text-green-700 dark:text-green-400">
                 {{ formatSignedCurrency(cashflow.summary.ytdDeposits) }}
               </div>
             </div>
             <div>
-              <div class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">YTD Withdrawals</div>
+              <div class="text-label">YTD Withdrawals</div>
               <div class="mt-1 text-lg font-bold tabular-nums tracking-tight whitespace-nowrap text-red-600 dark:text-red-400">
                 {{ formatSignedCurrency(-cashflow.summary.ytdWithdrawals) }}
               </div>
             </div>
           </div>
           <!-- Total Inflow / Outflow -->
-          <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm p-5 flex flex-col gap-4">
+          <div class="card card-body flex flex-col gap-4">
             <div>
-              <div class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Total Inflow</div>
-              <div class="mt-1 text-lg font-bold tabular-nums tracking-tight whitespace-nowrap text-green-600 dark:text-green-400">
+              <div class="text-label">Total Inflow</div>
+              <div class="mt-1 text-lg font-bold tabular-nums tracking-tight whitespace-nowrap text-green-700 dark:text-green-400">
                 {{ formatSignedCurrency(cashflow.summary.totalInflow) }}
               </div>
             </div>
             <div>
-              <div class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Total Outflow</div>
+              <div class="text-label">Total Outflow</div>
               <div class="mt-1 text-lg font-bold tabular-nums tracking-tight whitespace-nowrap text-red-600 dark:text-red-400">
                 {{ formatSignedCurrency(-cashflow.summary.totalOutflow) }}
               </div>
             </div>
           </div>
           <!-- Current Balance -->
-          <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm p-5 flex flex-col justify-center">
-            <div class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Current Balance</div>
-            <div class="mt-1 text-2xl font-bold tabular-nums tracking-tight whitespace-nowrap" :class="balanceClass">
+          <div class="card card-body flex flex-col justify-center">
+            <div class="text-label">Current Balance</div>
+            <div class="stat-value mt-1 whitespace-nowrap" :class="balanceClass">
               {{ formatCurrency(cashflow.summary.currentBalance) }}
             </div>
           </div>
@@ -124,13 +124,13 @@
 
             <div v-else class="overflow-x-auto">
               <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead>
+                <thead class="table-head">
                   <tr>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
-                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Inflow</th>
-                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Outflow</th>
-                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Net</th>
-                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Balance</th>
+                    <th class="text-left table-th px-4 py-2">Date</th>
+                    <th class="text-right table-th px-4 py-2">Inflow</th>
+                    <th class="text-right table-th px-4 py-2">Outflow</th>
+                    <th class="text-right table-th px-4 py-2">Net</th>
+                    <th class="text-right table-th px-4 py-2">Balance</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -140,7 +140,7 @@
                       :class="expandedDate === row.date ? 'bg-gray-50 dark:bg-gray-800' : ''"
                       @click="toggleDayDetail(row.date)"
                     >
-                      <td class="px-4 py-3 text-sm text-gray-900 dark:text-white whitespace-nowrap">
+                      <td class="text-sm text-gray-900 dark:text-white whitespace-nowrap px-4 py-3">
                         <div class="flex items-center gap-2">
                           <svg
                             class="h-4 w-4 text-gray-400 transition-transform"
@@ -152,25 +152,25 @@
                           {{ formatDate(row.date) }}
                         </div>
                       </td>
-                      <td class="px-4 py-3 text-sm text-right text-green-600 dark:text-green-400 whitespace-nowrap">
+                      <td class="text-sm text-right text-green-700 dark:text-green-400 whitespace-nowrap px-4 py-3">
                         <span v-if="row.inflow > 0">{{ formatSignedCurrency(row.inflow) }}</span>
                         <span v-else class="text-gray-400">-</span>
                       </td>
-                      <td class="px-4 py-3 text-sm text-right text-red-600 dark:text-red-400 whitespace-nowrap">
+                      <td class="text-sm text-right text-red-600 dark:text-red-400 whitespace-nowrap px-4 py-3">
                         <span v-if="row.outflow > 0">{{ formatSignedCurrency(-row.outflow) }}</span>
                         <span v-else class="text-gray-400">-</span>
                       </td>
-                      <td class="px-4 py-3 text-sm text-right font-medium whitespace-nowrap" :class="row.net >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                      <td class="text-sm text-right font-medium whitespace-nowrap px-4 py-3" :class="pnlClass(row.net)">
                         {{ formatSignedCurrency(row.net) }}
                       </td>
-                      <td class="px-4 py-3 text-sm text-right font-semibold text-gray-900 dark:text-white whitespace-nowrap">
+                      <td class="text-sm text-right font-semibold text-gray-900 dark:text-white whitespace-nowrap px-4 py-3">
                         {{ formatCurrency(row.balance) }}
                       </td>
                     </tr>
 
                     <!-- Expanded day detail -->
                     <tr v-if="expandedDate === row.date" class="bg-gray-50 dark:bg-gray-800/40">
-                      <td colspan="5" class="px-4 pb-4 pt-1">
+                      <td colspan="5" class="pb-4 pt-1 px-4 py-3">
                         <div v-if="dayActivityLoading && !expandedActivity" class="py-2 text-sm text-gray-500 dark:text-gray-400">
                           Loading details…
                         </div>
@@ -184,7 +184,7 @@
                           <div v-else class="space-y-4">
                             <!-- Trades -->
                             <div v-if="expandedActivity.trades.length">
-                              <div class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
+                              <div class="text-label mb-2">
                                 Trades
                               </div>
                               <ul class="space-y-1.5">
@@ -197,20 +197,20 @@
                                     <span class="h-1.5 w-1.5 shrink-0 rounded-full" :class="t.direction === 'inflow' ? 'bg-green-500' : 'bg-red-500'"></span>
                                     <span class="font-medium text-gray-900 dark:text-white">{{ t.symbol }}</span>
                                     <span class="text-gray-500 dark:text-gray-400 truncate">
-                                      {{ tradeActionLabel(t) }} {{ t.quantity }} @ {{ formatCurrency(t.price) }}
+                                      {{ tradeActionLabel(t) }} {{ formatQuantity(t.quantity) }} @ {{ formatCurrency(t.price) }}
                                     </span>
                                     <span v-if="t.commission" class="shrink-0 text-xs text-gray-400 dark:text-gray-500">
                                       fee {{ formatCurrency(t.commission) }}
                                     </span>
                                   </div>
                                   <div class="shrink-0 whitespace-nowrap text-right">
-                                    <span :class="t.direction === 'inflow' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                                    <span :class="t.direction === 'inflow' ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
                                       {{ formatSignedCurrency(t.direction === 'inflow' ? t.grossAmount : -t.grossAmount) }}
                                     </span>
                                     <span
                                       v-if="t.eventType === 'exit' && t.pnl !== null"
                                       class="ml-2 text-xs"
-                                      :class="t.pnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'"
+                                      :class="pnlClass(t.pnl)"
                                     >
                                       ({{ formatSignedCurrency(t.pnl) }} P&L)
                                     </span>
@@ -221,7 +221,7 @@
 
                             <!-- Deposits & Withdrawals -->
                             <div v-if="expandedActivity.transactions.length">
-                              <div class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
+                              <div class="text-label mb-2">
                                 Deposits &amp; Withdrawals
                               </div>
                               <ul class="space-y-1.5">
@@ -236,12 +236,12 @@
                                     <span v-if="tx.description" class="truncate text-gray-500 dark:text-gray-400">{{ tx.description }}</span>
                                     <span
                                       v-if="tx.sourceType === 'plaid'"
-                                      class="shrink-0 rounded bg-primary-100 px-1.5 py-0.5 text-[10px] font-medium uppercase text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
+                                      class="badge bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
                                     >
                                       Plaid
                                     </span>
                                   </div>
-                                  <span class="shrink-0 whitespace-nowrap" :class="tx.transactionType === 'deposit' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                                  <span class="shrink-0 whitespace-nowrap" :class="tx.transactionType === 'deposit' ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
                                     {{ formatSignedCurrency(tx.transactionType === 'deposit' ? tx.amount : -tx.amount) }}
                                   </span>
                                 </li>
@@ -265,7 +265,7 @@
                 <button
                   @click="goToCashflowPage(cashflowPage - 1)"
                   :disabled="cashflowPage <= 1"
-                  class="btn-secondary text-sm"
+                  class="btn-secondary"
                 >
                   Previous
                 </button>
@@ -297,14 +297,14 @@
           <div class="card-body">
             <div class="flex items-center justify-between mb-4">
               <h3 class="heading-card">Accounts</h3>
-              <button @click="openAddAccountModal" class="btn-primary text-sm">
+              <button @click="openAddAccountModal" class="btn-primary">
                 Add Account
               </button>
             </div>
 
             <div v-if="accounts.length === 0" class="text-center py-4">
               <p class="text-gray-500 dark:text-gray-400">No accounts configured</p>
-              <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Create an account to start tracking cashflow
               </p>
             </div>
@@ -314,17 +314,14 @@
                 v-for="account in accounts"
                 :key="account.id"
                 class="p-3 border rounded-lg cursor-pointer transition-colors"
-                :class="[
-                  account.isPrimary ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-gray-700',
-                  selectedAccountId === account.id ? 'ring-2 ring-primary-500' : ''
-                ]"
+                :class="[ account.isPrimary ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-gray-700', selectedAccountId === account.id ? 'ring-2 ring-primary-500' : '' ]"
                 @click="selectAccount(account.id)"
               >
                 <div class="flex items-start justify-between">
                   <div class="flex-1 min-w-0">
                     <div class="font-medium text-gray-900 dark:text-white truncate">
                       {{ account.accountName }}
-                      <span v-if="account.isPrimary" class="ml-2 text-xs text-primary-600 dark:text-primary-400">Primary</span>
+                      <span v-if="account.isPrimary" class="ml-2 text-xs text-primary-700 dark:text-primary-400">Primary</span>
                     </div>
                     <div v-if="account.broker" class="text-sm text-gray-500 dark:text-gray-400">
                       {{ account.broker }}
@@ -339,7 +336,7 @@
                   <div class="flex items-center space-x-2 ml-2">
                     <button
                       @click.stop="editAccount(account)"
-                      class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                      class="btn-ghost btn-sm"
                       title="Edit account"
                     >
                       <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -348,7 +345,7 @@
                     </button>
                     <button
                       @click.stop="confirmDeleteAccount(account)"
-                      class="text-red-400 hover:text-red-600"
+                      class="text-red-600 dark:text-red-400 hover:text-red-600"
                       title="Delete account"
                     >
                       <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -445,14 +442,14 @@
                 class="flex items-center justify-between p-2 rounded bg-gray-50 dark:bg-gray-800"
               >
                 <div>
-                  <div class="text-sm font-medium" :class="tx.transactionType === 'deposit' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                  <div class="text-sm font-medium" :class="tx.transactionType === 'deposit' ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
                     {{ formatSignedCurrency(tx.transactionType === 'deposit' ? tx.amount : -tx.amount) }}
                   </div>
                   <div class="text-xs text-gray-500 dark:text-gray-400">
                     {{ formatDate(tx.transactionDate) }}
                     <span v-if="tx.description" class="ml-1">- {{ tx.description }}</span>
                   </div>
-                  <div v-if="tx.sourceType === 'plaid'" class="mt-1 text-[11px] uppercase tracking-wide text-primary-600 dark:text-primary-400">
+                  <div v-if="tx.sourceType === 'plaid'" class="mt-1 text-xs uppercase tracking-wide text-primary-700 dark:text-primary-400">
                     Imported from Plaid
                   </div>
                 </div>
@@ -483,6 +480,7 @@
 </template>
 
 <script setup>
+import { pnlClass } from '@/utils/metricTone'
 import { resolveDatePreset, monthPresetOptions } from '@/utils/datePresets'
 import { ref, computed, watch, onMounted } from 'vue'
 import { useAccountsStore } from '@/stores/accounts'
@@ -496,6 +494,7 @@ import PlaidFundingPanel from '@/components/accounts/PlaidFundingPanel.vue'
 import PlaidReviewQueue from '@/components/accounts/PlaidReviewQueue.vue'
 import BaseSelect from '@/components/common/BaseSelect.vue'
 import { useCurrencyFormatter } from '@/composables/useCurrencyFormatter'
+import { formatQuantity } from '@/utils/formatters'
 
 const { formatCurrency, formatSignedCurrency, currencySymbol } = useCurrencyFormatter()
 
@@ -614,7 +613,7 @@ watch(reversedCashflow, () => {
 const balanceClass = computed(() => {
   if (!cashflow.value) return 'text-gray-900 dark:text-white'
   const diff = cashflow.value.summary.currentBalance - cashflow.value.summary.initialBalance
-  return diff >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+  return pnlClass(diff)
 })
 
 // Methods

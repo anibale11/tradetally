@@ -1,7 +1,7 @@
 <template>
     <div class="tick-data-chart">
         <div class="mb-4">
-            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+            <h3 class="heading-card mb-2">
                 Price Action Analysis
             </h3>
             <p class="text-sm text-gray-600 dark:text-gray-400">
@@ -9,23 +9,17 @@
             </p>
         </div>
 
-        <!-- Loading State -->
-        <div v-if="loading" class="flex items-center justify-center h-64">
-            <div
-                class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"
-            ></div>
-            <span class="ml-2 text-gray-600 dark:text-gray-400"
-                >Loading tick data...</span
-            >
-        </div>
+        <!-- First load: a placeholder the size of the chart. Refreshes keep
+             the current chart on screen. -->
+        <div v-if="loading && !chartData" class="skeleton h-64" aria-busy="true"></div>
 
         <!-- Error State -->
         <div
             v-else-if="error"
-            class="bg-red-50 border border-red-200 rounded-lg p-4"
+            class="callout-danger"
         >
             <div class="flex">
-                <div class="text-red-500 mr-3">
+                <div class="text-red-600 dark:text-red-400 mr-3">
                     <svg
                         class="w-5 h-5"
                         fill="none"
@@ -41,10 +35,10 @@
                     </svg>
                 </div>
                 <div>
-                    <h4 class="text-sm font-medium text-red-800">
+                    <h4 class="heading-sub text-red-600 dark:text-red-400">
                         Unable to load tick data
                     </h4>
-                    <p class="text-sm text-red-700 mt-1">{{ error }}</p>
+                    <p class="text-sm text-red-700 dark:text-red-400 mt-1">{{ error }}</p>
                 </div>
             </div>
         </div>
@@ -53,7 +47,7 @@
         <div v-else-if="chartData" class="space-y-6">
             <!-- Chart -->
             <div
-                class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+                class="card p-4"
             >
                 <div ref="chartContainer" class="w-full h-64"></div>
             </div>
@@ -61,10 +55,10 @@
             <!-- Analysis Summary -->
             <div v-if="analysis" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div
-                    class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+                    class="card p-4"
                 >
                     <h4
-                        class="text-sm font-medium text-gray-900 dark:text-white mb-3"
+                        class="heading-sub mb-3"
                     >
                         Price Movement
                     </h4>
@@ -74,9 +68,7 @@
                                 >Trend before entry:</span
                             >
                             <span
-                                :class="
-                                    getTrendColor(analysis.price_trend_before)
-                                "
+                                :class="getTrendColor(analysis.price_trend_before)"
                                 class="font-medium"
                             >
                                 {{ formatTrend(analysis.price_trend_before) }}
@@ -87,9 +79,7 @@
                                 >Trend after entry:</span
                             >
                             <span
-                                :class="
-                                    getTrendColor(analysis.price_trend_after)
-                                "
+                                :class="getTrendColor(analysis.price_trend_after)"
                                 class="font-medium"
                             >
                                 {{ formatTrend(analysis.price_trend_after) }}
@@ -102,17 +92,17 @@
                             <span
                                 class="font-medium text-gray-900 dark:text-white"
                             >
-                                ${{ analysis.price_at_entry?.toFixed(2) }}
+                                {{ formatCurrency(analysis.price_at_entry, { currency: 'USD' }) }}
                             </span>
                         </div>
                     </div>
                 </div>
 
                 <div
-                    class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+                    class="card p-4"
                 >
                     <h4
-                        class="text-sm font-medium text-gray-900 dark:text-white mb-3"
+                        class="heading-sub mb-3"
                     >
                         Behavioral Analysis
                     </h4>
@@ -123,15 +113,13 @@
                             >
                             <span
                                 class="font-medium"
-                                :class="
-                                    getScoreColor(analysis.entry_timing_score)
-                                "
+                                :class="getScoreColor(analysis.entry_timing_score)"
                             >
                                 {{
-                                    (analysis.entry_timing_score * 100).toFixed(
-                                        0,
-                                    )
-                                }}%
+                                    formatPercent(analysis.entry_timing_score, {
+                                        multiplier: 100,
+                                    })
+                                }}
                             </span>
                         </div>
                         <div class="flex justify-between text-sm">
@@ -142,8 +130,8 @@
                                 class="font-medium"
                                 :class="
                                     analysis.was_chasing_momentum
-                                        ? 'text-red-600'
-                                        : 'text-green-600'
+                                        ? 'text-red-600 dark:text-red-400'
+                                        : 'text-green-700 dark:text-green-400'
                                 "
                             >
                                 {{
@@ -159,8 +147,8 @@
                                 class="font-medium"
                                 :class="
                                     analysis.was_fighting_trend
-                                        ? 'text-red-600'
-                                        : 'text-green-600'
+                                        ? 'text-red-600 dark:text-red-400'
+                                        : 'text-green-700 dark:text-green-400'
                                 "
                             >
                                 {{ analysis.was_fighting_trend ? "Yes" : "No" }}
@@ -173,10 +161,10 @@
             <!-- Insights -->
             <div
                 v-if="insights.length > 0"
-                class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4"
+                class="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-4"
             >
                 <h4
-                    class="text-sm font-medium text-blue-900 dark:text-blue-200 mb-2"
+                    class="heading-sub text-primary-900 dark:text-primary-200 mb-2"
                 >
                     Key Insights
                 </h4>
@@ -184,7 +172,7 @@
                     <li
                         v-for="insight in insights"
                         :key="insight"
-                        class="text-sm text-blue-800 dark:text-blue-300"
+                        class="text-sm text-primary-800 dark:text-primary-300"
                     >
                         • {{ insight }}
                     </li>
@@ -196,6 +184,8 @@
 
 <script>
 import { ref, onMounted, onUnmounted, computed } from "vue";
+import { formatPercent } from "@/utils/formatters";
+import { useCurrencyFormatter } from "@/composables/useCurrencyFormatter";
 
 export default {
     name: "TickDataChart",
@@ -214,6 +204,7 @@ export default {
         },
     },
     setup(props) {
+        const { formatCurrency } = useCurrencyFormatter();
         const chartContainer = ref(null);
         const loading = ref(false);
         const error = ref(null);
@@ -280,8 +271,8 @@ export default {
         // Methods
         const getTrendColor = (trend) => {
             const colors = {
-                up: "text-green-600",
-                down: "text-red-600",
+                up: "text-green-700 dark:text-green-400",
+                down: "text-red-600 dark:text-red-400",
                 sideways: "text-gray-600",
             };
             return colors[trend] || "text-gray-600";
@@ -298,9 +289,9 @@ export default {
         };
 
         const getScoreColor = (score) => {
-            if (score >= 0.7) return "text-green-600";
+            if (score >= 0.7) return "text-green-700 dark:text-green-400";
             if (score >= 0.4) return "text-yellow-600";
-            return "text-red-600";
+            return "text-red-600 dark:text-red-400";
         };
 
         const createChart = () => {
@@ -366,7 +357,7 @@ export default {
             }
 
             // Draw price line
-            ctx.strokeStyle = "#3b82f6";
+            ctx.strokeStyle = "#F0812A";
             ctx.lineWidth = 2;
             ctx.beginPath();
 
@@ -416,7 +407,7 @@ export default {
             for (let i = 0; i <= 5; i++) {
                 const price = minPrice + (i / 5) * (maxPrice - minPrice);
                 const y = padding + (1 - i / 5) * chartHeight;
-                ctx.fillText(`$${price.toFixed(2)}`, padding - 20, y + 4);
+                ctx.fillText(formatCurrency(price, { currency: "USD" }), padding - 20, y + 4);
             }
 
             // Time labels
@@ -472,6 +463,8 @@ export default {
             formatTrend,
             getScoreColor,
             refreshChart,
+            formatCurrency,
+            formatPercent,
         };
     },
 };

@@ -8,17 +8,43 @@ const db = require('../../config/database');
 const AnalyticsCache = require('../analyticsCache');
 const OptionStrategyGroupingService = require('../optionStrategyGroupingService');
 const ibkrService = require('./ibkrService');
+const BrokerReauthNotificationService = require('./brokerReauthNotificationService');
 const schwabService = require('./schwabService');
 const tradestationService = require('./tradestationService');
 const alpacaService = require('./alpacaService');
 const webullService = require('./webullService');
 const trading212Service = require('./trading212Service');
+const oanda_service = require('./oandaService');
 const tradovateService = require('./tradovateService');
 const { getUserTimezone } = require('../../utils/timezone');
 const { publishInBackground } = require('../../events/domainEvents');
 
 const IBKR_BACKFILL_RETRY_LIMIT = 3;
 const IBKR_BACKFILL_RETRY_DELAY_MINUTES = 60;
+
+// Failures that say nothing about the user's configuration. Broker services
+// flag their own transient errors; this catches the ones raised below them
+// (HTTP client timeouts, DNS, Postgres pool exhaustion during a long sync).
+const TRANSIENT_ERROR_CODES = new Set(['EAI_AGAIN', 'ENOTFOUND', 'ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'ECONNABORTED', 'TIMEOUT']);
+const TRANSIENT_ERROR_PATTERNS = [
+  /timeout/i,
+  /timed out/i,
+  /connection terminated/i,
+  /ECONNRESET|ECONNREFUSED|EAI_AGAIN|ENOTFOUND/,
+  /socket hang up/i,
+  /too many clients/i,
+  /temporarily unavailable/i,
+  /503|502|504/
+];
+
+function isTransientSyncError(error) {
+  if (!error) return false;
+  if (error.transient === true) return true;
+  if (error.code && TRANSIENT_ERROR_CODES.has(error.code)) return true;
+  if (error.errorCode && TRANSIENT_ERROR_CODES.has(error.errorCode)) return true;
+  const message = String(error.message || '');
+  return TRANSIENT_ERROR_PATTERNS.some(pattern => pattern.test(message));
+}
 
 class BrokerSyncService {
   /**
@@ -60,6 +86,21 @@ class BrokerSyncService {
       throw new Error('Connection not found');
     }
 
+    const report_type = connection.brokerType === 'ibkr'
+      ? (options.report_type || (syncType === 'manual' && connection.ibkr_trade_confirmation_query_id ? 'all' : 'activity'))
+      : 'activity';
+    if (report_type === 'all') {
+      const reports = [];
+      for (const selected_report of ['trade_confirmation', 'activity']) {
+        if (selected_report === 'trade_confirmation' && !connection.ibkr_trade_confirmation_query_id) continue;
+        try { reports.push(await this.syncConnectionUnlocked(connectionId, { ...options, report_type: selected_report })); }
+        catch (error) { reports.push({ success: false, report_type: selected_report, error: error.message }); }
+      }
+      const totals = Object.fromEntries(['imported', 'updated', 'duplicates', 'skipped', 'failed'].map(name => [name, reports.reduce((sum, report) => sum + (Number(report[name]) || 0), 0)]));
+      return { ...totals, success: reports.every(report => report.success), reports,
+        warnings: reports.flatMap(report => [...(report.warnings || []), ...(report.error ? [report.error] : [])]) };
+    }
+
     // Broker sync is a Pro feature. This is the single funnel for every sync
     // path (manual, scheduled, retry), so gating here covers them all.
     // - Scheduled syncs for a gated free user are skipped cleanly: no sync log,
@@ -70,7 +111,7 @@ class BrokerSyncService {
     const TierService = require('../tierService');
     const syncAccess = await TierService.canSyncBrokerConnection(connection.userId);
     if (!syncAccess.allowed) {
-      if (['scheduled', 'ibkr_timeout_retry'].includes(syncType)) {
+      if (['scheduled', 'ibkr_timeout_retry', 'ibkr_confirmation'].includes(syncType)) {
         console.log(`[BROKER-SYNC] Skipping scheduled sync for connection ${connectionId}: broker sync is Pro-only for this free user`);
         return { success: false, skippedForTier: true, reason: 'tier_pro_required', imported: 0, duplicates: 0 };
       }
@@ -105,6 +146,23 @@ class BrokerSyncService {
 
     try {
       let result;
+      if (connection.brokerType === 'ibkr' && report_type === 'trade_confirmation') {
+        result = await ibkrService.syncConfirmations(connection, { startDate, endDate, syncLogId: syncLog.id });
+        await BrokerConnection.updateConfirmationSync(connectionId, { success: true, report_available: result.report_available !== false });
+        const pending = await db.query(`SELECT COUNT(*)::int AS count FROM trades WHERE user_id = $1 AND ibkr_reconciliation_status = 'pending'`, [connection.userId]);
+        result.pending_reconciliation_count = pending.rows[0]?.count || 0;
+        await BrokerConnection.updateSyncLog(syncLog.id, 'completed', {
+          tradesImported: result.imported, tradesSkipped: result.skipped, tradesFailed: result.failed,
+          duplicatesDetected: result.duplicates, syncDetails: { report_type, updated_count: result.updated || 0,
+            pending_reconciliation_count: result.pending_reconciliation_count, warnings: result.warnings,
+            outcome: result.outcome, manual_review_items: result.manualReviewItems,
+            manual_review_count: result.manualReviewCount, report_formats: result.reportFormats }
+        });
+        publishInBackground('broker_sync.completed', { connectionId, brokerType: 'ibkr', syncLogId: syncLog.id,
+          syncType, status: 'completed', imported: result.imported, updated_count: result.updated,
+          report_type, warnings: result.warnings }, { source: 'brokerSync', userId: connection.userId });
+        return { ...result, success: true, syncLogId: syncLog.id };
+      }
 
       // Route to appropriate broker service
       switch (connection.brokerType) {
@@ -150,6 +208,10 @@ class BrokerSyncService {
           });
           break;
 
+        case 'oanda':
+          result = await oanda_service.syncTrades(connection, { startDate, endDate, syncLogId: syncLog.id });
+          break;
+
         case 'trading212':
           result = await trading212Service.syncTrades(connection, {
             startDate,
@@ -170,6 +232,10 @@ class BrokerSyncService {
           throw new Error(`Unknown broker type: ${connection.brokerType}`);
       }
 
+      if (connection.brokerType === 'ibkr' && connection.ibkr_trade_confirmation_query_id) {
+        const pending = await db.query("SELECT COUNT(*)::int AS count FROM trades WHERE user_id = $1 AND ibkr_reconciliation_status = 'pending'", [connection.userId]);
+        result.pending_reconciliation_count = pending.rows[0]?.count || 0;
+      }
       // Auto-close expired options after importing broker data
       const expiredClosed = await this.closeExpiredOptions(connection.userId);
       result.expiredClosed = expiredClosed;
@@ -181,6 +247,9 @@ class BrokerSyncService {
         tradesFailed: result.failed,
         duplicatesDetected: result.duplicates,
         syncDetails: {
+          report_type,
+          updated_count: result.updated || 0,
+          pending_reconciliation_count: result.pending_reconciliation_count || 0,
           warnings: result.warnings || [],
           warning_details: result.warningDetails || [],
           outcome: result.outcome || ((result.warnings || []).length > 0 ? 'warning' : 'success'),
@@ -282,6 +351,8 @@ class BrokerSyncService {
         syncType,
         status: 'completed',
         imported: result.imported + expiredClosed,
+        updated_count: result.updated || 0,
+        report_type,
         skipped: result.skipped || 0,
         failed: result.failed || 0,
         duplicates: result.duplicates || 0,
@@ -318,10 +389,12 @@ class BrokerSyncService {
       // Without this we only have the human-friendly message and can't tell
       // an IBKR 1019 ("statement being generated") from a 1011 ("inactive
       // account") after the fact.
+      const transient = isTransientSyncError(error);
       const errorDetails = {
         errorCode: error.errorCode || null,
         rawMessage: error.rawMessage || null,
-        transient: Boolean(error.transient),
+        report_type,
+        transient,
         timestamp: new Date().toISOString()
       };
 
@@ -331,23 +404,42 @@ class BrokerSyncService {
         errorDetails
       });
 
-      // Update connection failure status
-      await BrokerConnection.updateAfterFailure(connectionId, error.message);
-
-      // Auto-retry transient failures by bringing next_scheduled_sync
-      // forward to 30 min from now. The scheduler will pick it up on its
-      // next pass. Only retries when auto-sync is enabled and we haven't
-      // already burned through retries (updateAfterFailure caps at 3
-      // consecutive failures, after which the connection is marked 'error').
-      // Manual retries are not auto-rescheduled — the user is watching the
-      // UI and can re-click "Sync Now".
-      if (connection.brokerType !== 'ibkr' && error.transient && syncType === 'scheduled') {
-        try {
-          await BrokerConnection.scheduleTransientRetry(connectionId, 30);
-          console.log(`[BROKER-SYNC] Scheduled transient-failure retry for ${connectionId} in 30 min`);
-        } catch (retryErr) {
-          console.error(`[BROKER-SYNC] Failed to schedule retry: ${retryErr.message}`);
+      if (connection.brokerType === 'ibkr' && report_type === 'trade_confirmation') {
+        error.transient = transient;
+        error.retry_count = Number(connection.brokerMetadata?.ibkr_confirmation?.retry_count || 0);
+        await BrokerConnection.updateConfirmationSync(connectionId, { error });
+        if (['1011', '1012', '1013', '1015'].includes(String(error.errorCode))) {
+          await BrokerReauthNotificationService.markRequired(connection, 'Interactive Brokers', {
+            message: error.message, instructions: ibkrService.IBKR_REAUTH_INSTRUCTIONS, reauthMode: 'credentials'
+          });
         }
+        publishInBackground('broker_sync.completed', { connectionId, brokerType: 'ibkr', syncLogId: syncLog.id,
+          syncType, status: 'failed', report_type, error: error.message }, { source: 'brokerSync', userId: connection.userId });
+        return { success: false, syncLogId: syncLog.id, report_type, error: error.message };
+      }
+
+      // Update connection failure status. Transient failures never count
+      // toward the 'error' lockout; the model pushes the next automatic sync
+      // out with exponential backoff instead, so a slow broker night is
+      // retried rather than silently disabling the connection. Manual syncs
+      // are not rescheduled: the user is watching the UI and can retry.
+      // IBKR credential errors (expired/invalid Flex token, bad query ID)
+      // cannot succeed on retry. Expire the connection and notify the owner
+      // once, the same way a Schwab refresh-token expiry does, so they learn
+      // about it from an email and the in-app banner instead of a silent
+      // three-strike lockout.
+      let updated = null;
+      if (connection.brokerType === 'ibkr' && ibkrService.isIBKRCredentialError(error)) {
+        await BrokerReauthNotificationService.markRequired(connection, 'Interactive Brokers', {
+          message: error.message,
+          instructions: ibkrService.IBKR_REAUTH_INSTRUCTIONS,
+          reauthMode: 'credentials'
+        });
+      } else {
+        updated = await BrokerConnection.updateAfterFailure(connectionId, error.message, { transient });
+      }
+      if (transient && updated?.nextScheduledSync) {
+        console.log(`[BROKER-SYNC] Transient failure for ${connectionId}; next automatic retry at ${new Date(updated.nextScheduledSync).toISOString()}`);
       }
 
       publishInBackground('broker_sync.completed', {
@@ -573,3 +665,4 @@ class BrokerSyncService {
 }
 
 module.exports = new BrokerSyncService();
+module.exports.isTransientSyncError = isTransientSyncError;

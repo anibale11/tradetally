@@ -9,7 +9,9 @@ const HoldingsService = require('../services/holdingsService');
 const PortfolioService = require('../services/portfolioService');
 const { parseReportDateRange } = require('../utils/reportDateRange');
 const RetirementService = require('../services/retirementService');
+const RetirementAffordabilityService = require('../services/retirementAffordabilityService');
 const DCFValuationService = require('../services/dcfValuationService');
+const ScreenerDiscoverService = require('../services/screenerDiscoverService');
 const plaidIncomeService = require('../services/plaid/plaidIncomeService');
 const db = require('../config/database');
 const { resolveDisplayCurrency, getRatesToDisplay, scaleMoneyFields, FINANCIAL_MONEY_KEYS } = require('../utils/displayCurrency');
@@ -1136,7 +1138,9 @@ const getRetirementPlan = async (req, res) => {
     const result = await RetirementService.get(req.user.id, {
       accounts: req.query.accounts
     });
-    res.json(result);
+    res.json(await RetirementAffordabilityService.attach(result, req.user.id, {
+      months: req.query.affordability_months
+    }));
   } catch (error) {
     console.error('[INVESTMENTS] Retirement plan error:', error);
     res.status(500).json({ error: error.message || 'Failed to get retirement plan' });
@@ -1152,7 +1156,9 @@ const calculateRetirementPlan = async (req, res) => {
     const result = await RetirementService.calculate(req.user.id, req.body, {
       accounts: req.query.accounts
     });
-    res.json(result);
+    res.json(await RetirementAffordabilityService.attach(result, req.user.id, {
+      months: req.query.affordability_months
+    }));
   } catch (error) {
     console.error('[INVESTMENTS] Retirement calculation error:', error);
     const status = /age|return|rate|contribution|spending|target/i.test(error.message) ? 400 : 500;
@@ -1168,12 +1174,12 @@ const saveRetirementPlan = async (req, res) => {
   try {
     const plan = await RetirementService.savePlan(req.user.id, req.body);
     const result = await RetirementService.calculate(req.user.id, plan);
-    res.json({
+    res.json(await RetirementAffordabilityService.attach({
       ...result,
       plan,
       draft_plan: plan,
       has_saved_plan: true
-    });
+    }, req.user.id));
   } catch (error) {
     console.error('[INVESTMENTS] Save retirement plan error:', error);
     const status = /age|return|rate|contribution|spending|target/i.test(error.message) ? 400 : 500;
@@ -1195,6 +1201,84 @@ const deleteRetirementPlan = async (req, res) => {
   }
 };
 
+/**
+ * Largest bank transactions in the affordability window with their category.
+ * GET /api/investments/retirement/affordability/transactions
+ */
+const getAffordabilityTransactions = async (req, res) => {
+  try {
+    const transactions = await RetirementAffordabilityService.listTransactions(req.user.id, {
+      months: req.query.months,
+      limit: req.query.limit,
+      category: req.query.category || null
+    });
+    res.json({
+      transactions,
+      categories: RetirementAffordabilityService.CATEGORIES
+    });
+  } catch (error) {
+    console.error('[INVESTMENTS] Affordability transactions error:', error);
+    res.status(500).json({ error: error.message || 'Failed to load transactions' });
+  }
+};
+
+/**
+ * Override the cash-flow category of one transaction.
+ * PUT /api/investments/retirement/affordability/transactions/:transactionId
+ */
+const setAffordabilityTransactionCategory = async (req, res) => {
+  try {
+    const row = await RetirementAffordabilityService.setTransactionCategory(
+      req.user.id,
+      req.params.transactionId,
+      req.body.category
+    );
+    if (!row) return res.status(404).json({ error: 'Transaction not found' });
+    res.json({ transaction: row, updated_ids: row.updated_ids || [row.id] });
+  } catch (error) {
+    console.error('[INVESTMENTS] Affordability category error:', error);
+    const status = /unknown cash-flow category/i.test(error.message) ? 400 : 500;
+    res.status(status).json({ error: error.message || 'Failed to update category' });
+  }
+};
+
+/**
+ * Count or stop counting a linked savings or CD account as retirement savings.
+ * PUT /api/investments/retirement/affordability/accounts/:plaidAccountId
+ */
+const setAffordabilityAccount = async (req, res) => {
+  try {
+    const row = await RetirementAffordabilityService.setAccountRetirementSavings(
+      req.user.id,
+      req.params.plaidAccountId,
+      req.body.include_in_retirement_savings
+    );
+    if (!row) return res.status(404).json({ error: 'Linked account not found' });
+    res.json({ account: row });
+  } catch (error) {
+    console.error('[INVESTMENTS] Affordability account error:', error);
+    res.status(500).json({ error: error.message || 'Failed to update account' });
+  }
+};
+
+/**
+ * Rebuild the affordability summary now, running classification again.
+ * POST /api/investments/retirement/affordability/refresh
+ */
+const refreshAffordability = async (req, res) => {
+  try {
+    RetirementAffordabilityService.invalidate(req.user.id);
+    const summary = await RetirementAffordabilityService.getSummary(req.user.id, {
+      months: req.body?.months,
+      force: true
+    });
+    res.json({ affordability: summary || { available: false, reason: 'no_bank_connection' } });
+  } catch (error) {
+    console.error('[INVESTMENTS] Affordability refresh error:', error);
+    res.status(500).json({ error: error.message || 'Failed to refresh affordability' });
+  }
+};
+
 // ========================================
 // SCREENER
 // ========================================
@@ -1203,23 +1287,41 @@ const deleteRetirementPlan = async (req, res) => {
  * Get search history
  * GET /api/investments/screener/history
  */
+/**
+ * Starter lists for the screener landing state: strong-pillar stocks with the
+ * lowest 5-year P/E, stocks passing the most pillars, and quality stocks with
+ * earnings in the next two weeks. All derived from cached data.
+ * GET /api/investments/screener/discover?limit=8
+ */
+const getScreenerDiscover = async (req, res) => {
+  try {
+    const data = await ScreenerDiscoverService.getDiscoverLists({ limit: req.query.limit });
+    res.json(data);
+  } catch (error) {
+    console.error('[INVESTMENTS] Screener discover error:', error);
+    res.status(500).json({ error: error.message || 'Failed to load screener starter lists' });
+  }
+};
+
 const getSearchHistory = async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 20;
     const favoritesOnly = req.query.favorites === 'true';
 
-    let query = `
-      SELECT DISTINCT ON (symbol) *
+    // One row per symbol, most recently searched first. Searches recorded
+    // without a company name (DCF lookups) take the name from an earlier
+    // search, and a symbol counts as a favorite if any of its rows is.
+    const query = `
+      SELECT symbol,
+             (array_agg(id ORDER BY searched_at DESC))[1] AS id,
+             (array_agg(company_name ORDER BY searched_at DESC) FILTER (WHERE company_name IS NOT NULL))[1] AS company_name,
+             MAX(searched_at) AS searched_at,
+             bool_or(COALESCE(is_favorite, false)) AS is_favorite
       FROM screener_searches
       WHERE user_id = $1
-    `;
-
-    if (favoritesOnly) {
-      query += ` AND is_favorite = true`;
-    }
-
-    query += `
-      ORDER BY symbol, searched_at DESC
+      GROUP BY symbol
+      ${favoritesOnly ? 'HAVING bool_or(COALESCE(is_favorite, false))' : ''}
+      ORDER BY MAX(searched_at) DESC
       LIMIT $2
     `;
 
@@ -1250,13 +1352,12 @@ const toggleFavorite = async (req, res) => {
       return res.status(400).json({ error: 'Symbol is required' });
     }
 
-    // Find most recent search for this symbol
+    // A symbol is a favorite if any of its search rows is
     const findQuery = `
-      SELECT id, is_favorite
+      SELECT bool_or(COALESCE(is_favorite, false)) AS is_favorite
       FROM screener_searches
       WHERE user_id = $1 AND symbol = $2
-      ORDER BY searched_at DESC
-      LIMIT 1
+      HAVING COUNT(*) > 0
     `;
 
     const findResult = await db.query(findQuery, [req.user.id, symbol.toUpperCase()]);
@@ -1488,6 +1589,10 @@ const getDCFMetrics = async (req, res) => {
 
     const metrics = await DCFValuationService.getHistoricalMetrics(symbol);
 
+    // The iOS analyzer only calls this endpoint, so record the search here
+    // too or iOS lookups never reach the shared recent-searches list.
+    await recordSearch(req.user.id, symbol, null);
+
     const { converted, currency } = await convertTradingToDisplay(req, metrics, DCF_METRICS_MONEY_KEYS);
 
     res.json({ ...converted, currency });
@@ -1685,9 +1790,29 @@ const deleteValuation = async (req, res) => {
  */
 const recordSearch = async (userId, symbol, companyName) => {
   try {
+    // The web analyzer loads both the analysis and the DCF metrics for one
+    // search, so a repeat within a few minutes refreshes the latest row
+    // instead of adding another. New rows keep the symbol's favorite flag.
     const query = `
-      INSERT INTO screener_searches (user_id, symbol, company_name)
-      VALUES ($1, $2, $3)
+      WITH refreshed AS (
+        UPDATE screener_searches
+        SET searched_at = CURRENT_TIMESTAMP,
+            company_name = COALESCE($3, company_name)
+        WHERE id = (
+          SELECT id FROM screener_searches
+          WHERE user_id = $1 AND symbol = $2
+            AND searched_at > CURRENT_TIMESTAMP - INTERVAL '5 minutes'
+          ORDER BY searched_at DESC
+          LIMIT 1
+        )
+        RETURNING id
+      )
+      INSERT INTO screener_searches (user_id, symbol, company_name, is_favorite)
+      SELECT $1, $2, $3, COALESCE(
+        (SELECT bool_or(is_favorite) FROM screener_searches WHERE user_id = $1 AND symbol = $2),
+        false
+      )
+      WHERE NOT EXISTS (SELECT 1 FROM refreshed)
     `;
 
     await db.query(query, [userId, symbol.toUpperCase(), companyName || null]);
@@ -1748,6 +1873,11 @@ module.exports = {
   deleteRetirementPlan,
 
   // Screener
+  getScreenerDiscover,
+  getAffordabilityTransactions,
+  setAffordabilityTransactionCategory,
+  setAffordabilityAccount,
+  refreshAffordability,
   getSearchHistory,
   toggleFavorite,
   compareStocks,

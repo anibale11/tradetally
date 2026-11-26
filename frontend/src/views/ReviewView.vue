@@ -1,27 +1,27 @@
 <template>
   <div class="content-wrapper py-8">
     <div class="max-w-xl mx-auto">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Leave a Review</h1>
+      <h1 class="heading-page mb-2">Leave a Review</h1>
       <p class="text-gray-500 dark:text-gray-400 mb-8">
         Your feedback helps other traders discover TradeTally. Even a sentence or two goes a long way.
       </p>
 
       <!-- Success state -->
-      <div v-if="submitted" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 text-center">
+      <div v-if="submitted" class="card card-body text-center">
         <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 mb-4">
-          <CheckCircleIcon class="h-6 w-6 text-green-600 dark:text-green-400" />
+          <CheckCircleIcon class="h-6 w-6 text-green-700 dark:text-green-400" />
         </div>
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Thanks for your review!</h2>
+        <h2 class="heading-card mb-2">Thanks for your review!</h2>
         <p class="text-gray-500 dark:text-gray-400">
           Your review has been submitted and will appear on our homepage once approved.
         </p>
-        <router-link to="/dashboard" class="inline-block mt-6 text-primary-600 hover:text-primary-700 font-medium">
+        <router-link to="/dashboard" class="inline-block mt-6 text-primary-700 hover:text-primary-800 font-medium">
           Back to Dashboard
         </router-link>
       </div>
 
       <!-- Form -->
-      <form v-else @submit.prevent="submitReview" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 space-y-6">
+      <form v-else @submit.prevent="submitReview" class="card card-body space-y-6">
         <!-- Star Rating -->
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Rating</label>
@@ -33,17 +33,15 @@
               @click="form.rating = star"
               @mouseenter="hoverRating = star"
               @mouseleave="hoverRating = 0"
-              class="p-1 focus:outline-none transition-transform hover:scale-110"
+              class="p-1 focus:outline-none transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-primary-500"
             >
               <StarIcon
                 class="h-8 w-8 transition-colors"
-                :class="(hoverRating || form.rating) >= star
-                  ? 'text-yellow-400 fill-yellow-400'
-                  : 'text-gray-300 dark:text-gray-600'"
+                :class="(hoverRating || form.rating) >= star ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300 dark:text-gray-600'"
               />
             </button>
           </div>
-          <p v-if="errors.rating" class="mt-1 text-sm text-red-600">{{ errors.rating }}</p>
+          <p v-if="errors.rating" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ errors.rating }}</p>
         </div>
 
         <!-- Review Text -->
@@ -55,10 +53,10 @@
             rows="4"
             maxlength="2000"
             placeholder="What's been most helpful about TradeTally?"
-            class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-4 py-3 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 placeholder-gray-400 dark:placeholder-gray-500"
+            class="input w-full"
           ></textarea>
           <div class="flex justify-between mt-1">
-            <p v-if="errors.body" class="text-sm text-red-600">{{ errors.body }}</p>
+            <p v-if="errors.body" class="text-sm text-red-600 dark:text-red-400">{{ errors.body }}</p>
             <span v-else></span>
             <span class="text-xs text-gray-400">{{ form.body.length }}/2000</span>
           </div>
@@ -75,13 +73,13 @@
             type="text"
             maxlength="100"
             placeholder="How you'd like to be shown (e.g. first name, initials)"
-            class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-4 py-3 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 placeholder-gray-400 dark:placeholder-gray-500"
+            class="input w-full"
           />
           <p class="mt-1 text-xs text-gray-400">If left blank, your username will be used.</p>
         </div>
 
         <!-- Existing review notice -->
-        <div v-if="existingReview" class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+        <div v-if="existingReview" class="callout-warning">
           <p class="text-sm text-yellow-700 dark:text-yellow-300">
             You already submitted a review. Submitting again will replace your previous one.
           </p>
@@ -95,14 +93,14 @@
           <button
             type="submit"
             :disabled="submitting"
-            class="px-6 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            class="btn-primary"
           >
             <span v-if="submitting">Submitting...</span>
             <span v-else>Submit Review</span>
           </button>
         </div>
 
-        <p v-if="errors.submit" class="text-sm text-red-600 text-center">{{ errors.submit }}</p>
+        <p v-if="errors.submit" class="text-sm text-red-600 dark:text-red-400 text-center">{{ errors.submit }}</p>
       </form>
     </div>
   </div>

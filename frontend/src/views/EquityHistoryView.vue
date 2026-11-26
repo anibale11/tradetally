@@ -15,9 +15,9 @@
             </div>
         </div>
 
-        <div v-if="loading" class="flex justify-center py-12">
+        <div v-if="initialLoading" class="flex justify-center py-12">
             <div
-                class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"
+                class="spinner spinner-lg"
             ></div>
         </div>
 
@@ -28,7 +28,7 @@
                     <div class="flex items-center justify-between mb-4">
                         <button
                             @click="previousMonth"
-                            class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            class="btn-icon p-2"
                         >
                             <svg
                                 class="w-5 h-5 text-gray-600 dark:text-gray-400"
@@ -46,14 +46,14 @@
                         </button>
 
                         <h2
-                            class="text-lg font-semibold text-gray-900 dark:text-white"
+                            class="heading-card"
                         >
                             {{ currentMonthYear }}
                         </h2>
 
                         <button
                             @click="nextMonth"
-                            class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            class="btn-icon p-2"
                         >
                             <svg
                                 class="w-5 h-5 text-gray-600 dark:text-gray-400"
@@ -92,11 +92,7 @@
                         >
                             <div
                                 class="text-sm font-medium"
-                                :class="
-                                    day.isCurrentMonth
-                                        ? 'text-gray-900 dark:text-white'
-                                        : 'text-gray-400 dark:text-gray-600'
-                                "
+                                :class="day.isCurrentMonth ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-600'"
                             >
                                 {{ day.day }}
                             </div>
@@ -104,7 +100,7 @@
                             <!-- Equity Amount Display -->
                             <div v-if="day.equity" class="mt-1">
                                 <div
-                                    class="text-xs font-medium text-green-600 dark:text-green-400"
+                                    class="text-xs font-medium text-green-700 dark:text-green-400"
                                 >
                                     {{ formatCurrency(day.equity) }}
                                 </div>
@@ -113,7 +109,7 @@
                             <!-- Today Indicator -->
                             <div
                                 v-if="day.isToday"
-                                class="absolute top-1 right-1 w-2 h-2 bg-blue-500 rounded-full"
+                                class="absolute top-1 right-1 w-2 h-2 bg-primary-500 rounded-full"
                             ></div>
 
                             <!-- Has Equity Indicator -->
@@ -187,14 +183,14 @@
         <!-- Equity Edit Modal -->
         <div
             v-if="showEquityModal"
-            class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+            class="modal-overlay flex items-center justify-center p-4"
         >
-            <div
-                class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full"
+            <div role="dialog" aria-modal="true"
+                class="modal-panel max-w-md w-full"
             >
                 <div class="p-6">
                     <h3
-                        class="text-lg font-medium text-gray-900 dark:text-white mb-4"
+                        class="modal-title mb-4"
                     >
                         Edit Equity for {{ selectedDateFormatted }}
                     </h3>
@@ -221,7 +217,7 @@
                                     step="0.01"
                                     min="0"
                                     placeholder="Enter equity amount"
-                                    class="block w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                                    class="input pl-8 block"
                                     required
                                 />
                             </div>
@@ -237,7 +233,7 @@
                                 v-model="equityForm.notes"
                                 rows="3"
                                 placeholder="Add any notes about this equity entry"
-                                class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                                class="input block"
                             ></textarea>
                         </div>
 
@@ -281,12 +277,14 @@ import { ref, onMounted } from "vue";
 import { useNotification } from "@/composables/useNotification";
 import api from "@/services/api";
 import { useCurrencyFormatter } from "@/composables/useCurrencyFormatter";
+import { formatPercent } from "@/utils/formatters";
 
 const { formatCurrency, currencySymbol } = useCurrencyFormatter();
 
 const { showSuccess, showError, showDangerConfirmation } = useNotification();
 
 const loading = ref(true);
+const initialLoading = ref(true);
 const saving = ref(false);
 const equitySnapshots = ref([]);
 const showEquityModal = ref(false);
@@ -328,7 +326,7 @@ function getDayClasses(day) {
     }
 
     if (day.isToday) {
-        classes.push("ring-2 ring-blue-500");
+        classes.push("ring-2 ring-primary-500");
     }
 
     if (day.equity) {
@@ -440,10 +438,10 @@ function updateMonthlyStats() {
 
     if (monthStartEquity.value && monthEndEquity.value) {
         const change = monthEndEquity.value - monthStartEquity.value;
-        const percentage = ((change / monthStartEquity.value) * 100).toFixed(2);
-        monthlyChange.value = `${formatCurrency(change)} (${percentage}%)`;
+        const percentage = formatPercent((change / monthStartEquity.value) * 100);
+        monthlyChange.value = `${formatCurrency(change)} (${percentage})`;
         monthlyChangeClass.value =
-            change >= 0 ? "text-green-600" : "text-red-600";
+            change >= 0 ? "text-green-700 dark:text-green-400" : "text-red-600 dark:text-red-400";
     } else {
         monthlyChange.value = "N/A";
         monthlyChangeClass.value = "text-gray-900 dark:text-white";
@@ -623,7 +621,8 @@ onMounted(async () => {
         console.error("Error loading equity history:", error);
         showError("Error", "Failed to load equity history");
     } finally {
-        loading.value = false;
+        loading.value = false
+        initialLoading.value = false;
     }
 });
 </script>

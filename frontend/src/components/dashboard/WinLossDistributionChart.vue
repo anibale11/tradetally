@@ -9,6 +9,7 @@
 // segment click ('profit' | 'loss' | 'breakeven') is emitted up for navigation.
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { Chart } from '@/lib/chartSetup'
+import { formatPercent } from '@/utils/formatters'
 
 const props = defineProps({
   summary: {
@@ -43,7 +44,7 @@ function renderChart() {
       labels: ['Wins', 'Losses', 'Breakeven'],
       datasets: [{
         data: [wins, losses, breakeven],
-        backgroundColor: ['#10b981', '#ef4444', '#9ca3af'],
+        backgroundColor: ['#15803d', '#ef4444', '#9ca3af'],
         hoverBackgroundColor: ['#34d399', '#f87171', '#b0b5bf'],
         borderWidth: 0,
         hoverOffset: 6,
@@ -85,8 +86,8 @@ function renderChart() {
           callbacks: {
             label: function(context) {
               const total = wins + losses + breakeven
-              const pct = total > 0 ? ((context.raw / total) * 100).toFixed(1) : 0
-              return ` ${context.raw} trades (${pct}%)`
+              const pct = formatPercent(total > 0 ? (context.raw / total) * 100 : 0)
+              return ` ${context.raw} trades (${pct})`
             }
           }
         }

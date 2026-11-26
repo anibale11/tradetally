@@ -3,7 +3,7 @@
     <div class="card">
         <div class="card-body">
             <h3
-                class="text-lg font-medium text-gray-900 dark:text-white mb-6"
+                class="heading-card mb-6"
             >
                 Data Export & Import
             </h3>
@@ -20,7 +20,7 @@
                 <div class="flex items-start space-x-4">
                     <div class="flex-1">
                         <h4
-                            class="text-sm font-medium text-gray-900 dark:text-white mb-3"
+                            class="heading-sub mb-3"
                         >
                             Export Your Data
                         </h4>
@@ -43,7 +43,7 @@
                             class="flex items-center"
                         >
                             <div
-                                class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"
+                                class="spinner spinner-xs spinner-light mr-2"
                             ></div>
                             Preparing Export...
                         </span>
@@ -72,7 +72,7 @@
                 >
                     <div class="flex-1">
                         <h4
-                            class="text-sm font-medium text-gray-900 dark:text-white mb-3"
+                            class="heading-sub mb-3"
                         >
                             Export Trades to CSV
                         </h4>
@@ -96,7 +96,7 @@
                             class="flex items-center"
                         >
                             <div
-                                class="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2"
+                                class="spinner spinner-xs spinner-muted mr-2"
                             ></div>
                             Exporting...
                         </span>
@@ -125,7 +125,7 @@
                 >
                     <div class="flex-1">
                         <h4
-                            class="text-sm font-medium text-gray-900 dark:text-white mb-3"
+                            class="heading-sub mb-3"
                         >
                             Import Data
                         </h4>
@@ -187,7 +187,7 @@
                             class="flex items-center"
                         >
                             <div
-                                class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"
+                                class="spinner spinner-xs spinner-light mr-2"
                             ></div>
                             Importing...
                         </span>

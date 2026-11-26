@@ -187,6 +187,10 @@ const settingsController = {
 
       // Convert snake_case to camelCase for frontend
       const camelCaseSettings = keysToCamelCase(safeSettings);
+      for (const field of ['default_stop_loss_points', 'default_stop_loss_points_by_underlying']) {
+        delete camelCaseSettings[toCamelCase(field)];
+        if (safeSettings?.[field] !== undefined) camelCaseSettings[field] = safeSettings[field];
+      }
       if (safeSettings?.ai_analysis_instructions !== undefined) {
         delete camelCaseSettings.aiAnalysisInstructions;
         camelCaseSettings.ai_analysis_instructions = safeSettings.ai_analysis_instructions;
@@ -237,6 +241,10 @@ const settingsController = {
 
       // Convert snake_case to camelCase for frontend
       const camelCaseSettings = keysToCamelCase(safeSettings);
+      for (const field of ['default_stop_loss_points', 'default_stop_loss_points_by_underlying']) {
+        delete camelCaseSettings[toCamelCase(field)];
+        if (safeSettings?.[field] !== undefined) camelCaseSettings[field] = safeSettings[field];
+      }
       if (safeSettings?.ai_analysis_instructions !== undefined) {
         delete camelCaseSettings.aiAnalysisInstructions;
         camelCaseSettings.ai_analysis_instructions = safeSettings.ai_analysis_instructions;
@@ -605,6 +613,8 @@ const settingsController = {
             averagePositionSize: 'medium',
             tradingGoals: [],
             preferredSectors: [],
+            aboutTrading: '',
+            aiMemoryNotes: [],
             postExitExcursionWindowMode: 'auto',
             postExitExcursionWindowMinutes: null
           }
@@ -620,6 +630,8 @@ const settingsController = {
         averagePositionSize: settings.average_position_size || 'medium',
         tradingGoals: settings.trading_goals || [],
         preferredSectors: settings.preferred_sectors || [],
+        aboutTrading: settings.about_trading || '',
+        aiMemoryNotes: Array.isArray(settings.ai_memory_notes) ? settings.ai_memory_notes : [],
         postExitExcursionWindowMode: settings.post_exit_excursion_window_mode || 'auto',
         postExitExcursionWindowMinutes: settings.post_exit_excursion_window_minutes || null
       };
@@ -641,6 +653,8 @@ const settingsController = {
         averagePositionSize,
         tradingGoals,
         preferredSectors,
+        aboutTrading,
+        aiMemoryNotes,
         postExitExcursionWindowMode,
         postExitExcursionWindowMinutes
       } = req.body;
@@ -667,7 +681,29 @@ const settingsController = {
         return res.status(400).json({ error: 'Invalid post-exit excursion window mode' });
       }
 
-      const parsedPostExitMinutes = postExitExcursionWindowMinutes === null || postExitExcursionWindowMinutes === ''
+      // Free-text self-description and AI memory notes feed every AI prompt
+      // through the trader dossier, so keep them bounded.
+      const AITraderContext = require('../services/aiTraderContext');
+      if (aboutTrading !== undefined && aboutTrading !== null && typeof aboutTrading !== 'string') {
+        return res.status(400).json({ error: 'aboutTrading must be text' });
+      }
+      const normalizedAbout = typeof aboutTrading === 'string' ? aboutTrading.trim() : '';
+      if (normalizedAbout.length > AITraderContext.MAX_ABOUT_CHARS) {
+        return res.status(400).json({ error: `aboutTrading must be at most ${AITraderContext.MAX_ABOUT_CHARS} characters` });
+      }
+      if (aiMemoryNotes !== undefined && aiMemoryNotes !== null && !Array.isArray(aiMemoryNotes)) {
+        return res.status(400).json({ error: 'aiMemoryNotes must be a list of short notes' });
+      }
+      const normalizedNotes = (Array.isArray(aiMemoryNotes) ? aiMemoryNotes : [])
+        .map(note => (typeof note === 'string' ? note.replace(/\s+/g, ' ').trim() : ''))
+        .filter(Boolean);
+      if (normalizedNotes.length > AITraderContext.MAX_MEMORY_NOTES) {
+        return res.status(400).json({ error: `At most ${AITraderContext.MAX_MEMORY_NOTES} AI memory notes are allowed` });
+      }
+      if (normalizedNotes.some(note => note.length > AITraderContext.MAX_MEMORY_NOTE_CHARS)) {
+        return res.status(400).json({ error: `Each AI memory note must be at most ${AITraderContext.MAX_MEMORY_NOTE_CHARS} characters` });
+      }
+      const parsedPostExitMinutes = postExitExcursionWindowMinutes === null || postExitExcursionWindowMinutes === undefined || postExitExcursionWindowMinutes === ''
         ? null
         : parseInt(postExitExcursionWindowMinutes, 10);
 
@@ -687,8 +723,16 @@ const settingsController = {
         postExitExcursionWindowMode: postExitExcursionWindowMode || 'auto',
         postExitExcursionWindowMinutes: parsedPostExitMinutes
       };
+      // Memory notes accumulate through AI chat and the self-description is
+      // optional, so a client that does not send these keys (older mobile
+      // builds, partial updates) must not erase them. Only an explicit value
+      // (including null / []) replaces what is stored.
+      if (aboutTrading !== undefined) profileData.aboutTrading = normalizedAbout || null;
+      if (aiMemoryNotes !== undefined) profileData.aiMemoryNotes = normalizedNotes;
 
       const updatedSettings = await User.updateSettings(req.user.id, profileData);
+      // Every AI prompt reads the profile through the cached dossier.
+      AITraderContext.invalidate(req.user.id);
       
       res.json({ 
         message: 'Trading profile updated successfully',
@@ -1477,6 +1521,15 @@ const settingsController = {
             const tableColumns = await getTableColumns(client, 'user_settings');
             const mergedSettings = { ...keysToSnakeCase(s), ...keysToSnakeCase(tp) };
 
+            // Host CLI providers are admin-only; never allow import to bypass that.
+            if (!canConfigureHostCliProvider(req.user)) {
+              for (const col of ['ai_provider', 'cusip_ai_provider']) {
+                if (HOST_CLI_AI_PROVIDERS.includes(String(mergedSettings[col] ?? '').trim())) {
+                  delete mergedSettings[col];
+                }
+              }
+            }
+
             // Encrypt AI provider keys like the legacy path does. Idempotent
             // for already-encrypted exports; protects plaintext keys from
             // hand-edited or cross-instance v3 files.
@@ -1547,6 +1600,9 @@ const settingsController = {
             }
           } else {
             // Legacy v1.0/2.0 hardcoded settings import
+            if (!canConfigureHostCliProvider(req.user) && HOST_CLI_AI_PROVIDERS.includes(String(s.aiProvider ?? '').trim())) {
+              delete s.aiProvider;
+            }
             if (existingSettings.rows.length === 0) {
               await client.query(
                 `INSERT INTO user_settings (

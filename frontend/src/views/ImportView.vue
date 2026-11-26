@@ -35,14 +35,12 @@
             <!-- File Upload Drop Zone -->
             <div>
               <div
-                class="flex justify-center px-6 pt-8 pb-8 border-2 border-dashed rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-                :class="[
-                  isAnalyzingFile ? 'border-primary-400 bg-primary-50/50 dark:bg-primary-900/10 cursor-wait' :
-                  dragOver ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 cursor-pointer' : 'border-gray-300 dark:border-gray-600 hover:border-primary-400 dark:hover:border-primary-500 cursor-pointer'
-                ]"
+                class="flex justify-center px-6 pt-8 pb-8 border-2 border-dashed rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                :class="[ isAnalyzingFile ? 'border-primary-400 bg-primary-50/50 dark:bg-primary-900/10 cursor-wait' : dragOver ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 cursor-pointer' : 'border-gray-300 dark:border-gray-600 hover:border-primary-400 dark:hover:border-primary-500 cursor-pointer' ]"
                 tabindex="0"
                 role="button"
                 aria-label="Upload a broker trade export file"
+                data-tour="import-dropzone"
                 @dragover.prevent="handleDragOver"
                 @dragleave.prevent="handleDragLeave"
                 @drop.prevent="handleDrop"
@@ -50,7 +48,7 @@
                 @click="!isAnalyzingFile && fileInput && fileInput.click()"
               >
                 <div v-if="isAnalyzingFile" class="space-y-3 text-center">
-                  <div class="animate-spin mx-auto h-12 w-12 rounded-full border-4 border-primary-200 border-t-primary-600"></div>
+                  <div class="spinner spinner-lg mx-auto"></div>
                   <p class="text-base font-medium text-gray-900 dark:text-white">Analyzing file...</p>
                   <p class="text-sm text-gray-500 dark:text-gray-400">Checking headers and row count</p>
                 </div>
@@ -60,7 +58,7 @@
                   <div class="flex text-sm text-gray-600 dark:text-gray-400">
                     <label
                       for="file-upload"
-                      class="relative cursor-pointer rounded-md font-medium text-primary-600 hover:text-primary-500"
+                      class="relative cursor-pointer rounded-md font-medium text-primary-700 hover:text-primary-500"
                       @click.stop
                     >
                       <span>Browse files</span>
@@ -69,14 +67,14 @@
                         ref="fileInput"
                         name="file-upload"
                         type="file"
-                        accept=".csv,.txt,.data,text/csv,text/plain,application/octet-stream"
+                        accept=".csv,.txt,.tsv,.plain,.data,.xlsx,.xlsm,.zip,.html,.htm,text/csv,text/plain,text/html,application/octet-stream,application/zip,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                         class="sr-only"
                         @change="handleFileSelect"
                       />
                     </label>
                     <p class="pl-1">or drag and drop</p>
                   </div>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">CSV, TXT, or Sierra Chart DATA files (up to 50MB)</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">CSV, TXT, Excel (.xlsx), HTML reports, ZIP archives, or Sierra Chart DATA files (up to 50MB)</p>
                 </div>
               </div>
               <div v-if="selectedFile" class="mt-2 flex items-center justify-between">
@@ -109,9 +107,7 @@
                   :key="brokerOption.value"
                   type="button"
                   class="flex-shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium transition"
-                  :class="selectedBroker === brokerOption.value
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700/60 dark:text-gray-300 dark:hover:bg-gray-700'"
+                  :class="selectedBroker === brokerOption.value ? 'bg-primary-700 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700/60 dark:text-gray-300 dark:hover:bg-gray-700'"
                   @click="selectQuickBroker(brokerOption.value)"
                 >
                   {{ brokerOption.label }}
@@ -122,8 +118,8 @@
               </p>
             </div>
 
-            <div v-if="isIbkrImport">
-              <label for="source-timezone" class="label">IBKR report timezone</label>
+            <div v-if="showReportTimezone">
+              <label for="source-timezone" class="label">{{ reportTimezoneLabel }}</label>
               <BaseSelect
                 id="source-timezone"
                 v-model="sourceTimezone"
@@ -131,20 +127,20 @@
                 :options="timezoneSelectGroups"
               />
               <p class="mt-1.5 text-sm text-gray-500 dark:text-gray-400">
-                Select the timezone used by the Date/Time column in the IBKR export. This is separate from the timezone used to display trades in TradeTally.
+                {{ reportTimezoneHelp }}
               </p>
             </div>
 
             <!-- Contextual broker export guide: only appears once a broker is chosen -->
-            <div v-if="showBrokerGuide" class="rounded-xl border border-gray-200 bg-gray-50/60 p-4 dark:border-gray-700 dark:bg-gray-900/40">
+            <div v-if="showBrokerGuide" class="rounded-lg border border-gray-200 bg-gray-50/60 p-4 dark:border-gray-700 dark:bg-gray-900/40">
               <div class="flex items-start gap-3">
                 <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-primary-50 ring-1 ring-primary-100 dark:bg-primary-900/30 dark:ring-primary-800/60">
-                  <DocumentTextIcon class="h-4 w-4 text-primary-600 dark:text-primary-400" />
+                  <DocumentTextIcon class="h-4 w-4 text-primary-700 dark:text-primary-400" />
                 </div>
                 <div class="min-w-0 flex-1">
                   <div class="flex items-baseline justify-between gap-3">
-                    <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ activeBrokerGuide.title }}</h3>
-                    <span class="text-[11px] font-semibold uppercase tracking-wider text-primary-600 dark:text-primary-400">
+                    <h3 class="heading-sub">{{ activeBrokerGuide.title }}</h3>
+                    <span class="text-xs font-semibold uppercase tracking-wider text-primary-700 dark:text-primary-400">
                       {{ activeBrokerGuide.badge }}
                     </span>
                   </div>
@@ -154,7 +150,7 @@
                       :key="step"
                       class="flex gap-2.5 text-sm leading-relaxed text-gray-700 dark:text-gray-300"
                     >
-                      <span class="mt-0.5 w-5 flex-shrink-0 font-mono text-xs font-semibold tabular-nums text-primary-500 dark:text-primary-400">
+                      <span class="mt-0.5 w-5 flex-shrink-0 font-mono text-xs font-semibold tabular-nums text-primary-700 dark:text-primary-400">
                         {{ index + 1 }}
                       </span>
                       <span>{{ step }}</span>
@@ -176,7 +172,7 @@
               <BaseSelect id="account" v-model="selectedAccountId" :options="accountOptions" />
               <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 Leave on "Automatically detect from file" to use the account embedded in the export, or pick a specific account to override it.
-                <router-link to="/accounts" class="text-primary-600 hover:text-primary-500">Manage accounts</router-link>
+                <router-link to="/accounts" class="text-primary-700 hover:text-primary-500">Manage accounts</router-link>
               </p>
             </div>
 
@@ -193,11 +189,11 @@
               </p>
             </div>
 
-            <label class="flex items-start gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-800">
+            <label class="card flex items-start gap-3 px-4 py-3">
               <input
                 v-model="includeImportedNotes"
                 type="checkbox"
-                class="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700"
+                class="checkbox mt-0.5"
               />
               <span>
                 <span class="block text-sm font-medium text-gray-900 dark:text-white">Import notes and descriptions</span>
@@ -207,7 +203,7 @@
               </span>
             </label>
 
-            <div v-if="selectedFile" class="rounded-2xl border border-gray-200 bg-gray-50/80 p-4 dark:border-gray-700 dark:bg-gray-900/50">
+            <div v-if="selectedFile" class="rounded-lg border border-gray-200 bg-gray-50/80 p-4 dark:border-gray-700 dark:bg-gray-900/50">
               <div class="flex flex-col gap-1">
                 <p class="text-sm font-semibold text-gray-900 dark:text-white">Pre-import check</p>
                 <p class="text-sm text-gray-600 dark:text-gray-400">
@@ -215,19 +211,19 @@
                 </p>
               </div>
 
-              <div v-if="isAnalyzingFile" class="mt-4 rounded-xl border border-primary-200 bg-primary-50 px-4 py-3 text-sm text-primary-700 dark:border-primary-800 dark:bg-primary-900/20 dark:text-primary-300">
+              <div v-if="isAnalyzingFile" class="callout-info mt-4">
                 Analyzing headers and estimating trade count...
               </div>
 
               <div v-else class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <div class="rounded-xl bg-white p-3 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
-                  <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Estimated rows</p>
+                <div class="card p-3 ring-1 ring-gray-200 dark:ring-gray-700">
+                  <p class="text-label">Estimated rows</p>
                   <p class="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
                     {{ fileAnalysis.rowCount !== null ? fileAnalysis.rowCount.toLocaleString() : 'Unknown' }}
                   </p>
                 </div>
-                <div class="rounded-xl bg-white p-3 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
-                  <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Format check</p>
+                <div class="card p-3 ring-1 ring-gray-200 dark:ring-gray-700">
+                  <p class="text-label">Format check</p>
                   <p class="mt-1 text-sm font-semibold" :class="fileAnalysis.formatDetected ? 'text-green-700 dark:text-green-400' : 'text-yellow-700 dark:text-yellow-400'">
                     {{ fileAnalysis.formatDetected ? 'Recognized' : 'Needs review' }}
                   </p>
@@ -235,13 +231,13 @@
                     {{ fileAnalysis.detectedBroker ? formatBrokerName(fileAnalysis.detectedBroker) : 'We may need column mapping.' }}
                   </p>
                 </div>
-                <div class="rounded-xl bg-white p-3 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
-                  <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Import mode</p>
+                <div class="card p-3 ring-1 ring-gray-200 dark:ring-gray-700">
+                  <p class="text-label">Import mode</p>
                   <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ selectedBrokerLabel }}</p>
                   <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ brokerRecommendation }}</p>
                 </div>
-                <div class="rounded-xl bg-white p-3 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
-                  <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Account</p>
+                <div class="card p-3 ring-1 ring-gray-200 dark:ring-gray-700">
+                  <p class="text-label">Account</p>
                   <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ accountReadinessLabel }}</p>
                   <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ accountReadinessMessage }}</p>
                   <p v-if="accountDetectionWarning" class="mt-1 text-xs text-yellow-600 dark:text-yellow-400">{{ accountDetectionWarning }}</p>
@@ -249,12 +245,12 @@
               </div>
 
               <div v-if="displayedHeaderPreview.length > 0" class="mt-4">
-                <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Detected columns</p>
+                <p class="text-label">Detected columns</p>
                 <div class="mt-2 flex flex-wrap gap-2">
                   <span
                     v-for="header in displayedHeaderPreview"
                     :key="header"
-                    class="rounded-full bg-white px-3 py-1 text-xs text-gray-700 ring-1 ring-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700"
+                    class="badge bg-white text-gray-700 ring-1 ring-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700"
                   >
                     {{ header }}
                   </span>
@@ -268,14 +264,14 @@
               </div>
             </div>
 
-            <div v-if="error" class="rounded-md bg-red-50 dark:bg-red-900/20 p-4">
+            <div v-if="error" class="callout-danger">
               <p class="text-sm text-red-800 dark:text-red-400">{{ error }}</p>
             </div>
 
             <!-- Import progress indicator -->
-            <div v-if="loading && importStage" class="rounded-md bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 p-4">
+            <div v-if="loading && importStage" class="callout-info">
               <div class="flex items-center space-x-3">
-                <div class="animate-spin rounded-full h-5 w-5 border-2 border-primary-600 border-t-transparent flex-shrink-0"></div>
+                <div class="spinner spinner-sm flex-shrink-0"></div>
                 <span class="text-sm font-medium text-primary-700 dark:text-primary-300">{{ importStage }}</span>
               </div>
             </div>
@@ -284,16 +280,13 @@
               <p v-if="accountBlockMessage" class="mb-2 text-right text-xs text-gray-500 dark:text-gray-400">
                 {{ accountBlockMessage }}
               </p>
-              <div class="flex justify-end">
+              <div class="modal-footer">
                 <button
                   type="submit"
                   :disabled="!canSubmit"
                   class="btn-primary inline-flex items-center"
                 >
-                  <svg v-if="loading" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
+                  <span v-if="loading" class="spinner spinner-xs spinner-light mr-2 -ml-1"></span>
                   <span v-if="loading">Importing...</span>
                   <span v-else>{{ importButtonLabel }}</span>
                 </button>
@@ -330,14 +323,14 @@
                   type="checkbox"
                   :checked="importHistory.length > 0 && selectedImportIds.size === importHistory.length"
                   @change="toggleSelectAll"
-                  class="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
+                  class="checkbox"
                 />
                 <span>Select All</span>
               </label>
               <button
                 v-if="authStore.user?.role === 'admin' || authStore.user?.role === 'owner'"
                 @click="fetchLogs()"
-                class="btn-secondary text-sm"
+                class="btn-secondary"
               >
                 View Logs
               </button>
@@ -355,7 +348,7 @@
                   type="checkbox"
                   :checked="selectedImportIds.has(importLog.id)"
                   @change="toggleImportSelection(importLog.id)"
-                  class="flex-shrink-0 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
+                  class="checkbox"
                 />
                 <div class="min-w-0">
                   <p class="truncate font-medium text-gray-900 dark:text-white">{{ importLog.file_name }}</p>
@@ -367,7 +360,7 @@
               <div class="flex items-center justify-between space-x-3 sm:justify-end">
                 <div class="text-left sm:text-right">
                   <div class="flex items-center space-x-2 sm:justify-end">
-                    <span class="px-2 py-1 text-xs rounded-full" :class="getStatusClass(importLog.status)">
+                    <span class="badge" :class="getStatusClass(importLog.status)">
                       {{ getStatusText(importLog.status) }}
                     </span>
                   </div>
@@ -380,7 +373,7 @@
                 </div>
                 <button
                   @click="deleteImport(importLog.id)"
-                  class="flex-shrink-0 text-red-600 hover:text-red-500 text-sm"
+                  class="flex-shrink-0 text-red-600 dark:text-red-400 hover:text-red-500 text-sm"
                   :disabled="deleting"
                 >
                   Delete
@@ -393,7 +386,7 @@
           <div v-if="pagination.hasMore" class="mt-4 text-center">
             <button
               @click="loadMoreHistory"
-              class="btn-secondary text-sm"
+              class="btn-secondary"
             >
               Load More ({{ pagination.total - importHistory.length }} remaining)
             </button>
@@ -408,7 +401,7 @@
             <h3 class="heading-card">Custom Importers</h3>
             <button
               @click="showCustomMappings = !showCustomMappings"
-              class="flex items-center space-x-2 text-sm text-primary-600 dark:text-primary-400 hover:text-primary-500"
+              class="flex items-center space-x-2 text-sm text-primary-700 dark:text-primary-400 hover:text-primary-500"
             >
               <span>{{ showCustomMappings ? 'Hide' : 'Show' }} Importers</span>
               <svg
@@ -434,7 +427,7 @@
               class="flex items-start justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
             >
               <div class="flex-1 min-w-0">
-                <h4 class="text-sm font-medium text-gray-900 dark:text-white">
+                <h4 class="heading-sub">
                   {{ mapping.mapping_name }}
                 </h4>
                 <p v-if="mapping.description" class="text-sm text-gray-600 dark:text-gray-400 mt-1">
@@ -474,7 +467,7 @@
               <div class="flex items-center gap-2">
                 <button
                   @click="showAllMappingsModal = true"
-                  class="btn-secondary text-sm"
+                  class="btn-secondary"
                 >
                   <Cog6ToothIcon class="h-5 w-5 sm:mr-2" />
                   <span class="hidden sm:inline">Manage All</span>
@@ -492,7 +485,7 @@
             </div>
             <button
               @click="showCusipManagement = !showCusipManagement"
-              class="flex items-center space-x-2 text-sm text-primary-600 dark:text-primary-400 hover:text-primary-500"
+              class="flex items-center space-x-2 text-sm text-primary-700 dark:text-primary-400 hover:text-primary-500"
             >
               <span>{{ showCusipManagement ? 'Hide' : 'Show' }}</span>
               <svg
@@ -525,7 +518,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <!-- Add New Mapping -->
               <div>
-                <h4 class="font-medium text-gray-900 dark:text-white mb-3">Add CUSIP Mapping</h4>
+                <h4 class="heading-card mb-3">Add CUSIP Mapping</h4>
                 <div class="space-y-3">
                   <div>
                     <label for="cusip" class="label">CUSIP (9 characters)</label>
@@ -561,7 +554,7 @@
 
               <!-- Lookup Existing -->
               <div>
-                <h4 class="font-medium text-gray-900 dark:text-white mb-3">Lookup CUSIP</h4>
+                <h4 class="heading-card mb-3">Lookup CUSIP</h4>
                 <div class="space-y-3">
                   <div>
                     <label for="lookupCusip" class="label">CUSIP to Lookup</label>
@@ -582,11 +575,9 @@
                     <span v-if="cusipLoading">Looking up...</span>
                     <span v-else>Lookup</span>
                   </button>
-                  <div v-if="lookupResult" class="p-3 rounded-md" :class="[
-                    lookupResult.found ? 'bg-green-50 dark:bg-green-900/20' : 'bg-red-50 dark:bg-red-900/20'
-                  ]">
+                  <div v-if="lookupResult" class="p-3 rounded-md" :class="[ lookupResult.found ? 'bg-green-50 dark:bg-green-900/20' : 'bg-red-50 dark:bg-red-900/20' ]">
                     <p class="text-sm" :class="[
-                      lookupResult.found ? 'text-green-800 dark:text-green-400' : 'text-red-800 dark:text-red-400'
+                      lookupResult.found ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                     ]">
                       <span v-if="lookupResult.found">
                         {{ lookupResult.cusip }} → {{ lookupResult.ticker }}
@@ -613,7 +604,7 @@
             <h3 class="heading-card">Supported CSV Formats</h3>
             <button
               @click="showFormats = !showFormats"
-              class="flex items-center space-x-2 text-sm text-primary-600 dark:text-primary-400 hover:text-primary-500"
+              class="flex items-center space-x-2 text-sm text-primary-700 dark:text-primary-400 hover:text-primary-500"
             >
               <span>{{ showFormats ? 'Hide' : 'Show' }} Formats</span>
               <svg 
@@ -630,7 +621,7 @@
           
           <div v-if="showFormats" class="space-y-6">
             <div>
-              <h4 class="font-medium text-gray-900 dark:text-white">Generic CSV</h4>
+              <h4 class="heading-card">Generic CSV</h4>
               <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
                 Use this format if your broker isn't listed or for custom CSV files. Supports comma, semicolon, or tab separators.
               </p>
@@ -645,7 +636,7 @@
             </div>
 
             <div>
-              <h4 class="font-medium text-gray-900 dark:text-white">Lightspeed Trader</h4>
+              <h4 class="heading-card">Lightspeed Trader</h4>
               <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
                 Export from Lightspeed's "Reports" > "Trade Blotter" section as CSV.
               </p>
@@ -660,7 +651,7 @@
             </div>
 
             <div>
-              <h4 class="font-medium text-gray-900 dark:text-white">Charles Schwab</h4>
+              <h4 class="heading-card">Charles Schwab</h4>
               <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
                 Supports both completed trades export and transaction history. Tab-separated files are automatically detected.
               </p>
@@ -679,9 +670,9 @@
             </div>
 
             <div>
-              <h4 class="font-medium text-gray-900 dark:text-white">ThinkorSwim</h4>
+              <h4 class="heading-card">ThinkorSwim</h4>
               <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                Export from ThinkorSwim's "Account Statement" section. Only processes trade (TRD) records.
+                Export from ThinkorSwim's "Account Statement" section. Only processes trade (TRD) records. Times are read in the timezone you pick above, since thinkorswim exports them in the platform's local time.
               </p>
               <div class="bg-gray-50 dark:bg-gray-800 rounded-md p-3 text-xs font-mono overflow-x-auto">
                 DATE,TIME,TYPE,REF #,DESCRIPTION,Commissions & Fees,Misc Fees<br>
@@ -694,7 +685,7 @@
             </div>
 
             <div>
-              <h4 class="font-medium text-gray-900 dark:text-white">Interactive Brokers</h4>
+              <h4 class="heading-card">Interactive Brokers</h4>
               <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
                 Supports both Activity Statement and Trade Confirmation exports. Also supports Flex Query exports.
               </p>
@@ -713,7 +704,7 @@
             </div>
 
             <div>
-              <h4 class="font-medium text-gray-900 dark:text-white">Webull</h4>
+              <h4 class="heading-card">Webull</h4>
               <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
                 Export from Webull's "Orders" > "Options Orders" history. Supports options trading with automatic roundtrip trade detection.
               </p>
@@ -728,7 +719,7 @@
             </div>
 
             <div>
-              <h4 class="font-medium text-gray-900 dark:text-white">E*TRADE</h4>
+              <h4 class="heading-card">E*TRADE</h4>
               <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
                 Export from E*TRADE's transaction history.
               </p>
@@ -743,7 +734,7 @@
             </div>
 
             <div>
-              <h4 class="font-medium text-gray-900 dark:text-white">PaperMoney</h4>
+              <h4 class="heading-card">PaperMoney</h4>
               <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
                 Export from ThinkorSwim's PaperMoney platform. Filled orders are treated as actual executed trades for analysis and tracking.
               </p>
@@ -759,7 +750,7 @@
             </div>
 
             <div>
-              <h4 class="font-medium text-gray-900 dark:text-white">TradingView</h4>
+              <h4 class="heading-card">TradingView</h4>
               <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
                 Export filled orders from TradingView's paper or live trading. Supports futures contracts with leverage detection.
               </p>
@@ -774,7 +765,7 @@
             </div>
 
             <div>
-              <h4 class="font-medium text-gray-900 dark:text-white">Tradovate</h4>
+              <h4 class="heading-card">Tradovate</h4>
               <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
                 Export order history from Tradovate. Supports futures contracts with automatic contract month/year parsing and point value calculations.
               </p>
@@ -789,7 +780,7 @@
             </div>
 
             <div>
-              <h4 class="font-medium text-gray-900 dark:text-white">NinjaTrader</h4>
+              <h4 class="heading-card">NinjaTrader</h4>
               <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
                 Export the Executions or Trade Performance grid from NinjaTrader. Futures contracts, account identifiers, commissions, and exchange fees are imported automatically.
               </p>
@@ -803,7 +794,7 @@
             </div>
 
             <div>
-              <h4 class="font-medium text-gray-900 dark:text-white">Sierra Chart</h4>
+              <h4 class="heading-card">Sierra Chart</h4>
               <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
                 Export Trade Activity Log with File &gt; Export, or upload its raw UTC .data file. Fill executions are reconstructed into flat-to-flat futures trades.
               </p>
@@ -817,7 +808,7 @@
             </div>
 
             <div>
-              <h4 class="font-medium text-gray-900 dark:text-white">Questrade</h4>
+              <h4 class="heading-card">Questrade</h4>
               <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
                 Export trade executions from Questrade. Supports stocks and options with automatic option symbol parsing.
               </p>
@@ -832,7 +823,7 @@
             </div>
 
             <div>
-              <h4 class="font-medium text-gray-900 dark:text-white">TradeStation</h4>
+              <h4 class="heading-card">TradeStation</h4>
               <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
                 Export transaction history from TradeStation. Supports both equity and options trades with detailed fee breakdown.
               </p>
@@ -847,7 +838,7 @@
             </div>
 
             <div>
-              <h4 class="font-medium text-gray-900 dark:text-white">Tastytrade</h4>
+              <h4 class="heading-card">Tastytrade</h4>
               <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
                 Export transaction history from Tastytrade. Supports stocks, options, and futures with OCC option symbol parsing.
               </p>
@@ -862,7 +853,7 @@
             </div>
 
             <div>
-              <h4 class="font-medium text-gray-900 dark:text-white">TradingView Performance</h4>
+              <h4 class="heading-card">TradingView Performance</h4>
               <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
                 Export performance data from TradingView. Contains completed trades with calculated P&L.
               </p>
@@ -881,12 +872,12 @@
 
 
       <!-- Logs Modal -->
-      <div v-if="showLogs" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-11/12 max-w-4xl h-3/4 flex flex-col">
+      <div v-if="showLogs" class="modal-overlay flex items-center justify-center">
+        <div role="dialog" aria-modal="true" class="modal-panel w-11/12 max-w-4xl h-3/4 flex flex-col">
           <!-- Header -->
           <div class="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700">
-            <h3 class="heading-card">Import Logs</h3>
-            <button @click="showLogs = false" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+            <h3 class="modal-title">Import Logs</h3>
+            <button @click="showLogs = false" class="btn-ghost btn-sm">
               <XMarkIcon class="h-6 w-6" />
             </button>
           </div>
@@ -922,7 +913,7 @@
                     v-for="logFile in logFiles"
                     :key="logFile.name"
                     @click="loadLogFile(logFile.name)"
-                    class="w-full text-left p-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700"
+                    class="btn-secondary w-full"
                     :class="{ 'bg-primary-50 dark:bg-primary-900/20': selectedLogFile === logFile.name }"
                   >
                     {{ logFile.name }}
@@ -932,7 +923,7 @@
                   <div v-if="logFilesPagination.hasMore" class="text-center pt-2">
                     <button
                       @click="loadMoreLogFiles"
-                      class="btn-secondary text-sm"
+                      class="btn-secondary"
                     >
                       Load More ({{ logFilesPagination.total - logFiles.length }} remaining)
                     </button>
@@ -956,7 +947,7 @@
                         Showing {{ Math.min(logPagination.page * logPagination.limit, logPagination.total) }} of {{ logPagination.total }} lines
                         <span v-if="logSearchQuery">(filtered)</span>
                       </span>
-                      <span v-if="!logPagination.showAll && logPagination.filteredOut > 0" class="text-xs text-primary-600 dark:text-primary-400">
+                      <span v-if="!logPagination.showAll && logPagination.filteredOut > 0" class="text-xs text-primary-700 dark:text-primary-400">
                         (Last 24 hours)
                       </span>
                     </div>
@@ -1002,7 +993,7 @@
                     <div class="text-center">
                       <MagnifyingGlassIcon class="h-12 w-12 mx-auto mb-3 opacity-50" />
                       <p class="text-sm">No results found for "{{ logSearchQuery }}"</p>
-                      <button @click="clearSearch" class="mt-2 text-xs text-primary-600 dark:text-primary-400 hover:underline">
+                      <button @click="clearSearch" class="btn-link mt-2">
                         Clear search
                       </button>
                     </div>
@@ -1013,7 +1004,7 @@
                 <div v-if="logPagination.hasMore" class="text-center mt-4">
                   <button
                     @click="loadMoreLogs"
-                    class="btn-secondary text-sm"
+                    class="btn-secondary"
                   >
                     Load More ({{ logPagination.total - (logPagination.page * logPagination.limit) }} lines remaining)
                   </button>
@@ -1134,7 +1125,7 @@
   >
     <div class="flex flex-col items-center text-center">
       <div class="flex h-12 w-12 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/40">
-        <svg class="h-6 w-6 text-primary-600 dark:text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <svg class="h-6 w-6 text-primary-700 dark:text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       </div>
@@ -1149,10 +1140,10 @@
         v-if="!hasUsedTrial && (!trialInfo || !trialInfo.active)"
         type="button"
         :disabled="startingTrial"
-        class="btn w-full justify-center bg-green-600 text-white hover:bg-green-700 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+        class="btn-primary w-full justify-center"
         @click="startTrial"
       >
-        <span v-if="startingTrial" class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></span>
+        <span v-if="startingTrial" class="spinner spinner-xs spinner-current inline-block mr-2"></span>
         Start 14-Day Free Trial
       </button>
 
@@ -1253,6 +1244,7 @@
       :failed-trades="importResultsData.failedTrades"
       :manual-review-items="importResultsData.manualReviewItems"
       :achievements="importResultsData.achievements"
+      :import-insight="importResultsData.insight"
       :selected-broker="selectedBroker"
       :file-name="selectedFile?.name || ''"
       :user-email="authStore.user?.email || ''"
@@ -1695,10 +1687,23 @@ const selectedBrokerLabel = computed(() => {
 })
 
 const ibkrBrokerFormats = new Set(['ibkr', 'ibkr_trade_confirmation'])
-const isIbkrImport = computed(() => {
-  if (ibkrBrokerFormats.has(selectedBroker.value)) return true
-  return selectedBroker.value === 'auto' && ibkrBrokerFormats.has(fileAnalysis.value.detectedBroker)
-})
+// thinkorswim exports (Account Statement and paperMoney) stamp fills with the
+// wall-clock time of the platform's configured timezone, not Eastern.
+const thinkorswimBrokerFormats = new Set(['thinkorswim', 'papermoney'])
+const effectiveImportBroker = computed(() => (
+  selectedBroker.value === 'auto' ? fileAnalysis.value.detectedBroker : selectedBroker.value
+))
+const isIbkrImport = computed(() => ibkrBrokerFormats.has(effectiveImportBroker.value))
+const isThinkorswimImport = computed(() => thinkorswimBrokerFormats.has(effectiveImportBroker.value))
+const showReportTimezone = computed(() => isIbkrImport.value || isThinkorswimImport.value)
+const reportTimezoneLabel = computed(() => (
+  isIbkrImport.value ? 'IBKR report timezone' : 'thinkorswim export timezone'
+))
+const reportTimezoneHelp = computed(() => (
+  isIbkrImport.value
+    ? 'Select the timezone used by the Date/Time column in the IBKR export. This is separate from the timezone used to display trades in TradeTally.'
+    : 'Select the timezone thinkorswim displays trade times in (usually your local time, set under Setup > Application Settings). This is separate from the timezone used to display trades in TradeTally.'
+))
 const timezoneSelectGroups = computed(() => {
   const groups = new Map()
   for (const timezone of TIMEZONE_OPTIONS) {
@@ -1707,7 +1712,27 @@ const timezoneSelectGroups = computed(() => {
   }
   return Array.from(groups, ([label, options]) => ({ label, options }))
 })
-const resolveSourceTimezoneParam = () => isIbkrImport.value ? sourceTimezone.value : null
+const resolveSourceTimezoneParam = () => showReportTimezone.value ? sourceTimezone.value : null
+
+// thinkorswim shows fills in the trader's own local time, so start the selector
+// at their TradeTally display timezone; IBKR reports default to Eastern. Only
+// move the selector while the user has not picked a timezone themselves.
+// The display timezone (even the schema default, UTC) is what earlier releases
+// used to store thinkorswim times, so defaulting to it keeps a re-import of an
+// old statement lined up with the trades already on file.
+const defaultReportTimezoneFor = (isThinkorswim) => {
+  if (isThinkorswim) {
+    const userTimezone = authStore.user?.timezone
+    if (userTimezone) return userTimezone
+  }
+  return 'America/New_York'
+}
+let autoSelectedReportTimezone = sourceTimezone.value
+watch(isThinkorswimImport, (isThinkorswim) => {
+  if (sourceTimezone.value !== autoSelectedReportTimezone) return
+  autoSelectedReportTimezone = defaultReportTimezoneFor(isThinkorswim)
+  sourceTimezone.value = autoSelectedReportTimezone
+}, { immediate: true })
 
 const displayedHeaderPreview = computed(() => fileAnalysis.value.headers.slice(0, 6))
 
@@ -2359,8 +2384,24 @@ function clearSelectedFile() {
   }
 }
 
+// Mirrors backend/src/utils/csv/fileNormalizer.js: workbooks, archives and
+// HTML reports are converted to CSV server-side.
+const SUPPORTED_IMPORT_EXTENSION = /\.(csv|txt|tsv|plain|text|data|xlsx|xlsm|zip|html?)$/i
+const UNSUPPORTED_IMPORT_HINTS = {
+  xls: 'Legacy Excel .xls workbooks are not supported. Open the file in Excel and save it as .xlsx or CSV.',
+  pdf: 'PDF statements cannot be imported. Export your trades as CSV or Excel from your broker instead.',
+  png: 'Screenshots cannot be imported. Export your trades as CSV or Excel from your broker instead.',
+  jpg: 'Screenshots cannot be imported. Export your trades as CSV or Excel from your broker instead.',
+  jpeg: 'Screenshots cannot be imported. Export your trades as CSV or Excel from your broker instead.'
+}
+
+function getFileExtension(name) {
+  const match = String(name || '').toLowerCase().match(/\.([a-z0-9]+)$/)
+  return match ? match[1] : ''
+}
+
 async function setSelectedFile(file, source = 'picker') {
-  const supportedExtension = file && /\.(csv|txt|data)$/i.test(file.name)
+  const supportedExtension = file && SUPPORTED_IMPORT_EXTENSION.test(file.name)
   if (file && (file.type === 'text/csv' || file.type === 'application/csv' || supportedExtension)) {
     selectedFile.value = file
     error.value = null
@@ -2368,17 +2409,22 @@ async function setSelectedFile(file, source = 'picker') {
     track('import_file_selected', {
       source,
       file_name: file.name,
-      file_size: file.size
+      file_size: file.size,
+      file_extension: getFileExtension(file.name)
     })
     await analyzeSelectedFile(file)
   } else {
-    error.value = 'Please select a valid CSV, TXT, or Sierra Chart DATA file'
+    const extension = getFileExtension(file?.name)
+    error.value = UNSUPPORTED_IMPORT_HINTS[extension]
+      || 'Please select a CSV, TXT, Excel (.xlsx), HTML report, ZIP archive, or Sierra Chart DATA file'
     selectedFile.value = null
     resetFileAnalysis()
     console.log('File rejected - unsupported trade export')
     trackImportValidationFailed('invalid_file_type', {
       file_name: file?.name || '',
-      file_size: file?.size || 0
+      file_size: file?.size || 0,
+      file_extension: extension,
+      file_mime: file?.type || ''
     })
   }
 }
@@ -3460,9 +3506,23 @@ function pollImportStatus(importId) {
             diagnostics,
             failedTrades,
             manualReviewItems: manualReviewItemsForImport,
-            achievements: []
+            achievements: [],
+            insight: null
           }
           showImportResultsModal.value = true
+
+          if (tradesImported > 0) {
+            api.get('/trades/import-insight', { params: importId ? { importId } : {} })
+              .then((res) => {
+                if (importResultsData.value?.importId === importId && res.data?.ready && res.data?.insight) {
+                  importResultsData.value = {
+                    ...importResultsData.value,
+                    insight: res.data
+                  }
+                }
+              })
+              .catch(() => {})
+          }
         }
 
         if (manualReviewItemsForImport.length > 0) {
@@ -3484,7 +3544,7 @@ function pollImportStatus(importId) {
               ? `Try using Auto-Detect instead of the "${brokerName}" format`
               : 'Try selecting your specific broker format instead of Auto-Detect',
             'Make sure your file contains actual trade data, not just an account summary or positions',
-            'Verify the file is CSV, TXT, or a Sierra Chart DATA export (not .xlsx or .xls)',
+            'Verify the file is a trade export (CSV, TXT, Excel .xlsx, or a Sierra Chart DATA file), not a PDF statement or screenshot',
             'Check that the file was exported from the correct section of your broker platform'
           ]
           showImportantWarning(

@@ -4,12 +4,12 @@
     <!-- Centered Card Style (for full page replacements) -->
     <div v-if="variant === 'card'" class="card mb-8">
     <div class="card-body text-center py-12">
-      <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-orange-100 dark:bg-orange-900/20 mb-4">
-        <svg class="h-6 w-6 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-primary-100 dark:bg-primary-900/20 mb-4">
+        <svg class="h-6 w-6 text-primary-700 dark:text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
         </svg>
       </div>
-      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Pro Feature</h3>
+      <h3 class="heading-card mb-2">Pro Feature</h3>
       <p class="text-gray-600 dark:text-gray-400 mb-6">
         {{ description }}
       </p>
@@ -20,10 +20,10 @@
   </div>
 
   <!-- Banner Style (for inline notices) -->
-  <div v-else-if="variant === 'banner'" class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-8">
+  <div v-else-if="variant === 'banner'" class="callout-warning mb-8">
     <div class="flex">
       <div class="flex-shrink-0">
-        <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+        <svg class="h-5 w-5 text-yellow-600 dark:text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
           <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
         </svg>
       </div>
@@ -39,7 +39,7 @@
   <!-- Compact Style (for smaller spaces) -->
   <div v-else-if="variant === 'compact'" class="text-center py-8">
     <div class="text-gray-500 dark:text-gray-400 mb-4">
-      <svg class="mx-auto h-8 w-8 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg class="mx-auto h-8 w-8 text-primary-700 dark:text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
       </svg>
     </div>

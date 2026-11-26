@@ -1,12 +1,12 @@
 <template>
   <div
     v-if="showStatus"
-    class="mb-6 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm"
+    class="card mb-6"
     role="status"
     aria-live="polite"
   >
     <div class="flex items-center gap-3 px-4 py-3">
-      <div class="animate-spin h-4 w-4 flex-shrink-0 rounded-full border-2 border-primary-600 border-t-transparent"></div>
+      <div class="spinner spinner-xs flex-shrink-0"></div>
 
       <div class="min-w-0 flex-1">
         <div class="flex flex-wrap items-baseline gap-x-2">
@@ -19,7 +19,7 @@
         <button
           v-if="!enrichmentStatus?.unresolvedCusips"
           @click="syncEnrichmentStatus"
-          class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white transition-colors"
+          class="btn-ghost btn-sm gap-1"
           title="Sync enrichment status with completed jobs"
         >
           <ArrowPathIcon class="h-3.5 w-3.5" />
@@ -27,14 +27,14 @@
         </button>
         <button
           @click="forceCompleteEnrichment"
-          class="rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 transition-colors"
+          class="btn-ghost btn-sm"
           title="Mark all pending enrichment jobs as complete"
         >
           Force complete
         </button>
         <button
           @click="dismiss"
-          class="ml-1 rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-200 transition-colors"
+          class="btn-icon p-1 ml-1"
           aria-label="Dismiss"
         >
           <XMarkIcon class="h-4 w-4" />
@@ -61,7 +61,7 @@
       class="border-t border-gray-200 dark:border-gray-700 px-4 py-3"
     >
       <div class="flex items-start gap-2">
-        <ExclamationTriangleIcon class="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-500" />
+        <ExclamationTriangleIcon class="mt-0.5 h-4 w-4 flex-shrink-0 text-yellow-500" />
         <div class="min-w-0 flex-1">
           <p class="text-xs font-medium text-gray-700 dark:text-gray-300">Some CUSIPs could not be resolved</p>
           <ul class="mt-1 space-y-0.5">

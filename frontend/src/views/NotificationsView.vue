@@ -1,6 +1,6 @@
 <template>
   <div class="content-wrapper py-8">
-    <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
+    <div class="card">
       <!-- Header -->
       <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
         <div class="flex items-center justify-between">
@@ -45,14 +45,14 @@
 
       <!-- Loading State -->
       <div v-if="loading && notifications.length === 0" class="p-8 text-center">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+        <div class="spinner spinner-md mx-auto"></div>
         <p class="text-gray-500 dark:text-gray-400 mt-4">Loading notifications...</p>
       </div>
 
       <!-- Empty State -->
       <div v-else-if="notifications.length === 0" class="p-12 text-center">
         <BellSlashIcon class="h-16 w-16 text-gray-400 mx-auto mb-4" />
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+        <h3 class="heading-card mb-2">
           No notifications yet
         </h3>
         <p class="text-gray-500 dark:text-gray-400">
@@ -74,7 +74,7 @@
                 type="checkbox"
                 :checked="selectedNotifications.includes(notification.id)"
                 @change="toggleNotificationSelection(notification.id)"
-                class="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                class="checkbox"
               />
             </div>
             <!-- Icon -->
@@ -130,10 +130,10 @@
               <div class="flex items-start justify-between">
                 <div class="flex-1">
                   <div class="flex items-center space-x-2 mb-1">
-                    <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
+                    <h3 class="heading-sub">
                       {{ notification.symbol || 'Notification' }}
                     </h3>
-                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium" :class="getTypeBadgeClass(notification.type)">
+                    <span class="badge" :class="getTypeBadgeClass(notification.type)">
                       {{ getTypeLabel(notification.type) }}
                     </span>
                   </div>
@@ -144,10 +144,10 @@
                   <!-- Additional details based on type -->
                   <div v-if="notification.type === 'price_alert'" class="text-xs text-gray-500 dark:text-gray-400">
                     <div v-if="notification.trigger_price" class="mb-1">
-                      <span class="font-medium">Triggered at:</span> ${{ parseFloat(notification.trigger_price).toFixed(2) }}
+                      <span class="font-medium">Triggered at:</span> {{ usd(parseFloat(notification.trigger_price)) }}
                     </div>
                     <div v-if="notification.target_price" class="mb-1">
-                      <span class="font-medium">Target price:</span> ${{ parseFloat(notification.target_price).toFixed(2) }}
+                      <span class="font-medium">Target price:</span> {{ usd(parseFloat(notification.target_price)) }}
                     </div>
                   </div>
                   
@@ -188,7 +188,7 @@
             <button
               @click="loadPage(pagination.page - 1)"
               :disabled="pagination.page <= 1 || loading"
-              class="btn-secondary text-sm"
+              class="btn-secondary"
             >
               Previous
             </button>
@@ -221,6 +221,12 @@ import {
 import { useUserTimezone } from '@/composables/useUserTimezone'
 import { useNotification } from '@/composables/useNotification'
 import { useNotificationCenter } from '@/composables/useNotificationCenter'
+import { useCurrencyFormatter } from '@/composables/useCurrencyFormatter'
+
+const { formatCurrency: _fmtCurrency, formatSignedCurrency: _fmtSigned } = useCurrencyFormatter()
+// Behavioral, alert and market-data values arrive in USD (not converted to the display currency).
+const usd = (v, o = {}) => _fmtCurrency(Number(v) || 0, { currency: 'USD', ...o })
+const usdSigned = (v, o = {}) => _fmtSigned(Number(v) || 0, { currency: 'USD', ...o })
 
 const router = useRouter()
 const { formatDateTime: formatDateTimeTz } = useUserTimezone()
@@ -403,19 +409,19 @@ const getTypeBadgeClass = (type) => {
     case 'price_alert':
       return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
     case 'trade_comment':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+      return 'bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200'
     case 'achievement_earned':
-      return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'
+      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
     case 'level_up':
-      return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200'
+      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
     case 'behavioral_alert':
-      return 'bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200'
+      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
     case 'portfolio_alert':
     case 'web_mention_alert':
       return 'bg-primary-100 text-primary-800 dark:bg-primary-900/30 dark:text-primary-200'
     case 'broker_reauth_expiring':
     case 'broker_reauth_required':
-      return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200'
+      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200'
     default:
       return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
   }
@@ -426,19 +432,19 @@ const getIconBgClass = (type) => {
     case 'price_alert':
       return 'bg-yellow-50 dark:bg-yellow-900/20'
     case 'trade_comment':
-      return 'bg-blue-50 dark:bg-blue-900/20'
+      return 'bg-primary-50 dark:bg-primary-900/20'
     case 'achievement_earned':
-      return 'bg-amber-50 dark:bg-amber-900/20'
+      return 'bg-yellow-50 dark:bg-yellow-900/20'
     case 'level_up':
-      return 'bg-emerald-50 dark:bg-emerald-900/20'
+      return 'bg-green-50 dark:bg-green-900/20'
     case 'behavioral_alert':
-      return 'bg-rose-50 dark:bg-rose-900/20'
+      return 'bg-red-50 dark:bg-red-900/20'
     case 'portfolio_alert':
     case 'web_mention_alert':
       return 'bg-primary-50 dark:bg-primary-900/20'
     case 'broker_reauth_expiring':
     case 'broker_reauth_required':
-      return 'bg-amber-50 dark:bg-amber-900/20'
+      return 'bg-yellow-50 dark:bg-yellow-900/20'
     default:
       return 'bg-gray-50 dark:bg-gray-700'
   }
@@ -449,19 +455,19 @@ const getIconColorClass = (type) => {
     case 'price_alert':
       return 'text-yellow-600 dark:text-yellow-400'
     case 'trade_comment':
-      return 'text-blue-600 dark:text-blue-400'
+      return 'text-primary-700 dark:text-primary-400'
     case 'achievement_earned':
-      return 'text-amber-600 dark:text-amber-400'
+      return 'text-yellow-600 dark:text-yellow-400'
     case 'level_up':
-      return 'text-emerald-600 dark:text-emerald-400'
+      return 'text-green-700 dark:text-green-400'
     case 'behavioral_alert':
-      return 'text-rose-600 dark:text-rose-400'
+      return 'text-red-600 dark:text-red-400'
     case 'portfolio_alert':
     case 'web_mention_alert':
-      return 'text-primary-600 dark:text-primary-300'
+      return 'text-primary-700 dark:text-primary-300'
     case 'broker_reauth_expiring':
     case 'broker_reauth_required':
-      return 'text-amber-600 dark:text-amber-400'
+      return 'text-yellow-600 dark:text-yellow-400'
     default:
       return 'text-gray-400'
   }

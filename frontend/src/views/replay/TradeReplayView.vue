@@ -12,7 +12,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
           </svg>
         </router-link>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+        <h1 class="heading-page">
           Trade Replay
           <span v-if="replayData" class="text-gray-500 dark:text-gray-400 font-medium">
             {{ replayData.symbol }}
@@ -23,7 +23,7 @@
       <div v-if="replayData" class="flex items-center space-x-2">
         <span
           v-if="replayData.trade.side"
-          class="text-xs px-2 py-1 rounded-full font-medium"
+          class="badge"
           :class="replayData.trade.side === 'long'
             ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
             : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'"
@@ -32,13 +32,13 @@
         </span>
         <span
           v-if="replayData.trade.instrument_type === 'option'"
-          class="text-xs px-2 py-1 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+          class="badge bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200"
         >
           Options Trade
         </span>
         <span
           v-if="quotaChip"
-          class="text-xs px-2 py-1 rounded-full bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200"
+          class="badge-primary"
         >
           {{ quotaChip }}
         </span>
@@ -47,7 +47,7 @@
 
     <!-- Initial loading -->
     <div v-if="initialLoading" class="flex justify-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div class="spinner spinner-lg"></div>
     </div>
 
     <!-- Free quota exhausted -->
@@ -64,7 +64,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
         <p class="text-red-600 dark:text-red-400 font-medium mb-2">{{ error }}</p>
-        <button @click="loadReplay" class="btn-secondary text-sm mt-2">Try Again</button>
+        <button @click="loadReplay" class="btn-secondary mt-2">Try Again</button>
       </div>
     </div>
 
@@ -72,7 +72,7 @@
       <!-- Degraded-data notice -->
       <div
         v-if="replayData.degraded"
-        class="mb-4 p-3 rounded-lg border border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20"
+        class="callout-warning mb-4"
       >
         <p class="text-sm text-yellow-800 dark:text-yellow-200">
           <strong>Daily mode:</strong> minute-level data isn't available for this trade, so the
@@ -98,7 +98,7 @@
       <!-- Options underlying notice -->
       <div
         v-if="replayData.trade.instrument_type === 'option'"
-        class="mb-4 p-3 rounded-lg border border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-900/20"
+        class="callout-info mb-4"
       >
         <p class="text-sm text-primary-800 dark:text-primary-200">
           The chart shows the <strong>underlying stock</strong> ({{ replayData.chart_symbol }});
@@ -111,7 +111,7 @@
       <!-- Futures continuous-contract notice -->
       <div
         v-if="replayData.futures_continuous"
-        class="mb-4 p-3 rounded-lg border border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-900/20"
+        class="callout-info mb-4"
       >
         <p class="text-sm text-primary-800 dark:text-primary-200">
           The chart shows <strong>continuous front-month data</strong> ({{ replayData.chart_symbol }}).
@@ -124,15 +124,13 @@
       <div class="card mb-4">
         <div class="card-body">
           <div class="flex flex-wrap items-center justify-end gap-1.5 mb-3">
-            <span class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 mr-1">Indicators</span>
+            <span class="text-label mr-1">Indicators</span>
             <button
               v-for="option in indicatorOptions"
               :key="option.key"
               @click="indicators[option.key] = !indicators[option.key]"
-              class="px-2 py-1 text-xs rounded-md font-medium"
-              :class="indicators[option.key]
-                ? 'bg-primary-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'"
+              class="segment"
+              :class="indicators[option.key] ? 'segment-active' : ''"
             >
               {{ option.label }}
             </button>

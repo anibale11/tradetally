@@ -6,8 +6,8 @@
         <div class="flex items-center gap-3">
           <h3 class="heading-card">Plaid Review</h3>
           <div v-if="accountId && reviewSummary" class="hidden items-center gap-3 text-xs font-medium sm:flex">
-            <span class="inline-flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
-              <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+            <span class="inline-flex items-center gap-1.5 text-yellow-600 dark:text-yellow-400">
+              <span class="h-1.5 w-1.5 rounded-full bg-yellow-500"></span>
               <span class="tabular-nums">{{ actionablePendingCount }}</span> pending review
             </span>
             <span class="h-3 w-px bg-gray-200 dark:bg-gray-700"></span>
@@ -27,11 +27,11 @@
         </div>
         <button
           type="button"
-          class="inline-flex items-center gap-1.5 text-xs font-medium text-primary-600 hover:text-primary-700 disabled:opacity-50 dark:text-primary-400 dark:hover:text-primary-300"
+          class="btn-link"
           :disabled="!accountId || store.reviewLoading"
           @click="refresh"
         >
-          <svg class="h-3.5 w-3.5" :class="{ 'animate-spin': store.reviewLoading }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <span v-if="store.reviewLoading" class="spinner spinner-xs spinner-current mr-2"></span><svg v-else class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M4 9a9 9 0 0114.2-4.5L20 7M20 15a9 9 0 01-14.2 4.5L4 17"/>
           </svg>
           Refresh
@@ -40,8 +40,8 @@
 
       <!-- Mobile stats (shown below title on narrow) -->
       <div v-if="accountId && reviewSummary" class="mt-2 flex items-center gap-3 text-xs font-medium sm:hidden">
-        <span class="inline-flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
-          <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+        <span class="inline-flex items-center gap-1.5 text-yellow-600 dark:text-yellow-400">
+          <span class="h-1.5 w-1.5 rounded-full bg-yellow-500"></span>
           <span class="tabular-nums">{{ actionablePendingCount }}</span> pending review
         </span>
         <span class="tabular-nums text-gray-500 dark:text-gray-400">
@@ -57,9 +57,7 @@
             :key="tab.id"
             type="button"
             class="inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors"
-            :class="activeTab === tab.id
-              ? 'bg-primary-600 text-white shadow-sm'
-              : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700/50'"
+            :class="activeTab === tab.id ? 'segment-active' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700/50'"
             @click="activeTab = tab.id"
           >
             {{ tab.label }}
@@ -75,7 +73,7 @@
           <input
             v-model="searchQuery"
             type="search"
-            class="w-full rounded-md border border-gray-200 bg-white py-1.5 pl-8 pr-8 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+            class="input input-sm w-full pl-8 pr-8"
             placeholder="Search transactions"
             aria-label="Search transactions"
           />
@@ -111,7 +109,7 @@
 
     <!-- Loading state -->
     <div v-else-if="store.reviewLoading && visibleItems.length === 0" class="px-5 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-      <div class="mx-auto h-5 w-5 animate-spin rounded-full border-2 border-primary-600 border-t-transparent"></div>
+      <div class="spinner spinner-sm mx-auto"></div>
       <p class="mt-2">Loading Plaid activity…</p>
     </div>
 
@@ -132,7 +130,7 @@
         <div class="flex items-center gap-1.5">
           <button
             type="button"
-            class="inline-flex items-center gap-1 rounded-md bg-green-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50"
+            class="btn-primary btn-sm gap-1"
             :disabled="bulkBusy"
             @click="requestSelectedAction('approve')"
           >
@@ -140,7 +138,7 @@
           </button>
           <button
             type="button"
-            class="inline-flex items-center gap-1 rounded-md bg-red-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
+            class="btn-danger btn-sm gap-1"
             :disabled="bulkBusy"
             @click="requestSelectedAction('reject')"
           >
@@ -148,7 +146,7 @@
           </button>
           <button
             type="button"
-            class="inline-flex items-center rounded-md px-2.5 py-1 text-xs font-medium text-primary-700 hover:bg-primary-100 dark:text-primary-300 dark:hover:bg-primary-900/40"
+            class="btn-ghost btn-sm"
             :disabled="bulkBusy"
             @click="clearSelection"
           >
@@ -161,10 +159,7 @@
         v-for="(item, pageIndex) in paginatedItems"
         :key="item.id"
         class="group transition-colors"
-        :class="[
-          expanded[item.id] ? 'bg-gray-50 dark:bg-gray-800/40' : '',
-          selectedIds.has(item.id) ? 'bg-primary-50/70 dark:bg-primary-900/20' : ''
-        ]"
+        :class="[ expanded[item.id] ? 'bg-gray-50 dark:bg-gray-800/40' : '', selectedIds.has(item.id) ? 'bg-primary-50/70 dark:bg-primary-900/20' : '' ]"
       >
         <!-- Primary row -->
         <div
@@ -175,7 +170,7 @@
           <input
             v-if="canAct(item)"
             type="checkbox"
-            class="h-4 w-4 shrink-0 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+            class="checkbox"
             :checked="selectedIds.has(item.id)"
             :aria-label="`Select ${item.description}`"
             @click.stop="toggleRowSelection(item, (currentPage - 1) * PAGE_SIZE + pageIndex, $event)"
@@ -196,7 +191,7 @@
               </div>
               <span
                 v-if="statusLabel(item)"
-                class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+                class="badge"
                 :class="statusClass(item)"
               >
                 {{ statusLabel(item) }}
@@ -224,7 +219,7 @@
           <div v-if="canAct(item)" class="flex shrink-0 items-center gap-0.5">
             <button
               type="button"
-              class="inline-flex h-7 w-7 items-center justify-center rounded-md text-green-600 transition-colors hover:bg-green-100 disabled:opacity-40 dark:text-green-400 dark:hover:bg-green-900/30"
+              class="inline-flex h-7 w-7 items-center justify-center rounded-md text-green-700 transition-colors hover:bg-green-100 disabled:opacity-40 dark:text-green-400 dark:hover:bg-green-900/30"
               :disabled="actingId === item.id"
               :title="`Approve as ${transactionTypes[item.id] || 'deposit'}`"
               @click.stop="requestAction(item, 'approve')"
@@ -232,10 +227,7 @@
               <svg v-if="actingId !== item.id" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
               </svg>
-              <svg v-else class="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10" stroke-opacity="0.25"/>
-                <path stroke-linecap="round" d="M12 2a10 10 0 0110 10"/>
-              </svg>
+              <span v-else class="spinner spinner-xs spinner-current mr-2"></span>
             </button>
             <button
               type="button"
@@ -269,7 +261,7 @@
           <button
             v-else-if="canRevert(item)"
             type="button"
-            class="inline-flex shrink-0 items-center gap-1 rounded-md border border-gray-200 bg-white px-2 py-1 text-[11px] font-medium text-gray-600 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-700 disabled:opacity-40 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-red-700 dark:hover:bg-red-900/20 dark:hover:text-red-300"
+            class="btn-secondary btn-sm gap-1"
             :disabled="actingId === item.id"
             title="Revert decision and return to pending"
             @click.stop="requestAction(item, 'revert')"
@@ -277,10 +269,7 @@
             <svg v-if="actingId !== item.id" class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a5 5 0 015 5v2M3 10l4-4M3 10l4 4"/>
             </svg>
-            <svg v-else class="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10" stroke-opacity="0.25"/>
-              <path stroke-linecap="round" d="M12 2a10 10 0 0110 10"/>
-            </svg>
+            <span v-else class="spinner spinner-xs spinner-current mr-2"></span>
             Untrack
           </button>
         </div>
@@ -293,13 +282,11 @@
         >
           <div class="flex flex-col gap-2.5 sm:flex-row sm:items-center">
             <!-- Segmented direction toggle -->
-            <div class="inline-flex shrink-0 rounded-lg bg-white p-0.5 ring-1 ring-gray-200 dark:bg-gray-900 dark:ring-gray-700">
+            <div class="segmented shrink-0">
               <button
                 type="button"
-                class="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-colors"
-                :class="transactionTypes[item.id] === 'deposit'
-                  ? 'bg-green-600 text-white shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'"
+                class="segment"
+                :class="transactionTypes[item.id] === 'deposit' ? 'segment-active' : ''"
                 @click="transactionTypes[item.id] = 'deposit'"
               >
                 <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -309,10 +296,8 @@
               </button>
               <button
                 type="button"
-                class="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-colors"
-                :class="transactionTypes[item.id] === 'withdrawal'
-                  ? 'bg-red-600 text-white shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'"
+                class="segment"
+                :class="transactionTypes[item.id] === 'withdrawal' ? 'segment-active' : ''"
                 @click="transactionTypes[item.id] = 'withdrawal'"
               >
                 <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -326,18 +311,18 @@
             <input
               v-model="descriptions[item.id]"
               type="text"
-              class="w-full rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-sm placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+              class="input input-sm w-full"
               placeholder="Override description (optional)"
               style="min-height: 0; font-size: 14px;"
             />
           </div>
 
           <!-- Hint about original suggestion -->
-          <div v-if="item.directionGuess && item.directionGuess !== 'ambiguous'" class="mt-2 text-[11px] text-gray-500 dark:text-gray-400">
+          <div v-if="item.directionGuess && item.directionGuess !== 'ambiguous'" class="mt-2 text-xs text-gray-500 dark:text-gray-400">
             Plaid suggested <span class="font-medium capitalize">{{ item.directionGuess }}</span>
             <span v-if="item.confidence">· <span class="tabular-nums">{{ item.confidence }}%</span> confidence</span>
           </div>
-          <div v-else class="mt-2 text-[11px] font-medium text-amber-600 dark:text-amber-400">
+          <div v-else class="mt-2 text-xs font-medium text-yellow-600 dark:text-yellow-400">
             Direction ambiguous — please choose deposit or withdrawal.
           </div>
         </div>
@@ -355,7 +340,7 @@
       <div class="flex items-center gap-1.5">
         <button
           type="button"
-          class="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+          class="btn-secondary btn-sm gap-1"
           :disabled="currentPage <= 1"
           @click="goToPage(currentPage - 1)"
         >
@@ -366,7 +351,7 @@
         </span>
         <button
           type="button"
-          class="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+          class="btn-secondary btn-sm gap-1"
           :disabled="currentPage >= totalPages"
           @click="goToPage(currentPage + 1)"
         >
@@ -380,12 +365,12 @@
   <Teleport to="body">
     <div
       v-if="confirmState.open"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+      class="modal-overlay flex items-center justify-center px-4"
       @click.self="closeConfirm"
     >
-      <div class="w-full max-w-md overflow-hidden rounded-xl bg-white shadow-xl dark:bg-gray-800">
+      <div role="dialog" aria-modal="true" class="modal-panel w-full p-6 max-w-md">
         <div class="border-b border-gray-200 px-5 py-4 dark:border-gray-700">
-          <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+          <h3 class="heading-card">
             {{ actionTitle }}
           </h3>
           <div class="mt-1 flex items-baseline gap-2">
@@ -401,15 +386,13 @@
         <div class="space-y-1.5 px-5 py-4">
           <label
             class="flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors"
-            :class="confirmState.scope === 'single'
-              ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-900/20'
-              : 'border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/40'"
+            :class="confirmState.scope === 'single' ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-900/20' : 'border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/40'"
           >
             <input
               type="radio"
               value="single"
               v-model="confirmState.scope"
-              class="mt-0.5 h-4 w-4 border-gray-300 text-primary-600 focus:ring-primary-500"
+              class="radio mt-0.5"
             />
             <div class="flex-1">
               <div class="text-sm font-medium text-gray-900 dark:text-white">
@@ -424,15 +407,13 @@
           <label
             v-if="hasMatchingExpansion"
             class="flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors"
-            :class="confirmState.scope === 'matching'
-              ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-900/20'
-              : 'border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/40'"
+            :class="confirmState.scope === 'matching' ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-900/20' : 'border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/40'"
           >
             <input
               type="radio"
               value="matching"
               v-model="confirmState.scope"
-              class="mt-0.5 h-4 w-4 border-gray-300 text-primary-600 focus:ring-primary-500"
+              class="radio mt-0.5"
             />
             <div class="flex-1">
               <div class="text-sm font-medium text-gray-900 dark:text-white">
@@ -451,7 +432,7 @@
         <div class="flex items-center justify-end gap-2 border-t border-gray-200 bg-gray-50 px-5 py-3 dark:border-gray-700 dark:bg-gray-900/40">
           <button
             type="button"
-            class="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+            class="btn-secondary btn-sm dark:text-gray-200"
             :disabled="bulkBusy"
             @click="closeConfirm"
           >
@@ -464,10 +445,7 @@
             :disabled="bulkBusy"
             @click="executeConfirm"
           >
-            <svg v-if="bulkBusy" class="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10" stroke-opacity="0.25"/>
-              <path stroke-linecap="round" d="M12 2a10 10 0 0110 10"/>
-            </svg>
+            <span v-if="bulkBusy" class="spinner spinner-xs spinner-current mr-2"></span>
             {{ bulkBusy ? 'Working…' : actionVerb }}
           </button>
         </div>
@@ -701,21 +679,21 @@ function toggleRowSelection(item, index, event) {
 }
 
 function railColor(item) {
-  if (item.pending) return 'bg-amber-400/70'
+  if (item.pending) return 'bg-yellow-400/70'
   if (item.reviewStatus === 'approved') {
     return item.importedTransactionType === 'withdrawal' ? 'bg-red-500/70' : 'bg-green-500/70'
   }
   if (item.reviewStatus === 'rejected') return 'bg-gray-300 dark:bg-gray-600'
   if (item.directionGuess === 'withdrawal') return 'bg-red-400/50'
   if (item.directionGuess === 'deposit') return 'bg-green-400/50'
-  return 'bg-amber-400/70'
+  return 'bg-yellow-400/70'
 }
 
 function amountColor(item) {
   const resolved = item.importedTransactionType || item.directionGuess
   if (item.reviewStatus === 'rejected') return 'text-gray-400 dark:text-gray-500 line-through'
   if (resolved === 'withdrawal') return 'text-red-600 dark:text-red-400'
-  if (resolved === 'deposit') return 'text-green-600 dark:text-green-400'
+  if (resolved === 'deposit') return 'text-green-700 dark:text-green-400'
   return 'text-gray-900 dark:text-white'
 }
 
@@ -735,7 +713,7 @@ function statusLabel(item) {
 }
 
 function statusClass(item) {
-  if (item.pending) return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+  if (item.pending) return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
   if (item.reviewStatus === 'approved') return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
   if (item.reviewStatus === 'rejected') return 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
   return ''

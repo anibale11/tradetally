@@ -2,7 +2,7 @@
   <div class="content-wrapper py-8">
     <!-- Hero -->
     <div class="max-w-3xl">
-      <p class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-medium">Market conditions</p>
+      <p class="text-label">Market conditions</p>
       <h1 class="heading-page mt-1">Market Risk Indicators</h1>
       <p class="mt-2 text-gray-600 dark:text-gray-400">
         Seven macro gauges of stock market valuation and stress: the Shiller CAPE ratio, Buffett Indicator,
@@ -13,7 +13,7 @@
 
     <!-- Loading -->
     <div v-if="initialLoading" class="flex justify-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div class="spinner spinner-lg"></div>
     </div>
 
     <template v-else>
@@ -47,16 +47,16 @@
           class="card-dense px-5 py-4"
         >
           <div class="flex items-center justify-between gap-2">
-            <h2 class="text-sm font-medium text-gray-600 dark:text-gray-400">{{ indicator.name }}</h2>
+            <h2 class="heading-sub">{{ indicator.name }}</h2>
             <span
-              class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium uppercase whitespace-nowrap"
+              class="badge"
               :class="badgeClasses(indicator.status)"
             >
               {{ indicator.status_label }}
             </span>
           </div>
           <div class="mt-2 flex items-baseline gap-1.5">
-            <span class="text-4xl font-semibold text-mono-num text-gray-900 dark:text-white">
+            <span class="stat-value text-gray-900 dark:text-white">
               {{ indicator.display_value ?? '—' }}</span>
             <span v-if="indicator.unit" class="text-sm text-gray-500 dark:text-gray-400">{{ indicator.unit }}</span>
           </div>
@@ -76,7 +76,7 @@
           <div class="card-dense px-5 py-4">
             <div class="flex items-center gap-2">
               <span class="h-2.5 w-2.5 rounded-full bg-red-500"></span>
-              <h3 class="font-semibold text-gray-900 dark:text-white">Red</h3>
+              <h3 class="heading-card">Red</h3>
             </div>
             <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
               The measure is at a historically extreme level. Extremes can persist for years, but forward returns
@@ -85,8 +85,8 @@
           </div>
           <div class="card-dense px-5 py-4">
             <div class="flex items-center gap-2">
-              <span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span>
-              <h3 class="font-semibold text-gray-900 dark:text-white">Amber</h3>
+              <span class="h-2.5 w-2.5 rounded-full bg-yellow-500"></span>
+              <h3 class="heading-card">Amber</h3>
             </div>
             <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
               The measure is elevated or in a historically risky window, such as the two years after a yield-curve
@@ -96,7 +96,7 @@
           <div class="card-dense px-5 py-4">
             <div class="flex items-center gap-2">
               <span class="h-2.5 w-2.5 rounded-full bg-green-500"></span>
-              <h3 class="font-semibold text-gray-900 dark:text-white">Green</h3>
+              <h3 class="heading-card">Green</h3>
             </div>
             <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
               The measure is within its normal historical range and is not flagging valuation or stress risk on its own.
@@ -111,7 +111,7 @@
         <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div v-for="item in explainers" :key="item.title" class="card">
             <div class="card-body">
-              <h3 class="font-semibold text-gray-900 dark:text-white">{{ item.title }}</h3>
+              <h3 class="heading-card">{{ item.title }}</h3>
               <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">{{ item.body }}</p>
               <p class="mt-2 text-xs text-gray-500 dark:text-gray-500">Source: {{ item.source }}</p>
             </div>
@@ -125,7 +125,7 @@
         <div class="mt-4 space-y-4">
           <div v-for="faq in faqs" :key="faq.q" class="card">
             <div class="card-body">
-              <h3 class="font-semibold text-gray-900 dark:text-white">{{ faq.q }}</h3>
+              <h3 class="heading-card">{{ faq.q }}</h3>
               <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">{{ faq.a }}</p>
             </div>
           </div>
@@ -149,7 +149,7 @@
         </div>
       </section>
 
-      <p class="mt-8 text-xs text-gray-400 dark:text-gray-500 max-w-3xl">
+      <p class="mt-8 text-xs text-gray-500 dark:text-gray-400 max-w-3xl">
         Data sources: Federal Reserve Economic Data (FRED) and multpl.com. Values update daily; quarterly series
         (Buffett Indicator, Tobin's Q) update with each Z.1 flow of funds release. Nothing on this page is
         investment advice.
@@ -180,7 +180,7 @@ const summaryClasses = computed(() => {
       return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/40 text-red-700 dark:text-red-300'
     case 'caution':
     case 'mixed':
-      return 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800/40 text-amber-700 dark:text-amber-300'
+      return 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800/40 text-yellow-700 dark:text-yellow-300'
     default:
       return 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800/40 text-green-700 dark:text-green-300'
   }
@@ -192,7 +192,7 @@ const summaryDotClass = computed(() => {
       return 'bg-red-500'
     case 'caution':
     case 'mixed':
-      return 'bg-amber-500'
+      return 'bg-yellow-500'
     default:
       return 'bg-green-500'
   }
@@ -203,7 +203,7 @@ function badgeClasses(status) {
     case 'red':
       return 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
     case 'amber':
-      return 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+      return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300'
     case 'green':
       return 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
     default:

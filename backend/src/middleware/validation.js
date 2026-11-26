@@ -254,8 +254,8 @@ const schemas = {
     exitPrice: Joi.number().min(0).allow(null, ''),
     quantity: Joi.number().positive().required(),
     side: Joi.string().valid('long', 'short').required(),
-    instrumentType: Joi.string().valid('stock', 'option', 'future', 'crypto', 'forex').default('stock'),
-    instrument_type: Joi.string().valid('stock', 'option', 'future', 'crypto', 'forex').optional(), // Accept snake_case for API compatibility
+    instrumentType: Joi.string().valid('stock', 'option', 'future', 'crypto', 'forex', 'cfd').default('stock'),
+    instrument_type: Joi.string().valid('stock', 'option', 'future', 'crypto', 'forex', 'cfd').optional(), // Accept snake_case for API compatibility
     commission: Joi.number().default(0),  // Can be negative for rebates
     entryCommission: Joi.number().default(0),  // Can be negative for rebates
     exitCommission: Joi.number().default(0),  // Can be negative for rebates
@@ -267,6 +267,7 @@ const schemas = {
     originalPnlCurrency: Joi.number().allow(null, ''),
     originalCommissionCurrency: Joi.number().allow(null, ''),
     originalFeesCurrency: Joi.number().allow(null, ''),
+    excursion_unit: Joi.string().valid('dollars', 'points', 'r'),
     mae: Joi.number().allow(null, ''),
     mfe: Joi.number().allow(null, ''),
     postExitMae: Joi.number().allow(null, ''),
@@ -359,8 +360,8 @@ const schemas = {
   createShellTrade: Joi.object({
     symbol: Joi.string().max(20).required(),
     side: Joi.string().valid('long', 'short').required(),
-    instrumentType: Joi.string().valid('stock', 'option', 'future', 'crypto', 'forex').default('stock'),
-    instrument_type: Joi.string().valid('stock', 'option', 'future', 'crypto', 'forex').optional(),
+    instrumentType: Joi.string().valid('stock', 'option', 'future', 'crypto', 'forex', 'cfd').default('stock'),
+    instrument_type: Joi.string().valid('stock', 'option', 'future', 'crypto', 'forex', 'cfd').optional(),
     broker: Joi.string().max(50).allow(''),
     account_identifier: Joi.string().max(50).allow(''),
     strategy: Joi.string().max(100).allow(''),
@@ -413,7 +414,7 @@ const schemas = {
     exitPrice: Joi.number().min(0).allow(null, ''),
     quantity: Joi.number().positive(),
     side: Joi.string().valid('long', 'short'),
-    instrumentType: Joi.string().valid('stock', 'option', 'future', 'crypto', 'forex'),
+    instrumentType: Joi.string().valid('stock', 'option', 'future', 'crypto', 'forex', 'cfd'),
     commission: Joi.number(),  // Can be negative for rebates
     entryCommission: Joi.number(),  // Can be negative for rebates
     exitCommission: Joi.number(),  // Can be negative for rebates
@@ -425,6 +426,7 @@ const schemas = {
     originalPnlCurrency: Joi.number().allow(null, ''),
     originalCommissionCurrency: Joi.number().allow(null, ''),
     originalFeesCurrency: Joi.number().allow(null, ''),
+    excursion_unit: Joi.string().valid('dollars', 'points', 'r'),
     mae: Joi.number().allow(null, ''),
     mfe: Joi.number().allow(null, ''),
     postExitMae: Joi.number().allow(null, ''),
@@ -543,7 +545,10 @@ const schemas = {
     enableTradeGrouping: Joi.boolean(),
     tradeGroupingTimeGapMinutes: Joi.number().integer().min(1).max(1440),
     autoCloseExpiredOptions: Joi.boolean(),
-    defaultStopLossType: Joi.string().valid('percent', 'lod', 'dollar'),
+    defaultStopLossType: Joi.string().valid('percent', 'lod', 'dollar', 'points'),
+    default_stop_loss_points: Joi.number().positive().max(1000000).allow(null),
+    default_stop_loss_points_by_underlying: Joi.object()
+      .pattern(/^[A-Z0-9]{1,20}$/, Joi.number().positive().max(1000000)).max(100),
     defaultStopLossPercent: Joi.number().min(0).max(100).allow(null),
     defaultStopLossDollars: Joi.number().min(0).allow(null),
     defaultTakeProfitType: Joi.string().valid('percent', 'risk_reward', 'dollar'),
@@ -763,12 +768,13 @@ const schemas = {
     autoAssignEnabled: Joi.boolean().default(false),
     checklistItems: Joi.array().items(
       Joi.object({
+        id: Joi.string().uuid(),
         label: Joi.string().trim().max(255).required(),
         itemOrder: Joi.number().integer().min(0).allow(null),
         weight: Joi.number().positive().max(100).default(1),
         isRequired: Joi.boolean().default(false)
       })
-    ).min(1).required()
+    ).unique((a, b) => Boolean(a.id && b.id && a.id === b.id)).min(1).required()
   }),
 
   submitPlaybookReview: Joi.object({
@@ -816,13 +822,28 @@ const schemas = {
     modelName: Joi.string().trim().max(200)
   }),
 
-  aiFollowup: Joi.object({
+  aiCreateChat: Joi.object({
     message: Joi.string().trim().max(4000).required(),
+    accounts: Joi.array().items(Joi.string().trim().max(200)).max(20),
+    request_id: Joi.string().trim().max(100).pattern(/^[a-zA-Z0-9_-]+$/),
     apiKey: Joi.string().trim().max(500),
     modelName: Joi.string().trim().max(200)
   }),
 
+  aiFollowup: Joi.object({
+    message: Joi.string().trim().max(4000).required(),
+    accounts: Joi.array().items(Joi.string().trim().max(200)).max(20),
+    apiKey: Joi.string().trim().max(500),
+    modelName: Joi.string().trim().max(200)
+  }),
+
+  aiMemoryNote: Joi.object({
+    note: Joi.string().trim().min(3).max(300).required()
+  }),
+
   brokerSyncIbkrConnection: Joi.object({
+    ibkr_trade_confirmation_query_id: nullableString(100),
+    ibkr_confirmation_interval_minutes: Joi.number().integer().min(15).max(1440).multiple(15),
     flexToken: Joi.string().trim().required(),
     flexQueryId: Joi.string().trim().required(),
     accountLabel: nullableString(255),
@@ -830,6 +851,22 @@ const schemas = {
     syncFrequency: Joi.string().valid('manual', 'hourly', 'every_4_hours', 'every_6_hours', 'every_12_hours', 'daily').default('manual'),
     syncTime: nullableString(10),
     syncStartDate: nullableDate
+  }),
+
+  brokerSyncOandaAccounts: Joi.object({
+    api_token: Joi.string().trim().min(1).max(512).required(),
+    broker_environment: Joi.string().valid('practice', 'live').default('practice')
+  }),
+
+  brokerSyncOandaConnection: Joi.object({
+    api_token: Joi.string().trim().min(1).max(512).required(),
+    account_id: Joi.string().trim().pattern(/^[0-9-]{1,32}$/).required(),
+    broker_environment: Joi.string().valid('practice', 'live').default('practice'),
+    account_label: Joi.string().trim().max(100).allow('').default(''),
+    auto_sync_enabled: Joi.boolean().default(false),
+    sync_frequency: Joi.string().valid('manual', 'daily', 'hourly', 'every_4_hours', 'every_6_hours', 'every_12_hours').default('daily'),
+    sync_time: Joi.string().pattern(/^([01]\d|2[0-3]):[0-5]\d:[0-5]\d$/).default('06:00:00'),
+    sync_start_date: Joi.string().isoDate().allow(null).default(null)
   }),
 
   brokerSyncTrading212Connection: Joi.object({
@@ -844,6 +881,8 @@ const schemas = {
   }),
 
   brokerSyncConnectionUpdate: Joi.object({
+    ibkr_trade_confirmation_query_id: nullableString(100),
+    ibkr_confirmation_interval_minutes: Joi.number().integer().min(15).max(1440).multiple(15),
     accountLabel: nullableString(255),
     autoSyncEnabled: Joi.boolean(),
     syncFrequency: Joi.string().valid('manual', 'hourly', 'every_4_hours', 'every_6_hours', 'every_12_hours', 'daily'),
@@ -853,6 +892,7 @@ const schemas = {
   }).min(1),
 
   brokerSyncManualSync: Joi.object({
+    report_type: Joi.string().valid('activity', 'trade_confirmation', 'all'),
     startDate: nullableDate,
     endDate: nullableDate
   }),
@@ -966,6 +1006,16 @@ const schemas = {
     custom_return_rate_percent: Joi.number().greater(-100).max(100).required(),
     inflation_rate_percent: Joi.number().min(0).max(20).required(),
     withdrawal_rate_percent: Joi.number().greater(0).max(20).required()
+  }),
+
+  retirementCashflowCategory: Joi.object({
+    category: Joi.string()
+      .valid('income', 'essential', 'discretionary', 'debt_payment', 'savings', 'transfer', 'refund', 'other')
+      .required()
+  }),
+
+  retirementAffordabilityAccount: Joi.object({
+    include_in_retirement_savings: Joi.boolean().required()
   }),
 
   investmentFavoriteToggle: Joi.object({

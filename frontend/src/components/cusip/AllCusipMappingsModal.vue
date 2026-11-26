@@ -1,24 +1,24 @@
 <template>
     <div v-if="isOpen" class="fixed inset-0 z-50 overflow-y-auto">
         <div
-            class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
+            class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center "
         >
             <!-- Background overlay -->
             <div
-                class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+                class="modal-backdrop"
                 @click="$emit('close')"
             ></div>
 
             <!-- Modal -->
-            <div
-                class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-6xl sm:w-full"
+            <div role="dialog" aria-modal="true"
+                class="modal-panel w-full p-6 max-w-6xl"
             >
                 <!-- Header -->
-                <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6">
+                <div class="px-4 pt-5 pb-4 sm:p-6">
                     <div class="flex items-center justify-between">
                         <div>
                             <h3
-                                class="text-lg leading-6 font-medium text-gray-900 dark:text-white"
+                                class="modal-title"
                             >
                                 All CUSIP Mappings
                             </h3>
@@ -51,7 +51,7 @@
                                 type="text"
                                 placeholder="Search CUSIP, ticker, or company..."
                                 aria-label="Search CUSIP mappings"
-                                class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                                class="input"
                             />
                         </div>
                         <div class="min-w-40">
@@ -80,7 +80,7 @@
                         <button
                             @click="loadMappings(1)"
                             :disabled="loading"
-                            class="btn-secondary text-sm"
+                            class="btn-secondary"
                         >
                             <ArrowPathIcon
                                 class="h-4 w-4 mr-2"
@@ -95,11 +95,11 @@
                 <div class="px-4 sm:px-6 pb-4">
                     <!-- Loading State -->
                     <div
-                        v-if="loading"
+                        v-if="initialLoading"
                         class="flex items-center justify-center py-12"
                     >
                         <div
-                            class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"
+                            class="spinner spinner-md"
                         ></div>
                         <span class="ml-3 text-gray-500 dark:text-gray-400"
                             >Loading mappings...</span
@@ -115,7 +115,7 @@
                             class="h-16 w-16 text-gray-400 mx-auto mb-4"
                         />
                         <h3
-                            class="text-lg font-medium text-gray-900 dark:text-white mb-2"
+                            class="heading-card mb-2"
                         >
                             No mappings found
                         </h3>
@@ -134,35 +134,35 @@
                             <table
                                 class="min-w-full divide-y divide-gray-200 dark:divide-gray-700"
                             >
-                                <thead class="bg-gray-50 dark:bg-gray-700">
+                                <thead class="table-head">
                                     <tr>
                                         <th
-                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                            class="text-left table-th px-4 py-2"
                                         >
                                             CUSIP
                                         </th>
                                         <th
-                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                            class="text-left table-th px-4 py-2"
                                         >
                                             Ticker
                                         </th>
                                         <th
-                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                            class="text-left table-th px-4 py-2"
                                         >
                                             Company
                                         </th>
                                         <th
-                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                            class="text-left table-th px-4 py-2"
                                         >
                                             Source
                                         </th>
                                         <th
-                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                            class="text-left table-th px-4 py-2"
                                         >
                                             Trades
                                         </th>
                                         <th
-                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                            class="text-left table-th px-4 py-2"
                                         >
                                             Actions
                                         </th>
@@ -176,20 +176,20 @@
                                         :key="mapping.cusip"
                                         class="hover:bg-gray-50 dark:hover:bg-gray-700"
                                     >
-                                        <td class="px-4 py-4 whitespace-nowrap">
+                                        <td class="whitespace-nowrap px-4 py-3">
                                             <code
                                                 class="text-sm font-mono text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded"
                                             >
                                                 {{ mapping.cusip }}
                                             </code>
                                         </td>
-                                        <td class="px-4 py-4 whitespace-nowrap">
+                                        <td class="whitespace-nowrap px-4 py-3">
                                             <div
                                                 v-if="mapping.ticker"
                                                 class="flex items-center"
                                             >
                                                 <span
-                                                    class="text-sm font-semibold text-primary-600 dark:text-primary-400"
+                                                    class="text-sm font-semibold text-primary-700 dark:text-primary-400"
                                                 >
                                                     {{ mapping.ticker }}
                                                 </span>
@@ -198,7 +198,7 @@
                                                     class="ml-2"
                                                 >
                                                     <CheckCircleIcon
-                                                        class="h-4 w-4 text-green-500"
+                                                        class="h-4 w-4 text-green-700 dark:text-green-400"
                                                         title="Verified"
                                                     />
                                                 </span>
@@ -217,13 +217,13 @@
                                                             mapping,
                                                         )
                                                     "
-                                                    class="ml-2 text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+                                                    class="btn-link ml-2"
                                                 >
                                                     Map Now
                                                 </button>
                                             </div>
                                         </td>
-                                        <td class="px-4 py-4 whitespace-nowrap">
+                                        <td class="whitespace-nowrap px-4 py-3">
                                             <div
                                                 class="text-sm text-gray-900 dark:text-white"
                                             >
@@ -233,16 +233,11 @@
                                                 }}
                                             </div>
                                         </td>
-                                        <td class="px-4 py-4 whitespace-nowrap">
+                                        <td class="whitespace-nowrap px-4 py-3">
                                             <span
                                                 v-if="mapping.resolution_source"
-                                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                                                :class="
-                                                    getSourceBadgeClass(
-                                                        mapping.resolution_source,
-                                                        mapping.is_user_override,
-                                                    )
-                                                "
+                                                class="badge"
+                                                :class="getSourceBadgeClass( mapping.resolution_source, mapping.is_user_override, )"
                                             >
                                                 {{
                                                     getSourceLabel(
@@ -257,7 +252,7 @@
                                                 >-</span
                                             >
                                         </td>
-                                        <td class="px-4 py-4 whitespace-nowrap">
+                                        <td class="whitespace-nowrap px-4 py-3">
                                             <div
                                                 class="flex items-center text-sm"
                                             >
@@ -279,7 +274,7 @@
                                             </div>
                                         </td>
                                         <td
-                                            class="px-4 py-4 whitespace-nowrap text-right text-sm font-medium"
+                                            class="whitespace-nowrap text-right text-sm font-medium px-4 py-3"
                                         >
                                             <div
                                                 class="flex items-center space-x-2"
@@ -294,7 +289,7 @@
                                                             mapping.cusip,
                                                         )
                                                     "
-                                                    class="text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
+                                                    class="text-green-700 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300"
                                                     title="Verify mapping"
                                                 >
                                                     <CheckIcon
@@ -306,7 +301,7 @@
                                                     @click="
                                                         editMapping(mapping)
                                                     "
-                                                    class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+                                                    class="btn-link"
                                                     title="Edit mapping"
                                                 >
                                                     <PencilIcon
@@ -367,7 +362,7 @@
                                 <button
                                     @click="loadPage(pagination.page - 1)"
                                     :disabled="pagination.page <= 1 || loading"
-                                    class="btn-secondary text-sm"
+                                    class="btn-secondary"
                                 >
                                     Previous
                                 </button>
@@ -392,7 +387,7 @@
                 >
                     <button
                         @click="$emit('close')"
-                        class="w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:w-auto sm:text-sm"
+                        class="btn-secondary w-full sm:w-auto"
                     >
                         Close
                     </button>
@@ -444,6 +439,7 @@ const { showDangerConfirmation } = useNotification();
 const mappings = ref([]);
 const pagination = ref(null);
 const loading = ref(false);
+const initialLoading = ref(true);
 const searchQuery = ref("");
 const statusFilter = ref("");
 const sourceFilter = ref("");
@@ -502,7 +498,8 @@ const loadMappings = async (page = 1) => {
     } catch (error) {
         console.error("Error loading mappings:", error);
     } finally {
-        loading.value = false;
+        loading.value = false
+        initialLoading.value = false;
         console.log("loadMappings completed, loading:", loading.value);
     }
 };
@@ -597,14 +594,14 @@ const getSourceLabel = (source, isUserOverride) => {
 
 const getSourceBadgeClass = (source, isUserOverride) => {
     if (isUserOverride) {
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+        return "bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200";
     }
 
     switch (source) {
         case "finnhub":
             return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
         case "ai":
-            return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
+            return "bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200";
         case "manual":
             return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200";
         default:

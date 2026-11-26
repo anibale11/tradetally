@@ -1,15 +1,15 @@
 <template>
-  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+  <div class="modal-overlay flex items-center justify-center p-4">
+    <div role="dialog" aria-modal="true" class="modal-panel max-w-md w-full max-h-[90vh] overflow-y-auto">
       <div class="p-6">
         <!-- Header -->
         <div class="flex items-center justify-between mb-6">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+          <h3 class="modal-title">
             {{ isEditing ? 'Edit Account' : 'Add Account' }}
           </h3>
           <button
             @click="$emit('close')"
-            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            class="btn-ghost btn-sm"
           >
             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -110,7 +110,7 @@
               id="isPrimary"
               v-model="form.isPrimary"
               type="checkbox"
-              class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+              class="checkbox"
             />
             <label for="isPrimary" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
               Set as primary account
@@ -133,7 +133,7 @@
           </div>
 
           <!-- Actions -->
-          <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div class="modal-footer border-t border-gray-200 pt-4 dark:border-gray-700">
             <button type="button" @click="$emit('close')" class="btn-secondary">
               Cancel
             </button>

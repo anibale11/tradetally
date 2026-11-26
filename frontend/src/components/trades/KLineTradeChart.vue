@@ -66,13 +66,13 @@
         <span v-if="currency_mismatch">
           Candle and trade currencies differ. Trade markers and P&L measurement are unavailable.
         </span>
-        <span v-else-if="hasPriceMismatch" class="font-medium text-amber-700 dark:text-amber-300">
+        <span v-else-if="hasPriceMismatch" class="font-medium text-yellow-700 dark:text-yellow-300">
           Recorded fill is outside the provider candle range. Marker is pinned to execution time.
         </span>
-        <span v-else-if="activeTool === 'pnl'" class="font-medium text-primary-600 dark:text-primary-400">
+        <span v-else-if="activeTool === 'pnl'" class="font-medium text-primary-700 dark:text-primary-400">
           P&L starts at the recorded entry price. Click a target price to measure the trade return.
         </span>
-        <span v-else-if="activeTool" class="font-medium text-primary-600 dark:text-primary-400">
+        <span v-else-if="activeTool" class="font-medium text-primary-700 dark:text-primary-400">
           Drawing mode active. Press Esc to cancel.
         </span>
         <span v-else>Drag drawing handles to edit. Right-click a drawing to remove it.</span>
@@ -90,9 +90,7 @@
             type="button"
             :data-resolution="option.value"
             class="rounded px-2 py-1 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:cursor-not-allowed disabled:opacity-40"
-            :class="selectedResolution === option.value
-              ? 'bg-primary-600 text-white shadow-sm'
-              : 'text-gray-500 hover:bg-white hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white'"
+            :class="selectedResolution === option.value ? 'segment-active' : 'text-gray-500 hover:bg-white hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white'"
             :disabled="resolutionLoading || !availableResolutions.includes(option.value)"
             :aria-pressed="selectedResolution === option.value"
             :title="availableResolutions.includes(option.value) ? `${option.label} candles` : 'This data source does not provide this resolution'"
@@ -128,6 +126,7 @@ import {
   formatSignedChartPercent,
 } from '@/utils/chartPnlMeasurement'
 import { clipBandToPane } from '@/utils/chartPositionBands'
+import { formatDecimal } from '@/utils/formatters'
 
 const props = defineProps({
   chartData: {
@@ -224,7 +223,7 @@ function registerPnlOverlay() {
 
       const is_profit = measurement.dollar_pnl > 0
       const is_loss = measurement.dollar_pnl < 0
-      const color = is_profit ? '#059669' : (is_loss ? '#dc2626' : '#6b7280')
+      const color = is_profit ? '#15803d' : (is_loss ? '#dc2626' : '#6b7280')
       const fill_color = is_profit
         ? 'rgba(5, 150, 105, 0.12)'
         : (is_loss ? 'rgba(220, 38, 38, 0.12)' : 'rgba(107, 114, 128, 0.12)')
@@ -270,7 +269,7 @@ function registerPnlOverlay() {
           styles: {
             style: 'fill',
             color: '#ffffff',
-            size: 11,
+            size: 12,
             weight: 600,
             backgroundColor: color,
             borderRadius: 4,
@@ -303,7 +302,7 @@ function registerExecutionOverlay() {
 
       const data = overlay.extendData || {}
       const isEntry = data.kind === 'entry'
-      const color = data.price_mismatch ? '#d97706' : (isEntry ? '#059669' : '#dc2626')
+      const color = data.price_mismatch ? '#ca8a04' : (isEntry ? '#15803d' : '#dc2626')
       const stackIndex = Math.max(0, Number(data.stack_index) || 0)
       const direction = isEntry ? 1 : -1
       const laneOffset = stackIndex * 24
@@ -343,7 +342,7 @@ function registerExecutionOverlay() {
           styles: {
             style: 'fill',
             color: '#ffffff',
-            size: 10,
+            size: 12,
             weight: 600,
             backgroundColor: color,
             borderRadius: 3,
@@ -430,7 +429,7 @@ function registerPositionOverlay() {
           styles: {
             style: 'stroke_fill',
             color: 'rgba(5, 150, 105, 0.14)',
-            borderColor: '#059669',
+            borderColor: '#15803d',
             borderSize: 1,
             borderStyle: 'solid',
           },
@@ -576,7 +575,7 @@ function pnlMeasurementExtendData() {
     side: String(trade.side || 'long').toLowerCase(),
     instrument_type,
     contract_size: Number(trade.contract_size ?? trade.contractSize) || 100,
-    point_value: Number(trade.point_value ?? trade.pointValue) || 1,
+    point_value: instrument_type === 'future' ? (trade.point_value ?? trade.pointValue ?? null) : 1,
     entry_price: Number.isFinite(entry_price) ? entry_price : null,
     currency_code: props.currencyCode,
     show_dollar_pnl: instrument_type !== 'option',
@@ -602,13 +601,13 @@ function chartStyles() {
     },
     candle: {
       bar: {
-        upColor: '#059669',
+        upColor: '#15803d',
         downColor: '#dc2626',
         noChangeColor: '#6b7280',
-        upBorderColor: '#059669',
+        upBorderColor: '#15803d',
         downBorderColor: '#dc2626',
         noChangeBorderColor: '#6b7280',
-        upWickColor: '#059669',
+        upWickColor: '#15803d',
         downWickColor: '#dc2626',
         noChangeWickColor: '#6b7280',
       },
@@ -838,7 +837,7 @@ function executionEvents() {
         ? (execution.entry_price ?? execution.entryPrice)
         : (execution.exit_price ?? execution.exitPrice))
     )
-    const priceLabel = !isOption && Number.isFinite(price) ? ` @ ${price.toFixed(pricePrecision())}` : ''
+    const priceLabel = !isOption && Number.isFinite(price) ? ` @ ${formatDecimal(price, { digits: pricePrecision() })}` : ''
     const label = (kind === 'entry'
       ? (String(trade.side).toLowerCase() === 'short' ? `SHORT${quantity}` : `BUY${quantity}`)
       : (String(trade.side).toLowerCase() === 'short' ? `COVER${quantity}` : `SELL${quantity}`)) + priceLabel
@@ -852,8 +851,8 @@ function executionEvents() {
   const exitTimestamp = parseExecutionTimestamp(trade.exitTime ?? trade.exitDate)
   const entryPrice = Number(trade.entryPrice ?? trade.entry_price)
   const exitPrice = Number(trade.exitPrice ?? trade.exit_price)
-  const entryPriceLabel = !isOption && Number.isFinite(entryPrice) ? ` @ ${entryPrice.toFixed(pricePrecision())}` : ''
-  const exitPriceLabel = !isOption && Number.isFinite(exitPrice) ? ` @ ${exitPrice.toFixed(pricePrecision())}` : ''
+  const entryPriceLabel = !isOption && Number.isFinite(entryPrice) ? ` @ ${formatDecimal(entryPrice, { digits: pricePrecision() })}` : ''
+  const exitPriceLabel = !isOption && Number.isFinite(exitPrice) ? ` @ ${formatDecimal(exitPrice, { digits: pricePrecision() })}` : ''
   if (entryTimestamp !== null) {
     events.push({
       kind: 'entry',
@@ -985,7 +984,7 @@ function addActualExitLine(position) {
   const losing = Number.isFinite(pnl)
     ? pnl < 0
     : (position.side === 'long' ? exitPrice < position.entry_price : exitPrice > position.entry_price)
-  const color = profitable ? '#059669' : (losing ? '#dc2626' : '#6b7280')
+  const color = profitable ? '#15803d' : (losing ? '#dc2626' : '#6b7280')
 
   chart.createOverlay({
     name: EXIT_OVERLAY,

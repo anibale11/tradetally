@@ -1,10 +1,10 @@
 <template>
-  <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+  <div class="card card-body">
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
       <div>
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
-          <SparklesIcon class="w-5 h-5 mr-2 text-purple-600" />
+        <h3 class="heading-card flex items-center">
+          <SparklesIcon class="w-5 h-5 mr-2 text-primary-700" />
           AI Journal Analysis
         </h3>
         <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
@@ -24,7 +24,7 @@
     <!-- Date Range Selection Form -->
     <div v-if="showAnalysisForm && !analyzing" class="mb-6">
       <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-        <h4 class="font-medium text-gray-900 dark:text-white mb-4">Select Analysis Period</h4>
+        <h4 class="heading-card mb-4">Select Analysis Period</h4>
         
         <!-- Quick Date Presets -->
         <div class="mb-4">
@@ -34,7 +34,7 @@
               v-for="preset in datePresets"
               :key="preset.label"
               @click="selectDatePreset(preset)"
-              class="px-3 py-1 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-50 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200"
+              class="btn-secondary btn-sm dark:bg-gray-600 dark:border-gray-500 dark:hover:bg-gray-500 dark:text-gray-200"
             >
               {{ preset.label }}
             </button>
@@ -82,95 +82,7 @@
             @click="startAnalysis"
             :disabled="!startDate || !endDate"
             class="btn-primary flex items-center"
-            :class="{ 'opacity-50 cursor-not-allowed': !startDate || !endDate }"
-          >
-            <SparklesIcon class="w-4 h-4 mr-2" />
-            Start Analysis
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Loading State -->
-    <div v-if="analyzing" class="text-center py-8">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Analyzing Your Journal</h3>
-      <p class="text-gray-600 dark:text-gray-400">
-        AI is reviewing your entries from {{ startDate }} to {{ endDate }}...
-      </p>
-      <div class="mt-4 text-sm text-gray-500 dark:text-gray-400">
-        Complex analyses can take several minutes. You can keep this page open while it finishes.
-      </div>
-    </div>
-
-    <!-- Analysis Results -->
-    <div v-if="analysis && !analyzing" class="space-y-6">
-      <!-- Analysis Header -->
-      <div class="flex items-center justify-between">
-        <div>
-          <h4 class="text-lg font-medium text-gray-900 dark:text-white">
-            Analysis Results
-          </h4>
-          <p class="text-sm text-gray-600 dark:text-gray-400">
-            Period: {{ formatDate(startDate) }} - {{ formatDate(endDate) }} 
-            ({{ entriesAnalyzed }} entries analyzed)
-          </p>
-        </div>
-        <button
-          @click="startNewAnalysis"
-          class="btn-secondary text-sm"
-        >
-          New Analysis
-        </button>
-      </div>
-
-      <!-- Analysis Content -->
-      <AIReportRenderer :content="analysis" />
-
-      <!-- Actions -->
-      <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-600">
-        <button
-          @click="shareAnalysis"
-          class="btn-secondary flex items-center"
-        >
-          <ShareIcon class="w-4 h-4 mr-2" />
-          Share
-        </button>
-        <button
-          @click="saveAnalysis"
-          class="btn-primary flex items-center"
-        >
-          <BookmarkIcon class="w-4 h-4 mr-2" />
-          Save Analysis
-        </button>
-      </div>
-    </div>
-
-    <!-- Error State -->
-    <div v-if="error" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-      <div class="flex items-start">
-        <ExclamationTriangleIcon class="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 mr-3 flex-shrink-0" />
-        <div>
-          <h3 class="text-sm font-medium text-red-800 dark:text-red-200">
-            Analysis Failed
-          </h3>
-          <p class="text-sm text-red-700 dark:text-red-300 mt-1">
-            {{ error }}
-          </p>
-          <button
-            @click="clearError"
-            class="text-sm text-red-800 dark:text-red-200 underline mt-2"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
-<script setup>
-import { resolveDatePreset, monthPresetOptions } from '@/utils/datePresets'
+            :class="{ 'opacity-50 cursor-not-allowed': !startDate || !endDate }" > <SparklesIcon class="w-4 h-4 mr-2" /> Start Analysis </button> </div> </div> </div> <!-- Loading State --> <div v-if="analyzing" class="text-center py-8"> <div class="spinner spinner-lg mx-auto mb-4"></div> <h3 class="heading-card mb-2">Analyzing Your Journal</h3> <p class="text-gray-600 dark:text-gray-400"> AI is reviewing your entries from {{ startDate }} to {{ endDate }}... </p> <div class="mt-4 text-sm text-gray-500 dark:text-gray-400"> Complex analyses can take several minutes. You can keep this page open while it finishes. </div> </div> <!-- Analysis Results --> <div v-if="analysis && !analyzing" class="space-y-6"> <!-- Analysis Header --> <div class="flex items-center justify-between"> <div> <h4 class="heading-card"> Analysis Results </h4> <p class="text-sm text-gray-600 dark:text-gray-400"> Period: {{ formatDate(startDate) }} - {{ formatDate(endDate) }} ({{ entriesAnalyzed }} entries analyzed) </p> </div> <button @click="startNewAnalysis" class="btn-secondary" > New Analysis </button> </div> <!-- Analysis Content --> <AIReportRenderer :content="analysis" /> <!-- Actions --> <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-600"> <button @click="shareAnalysis" class="btn-secondary flex items-center" > <ShareIcon class="w-4 h-4 mr-2" /> Share </button> <button @click="saveAnalysis" class="btn-primary flex items-center" > <BookmarkIcon class="w-4 h-4 mr-2" /> Save Analysis </button> </div> </div> <!-- Error State --> <div v-if="error" class="callout-danger"> <div class="flex items-start"> <ExclamationTriangleIcon class="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 mr-3 flex-shrink-0" /> <div> <h3 class="heading-sub text-red-600 dark:text-red-200"> Analysis Failed </h3> <p class="text-sm text-red-600 dark:text-red-400 mt-1"> {{ error }} </p> <button @click="clearError" class="text-sm text-red-600 dark:text-red-400 underline mt-2" > Try Again </button> </div> </div> </div> </div> </template> <script setup> import { resolveDatePreset, monthPresetOptions } from'@/utils/datePresets'
 import { formatLocalDate } from '@/utils/date'
 import { ref, computed } from 'vue'
 import { subDays, subWeeks, startOfWeek } from 'date-fns'

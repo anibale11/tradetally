@@ -5,11 +5,11 @@
       <div class="flex items-center gap-3">
         <button
           @click="goBack"
-          class="text-sm text-primary-600 hover:text-primary-800"
+          class="btn-link"
         >
           ← Back to Investments
         </button>
-        <h1 class="text-lg font-semibold text-gray-900 dark:text-white">
+        <h1 class="heading-page">
           Compare Accounts
           <span v-if="selectedAccountLabels.length > 0" class="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">
             ({{ selectedAccountLabels.length }})
@@ -31,10 +31,10 @@
     <!-- Empty / invalid state -->
     <div
       v-if="selectedAccountValues.length < 2"
-      class="rounded-lg border border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20 p-4 text-sm text-yellow-800 dark:text-yellow-200"
+      class="callout-warning"
     >
       Select at least two accounts from the Account Comparison panel to compare.
-      <button @click="goBack" class="ml-2 underline text-primary-600 hover:text-primary-800">
+      <button @click="goBack" class="btn-link ml-2">
         Back to Investments
       </button>
     </div>
@@ -44,36 +44,36 @@
       v-else-if="initialLoading"
       class="flex justify-center py-16"
     >
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div class="spinner spinner-lg"></div>
     </div>
 
     <!-- Comparison table: all metrics for every selected account in one place,
          with a Difference column when exactly two accounts are being compared. -->
     <div v-else class="space-y-4">
-      <section class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden">
+      <section class="card overflow-hidden">
         <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-          <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Comparison</h2>
+          <h2 class="heading-sub">Comparison</h2>
         </div>
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
-            <thead class="bg-gray-50 dark:bg-gray-700">
+            <thead class="table-head">
               <tr>
-                <th class="px-4 py-2 text-left text-[11px] font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Metric</th>
+                <th class="px-4 py-2 text-left table-th">Metric</th>
                 <th
                   v-for="account in selectedAccountValues"
                   :key="account"
-                  class="px-4 py-2 text-right text-[11px] font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                  class="px-4 py-2 text-right table-th"
                 >
                   <div class="text-gray-900 dark:text-white normal-case font-medium">
                     {{ accountLabels[account] || account }}
                   </div>
-                  <div v-if="leaderAccount === account" class="text-[10px] text-primary-600 dark:text-primary-400 normal-case font-normal">
+                  <div v-if="leaderAccount === account" class="text-xs text-primary-700 dark:text-primary-400 normal-case font-normal">
                     leader
                   </div>
                 </th>
                 <th
                   v-if="isPairCompare"
-                  class="px-4 py-2 text-right text-[11px] font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                  class="px-4 py-2 text-right table-th"
                 >
                   Difference
                 </th>
@@ -81,11 +81,11 @@
             </thead>
             <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               <tr v-for="metric in comparisonMetricRows" :key="metric.key">
-                <td class="px-4 py-2 text-gray-700 dark:text-gray-300">{{ metric.label }}</td>
+                <td class="text-gray-700 dark:text-gray-300 px-4 py-3">{{ metric.label }}</td>
                 <td
                   v-for="account in selectedAccountValues"
                   :key="account"
-                  class="px-4 py-2 text-right"
+                  class="text-right px-4 py-3"
                 >
                   <span
                     class="font-medium"
@@ -96,14 +96,14 @@
                   <span
                     v-if="!isPairCompare && leaderAccount !== account && metric.formatDelta(account) !== ''"
                     :class="metric.deltaClass(account)"
-                    class="block text-[10px]"
+                    class="block text-xs"
                   >
                     {{ metric.formatDelta(account) }}
                   </span>
                 </td>
                 <td
                   v-if="isPairCompare"
-                  class="px-4 py-2 text-right font-medium"
+                  class="text-right font-medium px-4 py-3"
                   :class="metric.pairDeltaClass()"
                 >
                   {{ metric.formatPairDelta() }}
@@ -124,17 +124,17 @@
           <section
             v-for="account in selectedAccountValues"
             :key="account"
-            class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden"
+            class="card overflow-hidden"
           >
           <!-- Account header -->
           <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
             <div class="flex items-center justify-between gap-2">
-              <h2 class="text-sm font-semibold text-gray-900 dark:text-white">
+              <h2 class="heading-sub">
                 {{ accountLabels[account] || account }}
               </h2>
               <span
                 v-if="leaderAccount === account"
-                class="text-[10px] font-medium text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-800 rounded-full px-2 py-0.5 whitespace-nowrap"
+                class="badge text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-800"
               >
                 Leader
               </span>
@@ -146,13 +146,13 @@
             v-if="perAccountLoading[account]"
             class="flex justify-center py-12"
           >
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+            <div class="spinner spinner-md"></div>
           </div>
 
           <template v-else>
             <!-- Performance chart -->
             <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3">Performance vs {{ benchmark }}</h3>
+              <h3 class="text-label mb-3">Performance vs {{ benchmark }}</h3>
               <div
                 v-if="perAccountData[account]?.performance?.series?.length"
                 class="h-64"
@@ -169,32 +169,32 @@
 
             <!-- Holdings table (read-only) -->
             <div class="p-4">
-              <h3 class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3">Holdings</h3>
+              <h3 class="text-label mb-3">Holdings</h3>
               <div v-if="perAccountData[account]?.rebalance?.positions?.length" class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-xs">
-                  <thead class="bg-gray-50 dark:bg-gray-700">
+                  <thead class="table-head">
                     <tr>
-                      <th class="px-2 py-1.5 text-left text-[10px] font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Symbol</th>
-                      <th class="px-2 py-1.5 text-right text-[10px] font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Value</th>
-                      <th class="px-2 py-1.5 text-right text-[10px] font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actual</th>
-                      <th class="px-2 py-1.5 text-right text-[10px] font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Target</th>
-                      <th class="px-2 py-1.5 text-right text-[10px] font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Drift</th>
+                      <th class="px-2 py-1.5 text-left table-th">Symbol</th>
+                      <th class="px-2 py-1.5 text-right table-th">Value</th>
+                      <th class="px-2 py-1.5 text-right table-th">Actual</th>
+                      <th class="px-2 py-1.5 text-right table-th">Target</th>
+                      <th class="px-2 py-1.5 text-right table-th">Drift</th>
                     </tr>
                   </thead>
                   <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                     <tr v-for="position in perAccountData[account].rebalance.positions" :key="position.symbol">
-                      <td class="px-2 py-1.5 font-medium text-gray-900 dark:text-white">{{ position.symbol }}</td>
-                      <td class="px-2 py-1.5 text-right text-gray-900 dark:text-gray-100">
+                      <td class="font-medium text-gray-900 dark:text-white px-4 py-3">{{ position.symbol }}</td>
+                      <td class="text-right text-gray-900 dark:text-gray-100 px-4 py-3">
                         {{ position.currentValue === null ? '—' : formatCurrency(position.currentValue) }}
                       </td>
-                      <td class="px-2 py-1.5 text-right text-gray-900 dark:text-gray-100">
+                      <td class="text-right text-gray-900 dark:text-gray-100 px-4 py-3">
                         {{ position.actualAllocationPercent === null || position.actualAllocationPercent === undefined ? '—' : formatPercent(position.actualAllocationPercent, false) }}
                       </td>
-                      <td class="px-2 py-1.5 text-right text-gray-900 dark:text-gray-100">
+                      <td class="text-right text-gray-900 dark:text-gray-100 px-4 py-3">
                         {{ position.targetAllocationPercent === null || position.targetAllocationPercent === undefined ? '—' : formatPercent(position.targetAllocationPercent, false) }}
                       </td>
                       <td
-                        class="px-2 py-1.5 text-right"
+                        class="text-right px-4 py-3"
                         :class="driftColorClass(position.driftPercent)"
                       >
                         {{ position.driftPercent === null || position.driftPercent === undefined ? '—' : formatPercent(position.driftPercent) }}
@@ -214,13 +214,14 @@
 </template>
 
 <script setup>
+import { pnlClass } from '@/utils/metricTone'
 import { resolveDatePreset, monthPresetOptions } from '@/utils/datePresets'
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/services/api'
 import { useGlobalAccountFilter } from '@/composables/useGlobalAccountFilter'
 import { useCurrencyFormatter } from '@/composables/useCurrencyFormatter'
-import { formatPercent as formatPercentBase } from '@/utils/formatters'
+import { formatPercent as formatPercentBase, formatDecimal } from '@/utils/formatters'
 import PortfolioPerformanceChart from '@/components/investments/PortfolioPerformanceChart.vue'
 import BaseSelect from '@/components/common/BaseSelect.vue'
 
@@ -311,13 +312,12 @@ function deltaColorClass(delta) {
     if (!delta) return ''
     const improved = delta.lowerIsBetter ? delta.delta < 0 : delta.delta > 0
     if (delta.delta === 0) return 'text-gray-500 dark:text-gray-400'
-    return improved ? 'text-green-600' : 'text-red-600'
+    return improved ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'
 }
 
 function formatDeltaPercent(delta) {
     if (!delta) return ''
-    const sign = delta.delta >= 0 ? '+' : ''
-    return `${sign}${delta.delta.toFixed(2)}%`
+    return `${formatDecimal(delta.delta, { digits: 1, showSign: true })}%`
 }
 
 function formatDeltaCurrency(delta) {
@@ -328,13 +328,12 @@ function formatDeltaCurrency(delta) {
 
 function formatDeltaNumber(delta, decimals = 2) {
     if (!delta) return ''
-    const sign = delta.delta >= 0 ? '+' : ''
-    return `${sign}${delta.delta.toFixed(decimals)}`
+    return formatDecimal(delta.delta, { digits: decimals, showSign: true })
 }
 
 function formatDeltaInt(delta) {
     if (!delta) return ''
-    const sign = delta.delta >= 0 ? '+' : ''
+    const sign = delta.delta > 0 ? '+' : ''
     return `${sign}${Math.round(delta.delta)}`
 }
 
@@ -415,7 +414,7 @@ const comparisonMetricRows = computed(() => [
         valueClass: (account) => {
             const value = metricValue(account, 'totalReturnPercent')
             if (value === null) return 'text-gray-500 dark:text-gray-400'
-            return value >= 0 ? 'text-green-600' : 'text-red-600'
+            return pnlClass(value)
         },
         formatDelta: (account) => {
             const delta = metricDelta(account, 'totalReturnPercent')
@@ -525,7 +524,7 @@ const comparisonMetricRows = computed(() => [
             if (value === null) return '—'
             return formatPercent(-Math.abs(value))
         },
-        valueClass: () => 'text-red-600',
+        valueClass: () => 'text-red-600 dark:text-red-400',
         formatDelta: (account) => {
             const delta = metricDelta(account, 'maxDrawdownPercent', { lowerIsBetter: true })
             return delta ? formatDeltaPercent(delta) : ''
@@ -555,8 +554,7 @@ function formatPercent(value, showSign = true) {
 }
 
 function formatMetric(value, decimals = 2) {
-    if (value === null || value === undefined) return 'N/A'
-    return Number(value).toFixed(decimals)
+    return formatDecimal(value, { digits: decimals, nullValue: 'N/A' })
 }
 
 function driftColorClass(driftPercent) {

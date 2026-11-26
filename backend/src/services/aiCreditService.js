@@ -10,7 +10,11 @@ class AICreditService {
   // Credit costs for different actions
   static CREDIT_COSTS = {
     NEW_SESSION: 10,    // Starting a new AI analysis session
-    FOLLOWUP: 2         // Each follow-up question
+    FOLLOWUP: 2,        // Each follow-up question
+    CHAT_MESSAGE: 2,    // Each free-form AI chat message
+    CASHFLOW_CLASSIFY: 1, // Each batch of bank transactions sent to the cash-flow classifier
+    CSV_MAPPING_SUGGEST: 1, // One AI column match for an unrecognised CSV export
+    JOURNAL_TAG_SUGGEST: 1 // Evidence-based journal tag suggestions for one note
   };
 
   // Default monthly allocation for Pro users
@@ -173,11 +177,14 @@ class AICreditService {
     const now = new Date();
     const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    // Deduct credits
+    // Deduct credits. The balance guard is repeated in the UPDATE so two
+    // concurrent requests that both passed the read above cannot drive the
+    // balance negative.
     const updateQuery = `
       UPDATE ai_credits
       SET credits_used = credits_used + $1, updated_at = CURRENT_TIMESTAMP
       WHERE user_id = $2 AND period_start = $3
+        AND credits_used + $1 <= credits_allocated
       RETURNING credits_allocated, credits_used
     `;
 
@@ -188,7 +195,7 @@ class AICreditService {
     ]);
 
     if (result.rows.length === 0) {
-      throw new Error('Failed to update credits');
+      throw new Error(`Insufficient credits. This action requires ${amount} credits.`);
     }
 
     const record = result.rows[0];
@@ -205,7 +212,7 @@ class AICreditService {
 
   /**
    * Get credit cost for a specific action
-   * @param {string} action - Action type (NEW_SESSION, FOLLOWUP)
+   * @param {string} action - Action type (NEW_SESSION, FOLLOWUP, CHAT_MESSAGE)
    * @returns {number} Credit cost
    */
   static getCost(action) {

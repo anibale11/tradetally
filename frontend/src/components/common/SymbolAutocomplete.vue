@@ -20,7 +20,7 @@
         v-if="isLoading"
         class="absolute right-3 top-1/2 -translate-y-1/2"
       >
-        <div class="animate-spin rounded-full h-4 w-4 border-2 border-primary-600 border-t-transparent"></div>
+        <div class="spinner spinner-xs"></div>
       </div>
     </div>
 
@@ -34,7 +34,7 @@
     >
       <ul
         v-if="showDropdown"
-        class="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg max-h-60 overflow-auto"
+        class="dropdown-menu absolute z-50 mt-1 w-full border border-gray-200 dark:border-gray-700 max-h-60 overflow-auto"
         role="listbox"
       >
         <li
@@ -48,12 +48,7 @@
           :key="item.symbol"
           @mousedown.prevent="selectItem(item)"
           @mouseenter="highlightedIndex = index"
-          :class="[
-            'px-3 py-2 cursor-pointer text-sm flex items-center justify-between',
-            index === highlightedIndex
-              ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
-              : 'text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700'
-          ]"
+          :class="[ 'px-3 py-2 cursor-pointer text-sm flex items-center justify-between', index === highlightedIndex ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' : 'text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700' ]"
           role="option"
           :aria-selected="index === highlightedIndex"
         >
@@ -63,7 +58,7 @@
               :logo-url="item.logo"
               size-class="w-7 h-7"
               rounded-class="rounded-md"
-              fallback-text-class="text-[10px] font-semibold"
+              fallback-text-class="text-xs font-semibold"
             />
             <span class="font-medium flex-shrink-0">{{ item.symbol }}</span>
             <span
@@ -75,10 +70,8 @@
           </div>
           <span
             v-if="item.source === 'user_trades' || item.asset_type === 'crypto'"
-            class="text-xs px-1.5 py-0.5 rounded flex-shrink-0 ml-2"
-            :class="item.asset_type === 'crypto'
-              ? 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
-              : 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300'"
+            class="badge flex-shrink-0 ml-2"
+            :class="item.asset_type === 'crypto' ? 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300' : 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300'"
           >
             {{ item.asset_type === 'crypto' ? 'Crypto' : 'Traded' }}
           </span>

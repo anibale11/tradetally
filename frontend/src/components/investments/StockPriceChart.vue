@@ -1,7 +1,7 @@
 <template>
-  <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden">
+  <div class="card overflow-hidden">
     <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-      <h3 class="text-lg font-medium text-gray-900 dark:text-white">Price Chart</h3>
+      <h3 class="heading-card">Price Chart</h3>
 
       <!-- Period Selector -->
       <div class="flex space-x-1">
@@ -9,12 +9,7 @@
           v-for="p in periods"
           :key="p.value"
           @click="selectPeriod(p.value)"
-          :class="[
-            'px-3 py-1 text-sm rounded-md transition-colors',
-            selectedPeriod === p.value
-              ? 'bg-primary-600 text-white'
-              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-          ]"
+          :class="[ 'px-3 py-1 text-sm rounded-md transition-colors', selectedPeriod === p.value ? 'bg-primary-700 text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700' ]"
         >
           {{ p.label }}
         </button>
@@ -23,8 +18,8 @@
 
     <div class="p-6">
       <!-- Loading State -->
-      <div v-if="loading" class="flex justify-center items-center h-80">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      <div v-if="initialLoading" class="flex justify-center items-center h-80">
+        <div class="spinner spinner-md"></div>
       </div>
 
       <!-- Error State -->
@@ -33,7 +28,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
         </svg>
         <p class="text-gray-600 dark:text-gray-400 mb-2">{{ error }}</p>
-        <button @click="loadChart" class="text-primary-600 hover:text-primary-800 text-sm">
+        <button @click="loadChart" class="btn-link">
           Try Again
         </button>
       </div>
@@ -67,6 +62,7 @@ const periods = [
 
 const chartContainer = ref(null)
 const loading = ref(false)
+const initialLoading = ref(true)
 const error = ref(null)
 const selectedPeriod = ref('1Y')
 let chart = null
@@ -90,11 +86,13 @@ async function loadChart() {
     if (!candles || candles.length === 0) {
       error.value = 'No chart data available for this symbol'
       loading.value = false
+      initialLoading.value = false
       return
     }
 
     // Set loading to false first so the container becomes visible
     loading.value = false
+    initialLoading.value = false
     
     // Wait for Vue to render the DOM after loading changes
     await nextTick()
@@ -120,6 +118,7 @@ async function loadChart() {
     console.error('Failed to load chart:', err)
     error.value = err.response?.data?.error || 'Failed to load chart data'
     loading.value = false
+    initialLoading.value = false
   }
 }
 
@@ -175,11 +174,11 @@ function createChart(candles) {
     })
 
     candleSeries = chart.addSeries(LightweightCharts.CandlestickSeries, {
-      upColor: '#10b981',
+      upColor: '#15803d',
       downColor: '#ef4444',
-      borderUpColor: '#10b981',
+      borderUpColor: '#15803d',
       borderDownColor: '#ef4444',
-      wickUpColor: '#10b981',
+      wickUpColor: '#15803d',
       wickDownColor: '#ef4444',
     })
 

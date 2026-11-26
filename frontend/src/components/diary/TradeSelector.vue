@@ -1,8 +1,8 @@
 <template>
   <div>
     <!-- Loading State -->
-    <div v-if="loading" class="flex justify-center py-4">
-      <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"></div>
+    <div v-if="initialLoading" class="flex justify-center py-4">
+      <div class="spinner spinner-sm"></div>
     </div>
 
     <!-- No Trades -->
@@ -16,16 +16,14 @@
         v-for="trade in availableTrades"
         :key="trade.id"
         class="flex items-center justify-between p-3 border rounded-lg transition-colors"
-        :class="isSelected(trade.id)
-          ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-300 dark:border-primary-700'
-          : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'"
+        :class="isSelected(trade.id) ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-300 dark:border-primary-700' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'"
       >
         <div class="flex items-center space-x-3 flex-1">
           <input
             type="checkbox"
             :checked="isSelected(trade.id)"
             @change="toggleTrade(trade.id)"
-            class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+            class="checkbox"
           />
           <div class="flex-1">
             <div class="flex items-center space-x-2">
@@ -33,21 +31,21 @@
                 {{ trade.symbol }}
               </span>
               <span
-                class="px-2 py-0.5 text-xs font-semibold rounded"
+                class="badge"
                 :class="trade.side === 'buy' || trade.side === 'long'
                   ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
                   : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'"
               >
                 {{ (trade.side || '').toUpperCase() }}
               </span>
-              <span v-if="trade.instrument_type === 'option'" class="px-1.5 py-0.5 text-xs font-semibold rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400">
+              <span v-if="trade.instrument_type === 'option'" class="badge bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-400">
                 OPT
               </span>
             </div>
             <div class="mt-1 flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
               <span>Qty: {{ Math.abs(trade.quantity) }}</span>
               <span v-if="trade.entry_price">Entry: {{ formatCurrency(trade.entry_price, { abs: true }) }}</span>
-              <span v-if="trade.pnl !== null && trade.pnl !== undefined" :class="trade.pnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+              <span v-if="trade.pnl !== null && trade.pnl !== undefined" :class="pnlClass(trade.pnl)">
                 P/L: {{ formatCurrency(trade.pnl, { abs: true }) }}
               </span>
             </div>
@@ -64,6 +62,7 @@
 </template>
 
 <script setup>
+import { pnlClass } from '@/utils/metricTone'
 import { ref, watch, computed } from 'vue'
 import api from '@/services/api'
 import { useCurrencyFormatter } from '@/composables/useCurrencyFormatter'
@@ -84,6 +83,7 @@ const emit = defineEmits(['update:modelValue'])
 const { formatCurrency } = useCurrencyFormatter()
 
 const loading = ref(false)
+const initialLoading = ref(true)
 const availableTrades = ref([])
 const selectedTrades = computed({
   get: () => props.modelValue,
@@ -125,6 +125,7 @@ const fetchTrades = async () => {
     availableTrades.value = []
   } finally {
     loading.value = false
+    initialLoading.value = false
   }
 }
 

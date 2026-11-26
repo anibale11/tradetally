@@ -37,7 +37,7 @@
                         Filters
                         <span
                             v-if="activeFilterCount > 0"
-                            class="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-primary-600 px-1.5 text-xs font-semibold text-white"
+                            class="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-primary-700 px-1.5 text-xs font-semibold text-white"
                         >{{ activeFilterCount }}</span>
                     </span>
                     <ChevronDownIcon
@@ -65,7 +65,7 @@
         <!-- Individual Trade Analysis Section -->
         <div class="mb-6">
             <h2
-                class="text-xl font-semibold text-gray-900 dark:text-white mb-2"
+                class="heading-section mb-2"
             >
                 Individual Trade Analysis
             </h2>
@@ -162,10 +162,10 @@
         <!-- Loading State for Analysis -->
         <div
             v-if="selectedTrade && !needsRiskLevels && analysisLoading"
-            class="mt-6 bg-white dark:bg-gray-800 shadow-sm rounded-lg p-8 text-center"
+            class="card mt-6 card-body text-center"
         >
             <div
-                class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"
+                class="spinner spinner-md mx-auto mb-4"
             ></div>
             <p class="text-gray-600 dark:text-gray-400">
                 Calculating R-Multiple analysis...
@@ -175,7 +175,7 @@
         <!-- Error State -->
         <div
             v-if="error"
-            class="mt-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4"
+            class="callout-danger mt-6"
         >
             <p class="text-red-800 dark:text-red-200">{{ error }}</p>
         </div>

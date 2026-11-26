@@ -17,24 +17,20 @@
 
       <template v-else>
         <!-- Streak scope toggle: by-day (default) vs by-trade -->
-        <div v-if="hasTradeData" class="mb-3 inline-flex rounded-md border border-gray-200 dark:border-gray-700 p-0.5 text-xs">
+        <div v-if="hasTradeData" class="mb-3 segmented">
           <button
             type="button"
             @click="scope = 'day'"
-            class="px-2.5 py-1 rounded transition-colors"
-            :class="scope === 'day'
-              ? 'bg-primary-600 text-white'
-              : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
+            class="segment"
+            :class="scope === 'day' ? 'segment-active' : ''"
           >
             By day
           </button>
           <button
             type="button"
             @click="scope = 'trade'"
-            class="px-2.5 py-1 rounded transition-colors"
-            :class="scope === 'trade'
-              ? 'bg-primary-600 text-white'
-              : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
+            class="segment"
+            :class="scope === 'trade' ? 'segment-active' : ''"
           >
             By trade
           </button>
@@ -43,7 +39,7 @@
         <!-- Main streak -->
         <div class="flex items-baseline gap-3">
           <div
-            class="text-mono-num text-4xl font-semibold tracking-tight"
+            class="stat-value"
             :class="streakClass"
           >
             {{ streakLabel }}
@@ -62,7 +58,7 @@
                    count above includes BE, surface the strict count too so the
                    user can read both numbers at a glance (matches the calendar's
                    W/L/B convention). -->
-              <div v-if="showExclBeNote" class="mt-0.5 text-[10px] text-gray-400 dark:text-gray-500">
+              <div v-if="showExclBeNote" class="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
                 {{ currentStreakExclBe }} excl. BE
               </div>
             </template>
@@ -80,7 +76,7 @@
               :title="cell.title"
             />
           </div>
-          <div class="mt-1 flex justify-between text-[10px] text-gray-400 dark:text-gray-500 text-mono-num">
+          <div class="mt-1 flex justify-between text-xs text-gray-400 dark:text-gray-500 text-mono-num">
             <span v-if="scope === 'day'">{{ stripCells[0]?.shortDate }}</span>
             <span v-else>oldest</span>
             <span v-if="scope === 'day'">{{ stripCells[stripCells.length - 1]?.shortDate }}</span>
@@ -92,7 +88,7 @@
         <div class="mt-4 grid grid-cols-2 gap-3 text-xs">
           <div class="rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2">
             <div class="text-label">Best streak</div>
-            <div class="text-mono-num text-lg font-semibold text-green-600 dark:text-green-400">
+            <div class="text-mono-num text-lg font-semibold text-green-700 dark:text-green-400">
               {{ bestWinStreak }}W
             </div>
           </div>
@@ -115,7 +111,7 @@
           <div class="text-right">
             <div class="text-label">vs avg</div>
             <div class="text-mono-num text-gray-700 dark:text-gray-300">
-              {{ avgDailyTrades > 0 ? avgDailyTrades.toFixed(1) : '—' }}/day
+              {{ avgDailyTrades > 0 ? formatDecimal(avgDailyTrades, { digits: 1 }) : '—' }}/day
             </div>
           </div>
         </div>
@@ -127,6 +123,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { useCurrencyFormatter } from '@/composables/useCurrencyFormatter'
+import { formatDecimal } from '@/utils/formatters'
 
 const props = defineProps({
   dailyPnL: {
@@ -173,7 +170,7 @@ const recentDaysSliced = computed(() => {
         : isLoss
           ? 'bg-red-500/80 dark:bg-red-500'
           : 'bg-gray-300 dark:bg-gray-600',
-      title: `${d.date}: ${d.pnl > 0 ? '+' : ''}${d.pnl.toFixed(2)} (${d.count})`
+      title: `${d.date}: ${formatSignedCurrency(d.pnl)} (${d.count})`
     }
   })
 })
@@ -190,7 +187,7 @@ const recentTradesSliced = computed(() => {
         : isLoss
           ? 'bg-red-500/80 dark:bg-red-500'
           : 'bg-gray-300 dark:bg-gray-600',
-      title: `${t.date}: ${t.pnl > 0 ? '+' : ''}${t.pnl.toFixed(2)}`
+      title: `${t.date}: ${formatSignedCurrency(t.pnl)}`
     }
   })
 })
@@ -345,13 +342,13 @@ const streakLabel = computed(() => {
 })
 
 const streakClass = computed(() => {
-  if (currentStreak.value > 0) return 'text-green-600 dark:text-green-400'
+  if (currentStreak.value > 0) return 'text-green-700 dark:text-green-400'
   if (currentStreak.value < 0) return 'text-red-600 dark:text-red-400'
   return 'text-gray-400 dark:text-gray-500'
 })
 
 const todayPnlClass = computed(() => {
-  if (todayPnl.value > 0) return 'text-green-600 dark:text-green-400'
+  if (todayPnl.value > 0) return 'text-green-700 dark:text-green-400'
   if (todayPnl.value < 0) return 'text-red-600 dark:text-red-400'
   return 'text-gray-700 dark:text-gray-300'
 })

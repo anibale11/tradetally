@@ -1,6 +1,6 @@
 <template>
   <div v-if="images.length > 0" class="space-y-4">
-    <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+    <h3 class="heading-card">
       Trade Images
     </h3>
     
@@ -22,15 +22,17 @@
             v-else-if="!authedImage.urlFor(image)"
             class="w-full aspect-video flex items-center justify-center bg-gray-100 dark:bg-gray-700"
           >
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+            <div class="spinner spinner-md"></div>
           </div>
-          <img
+          <button
             v-else
-            :src="authedImage.urlFor(image)"
-            :alt="image.file_name"
-            class="w-full h-auto cursor-pointer hover:opacity-95 transition-opacity duration-200"
+            type="button"
+            :aria-label="`View ${image.file_name}`"
+            class="block w-full hover:opacity-95 transition-opacity duration-200 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
             @click="openImage(image)"
-          />
+          >
+            <img :src="authedImage.urlFor(image)" :alt="image.file_name" class="w-full h-auto" />
+          </button>
         </div>
         
         <!-- File info bar -->
@@ -58,36 +60,12 @@
     </div>
 
     <!-- Image modal -->
-    <div
+    <TradeImageViewer
       v-if="selectedImage"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75"
-      @click="closeImage"
-    >
-      <div class="relative max-w-4xl max-h-full p-4">
-        <img
-          :src="authedImage.urlFor(selectedImage)"
-          :alt="selectedImage.file_name"
-          class="max-w-full max-h-full object-contain"
-        />
-        
-        <!-- Close button -->
-        <button
-          type="button"
-          @click="closeImage"
-          class="absolute top-4 right-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700"
-        >
-          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-          </svg>
-        </button>
-
-        <!-- Image info -->
-        <div class="absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-3 py-2 rounded">
-          <p class="text-sm font-medium">{{ selectedImage.file_name }}</p>
-          <p class="text-xs opacity-75">{{ formatFileSize(selectedImage.file_size) }}</p>
-        </div>
-      </div>
-    </div>
+      :image="selectedImage"
+      :src="authedImage.urlFor(selectedImage)"
+      @close="closeImage"
+    />
 
     <!-- Delete confirmation modal -->
     <div
@@ -95,13 +73,13 @@
       class="fixed inset-0 z-50 overflow-y-auto"
       @click="cancelDelete"
     >
-      <div class="flex min-h-screen items-end justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+      <div class="flex min-h-screen items-end justify-center px-4 pt-4 pb-20 text-center ">
+        <div class="modal-backdrop"></div>
         
         <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
         
-        <div
-          class="relative inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6"
+        <div role="dialog" aria-modal="true"
+          class="modal-panel w-full p-6 max-w-lg"
           @click.stop
         >
           <div class="sm:flex sm:items-start">
@@ -111,7 +89,7 @@
               </svg>
             </div>
             <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-              <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">
+              <h3 class="modal-title">
                 Delete Image
               </h3>
               <div class="mt-2">
@@ -125,14 +103,14 @@
             <button
               type="button"
               @click="confirmDelete"
-              class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
+              class="btn-danger w-full justify-center sm:ml-3 sm:w-auto sm:text-sm"
             >
               Delete
             </button>
             <button
               type="button"
               @click="cancelDelete"
-              class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-700 text-base font-medium text-gray-700 dark:text-gray-300 hover:text-gray-500 dark:hover:text-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:w-auto sm:text-sm"
+              class="btn-secondary mt-3 w-full sm:mt-0 sm:w-auto"
             >
               Cancel
             </button>
@@ -148,6 +126,7 @@ import { ref, toRef } from 'vue'
 import { useNotification } from '@/composables/useNotification'
 import { useAuthedImage } from '@/composables/useAuthedImage'
 import api from '@/services/api'
+import TradeImageViewer from './TradeImageViewer.vue'
 
 const props = defineProps({
   tradeId: {

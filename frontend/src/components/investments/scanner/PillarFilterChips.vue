@@ -7,7 +7,7 @@
       <button
         v-if="selectedPillars.length > 0"
         @click="clearFilters"
-        class="text-sm text-primary-600 dark:text-primary-400 hover:underline"
+        class="text-sm text-primary-700 dark:text-primary-400 hover:underline"
       >
         Clear filters
       </button>
@@ -18,12 +18,7 @@
         v-for="pillar in 8"
         :key="pillar"
         @click="togglePillar(pillar)"
-        :class="[
-          'inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
-          selectedPillars.includes(pillar)
-            ? 'bg-primary-600 text-white'
-            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-        ]"
+        :class="[ 'inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-colors', selectedPillars.includes(pillar) ? 'bg-primary-700 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' ]"
       >
         <span class="mr-1.5 text-xs opacity-75">{{ pillar }}.</span>
         {{ pillarShortNames[pillar] }}

@@ -1,13 +1,13 @@
 <template>
   <div>
     <div v-if="initialLoading" class="flex justify-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div class="spinner spinner-lg"></div>
     </div>
 
     <div v-else class="relative space-y-10">
       <div v-if="loading" class="absolute top-0 right-0 z-10">
         <div class="flex items-center space-x-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm border border-gray-200 dark:border-gray-700">
-          <div class="animate-spin rounded-full h-4 w-4 border-2 border-primary-600 border-t-transparent"></div>
+          <div class="spinner spinner-xs"></div>
           <span class="text-xs text-gray-600 dark:text-gray-400">Updating...</span>
         </div>
       </div>
@@ -15,8 +15,8 @@
       <section v-for="group in groups" :key="group.period">
         <div class="mb-4 flex flex-wrap items-baseline justify-between gap-2">
           <div>
-            <div class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ group.eyebrow }}</div>
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ group.title }}</h2>
+            <div class="text-label">{{ group.eyebrow }}</div>
+            <h2 class="heading-card">{{ group.title }}</h2>
           </div>
           <div v-if="group.challenges.length" class="text-sm text-gray-500 dark:text-gray-400">
             {{ timeLeftLabel(group.challenges[0].end_date) }}
@@ -31,14 +31,7 @@
           <div
             v-for="challenge in group.challenges"
             :key="challenge.id"
-            :class="[
-              'card flex flex-col p-5 border',
-              challenge.user_status === 'completed'
-                ? 'border-green-200 dark:border-green-800'
-                : challenge.user_status === 'active'
-                  ? 'border-primary-200 dark:border-primary-800'
-                  : 'border-transparent'
-            ]"
+            :class="[ 'card flex flex-col p-5 border', challenge.user_status === 'completed' ? 'border-green-200 dark:border-green-800' : challenge.user_status === 'active' ? 'border-primary-200 dark:border-primary-800' : 'border-transparent' ]"
           >
             <div class="flex items-start justify-between gap-3">
               <div class="flex items-center gap-3 min-w-0">
@@ -46,11 +39,11 @@
                   <MdiIcon :icon="iconFor(challenge)" :size="22" />
                 </div>
                 <div class="min-w-0">
-                  <h3 class="truncate font-semibold text-gray-900 dark:text-white">{{ challenge.name }}</h3>
+                  <h3 class="heading-card truncate">{{ challenge.name }}</h3>
                   <p class="text-sm text-gray-600 dark:text-gray-400">{{ challenge.description }}</p>
                 </div>
               </div>
-              <span class="flex-shrink-0 rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-bold text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300">
+              <span class="badge-warning flex-shrink-0">
                 +{{ challenge.reward_points }} XP
               </span>
             </div>
@@ -71,10 +64,7 @@
               </div>
               <div class="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
                 <div
-                  :class="[
-                    'h-full rounded-full transition-all duration-700',
-                    challenge.user_status === 'completed' ? 'bg-green-500' : 'bg-primary-500'
-                  ]"
+                  :class="[ 'h-full rounded-full transition-all duration-700', challenge.user_status === 'completed' ? 'bg-green-500' : 'bg-primary-500' ]"
                   :style="{ width: progressPercent(challenge) + '%' }"
                 ></div>
               </div>
@@ -99,7 +89,7 @@
                 v-else-if="!challenge.user_status"
                 @click="join(challenge)"
                 :disabled="joiningId === challenge.id"
-                class="btn-primary disabled:opacity-60"
+                class="btn-primary"
               >
                 {{ joiningId === challenge.id ? 'Joining...' : 'Join' }}
               </button>
@@ -111,8 +101,8 @@
       <!-- History -->
       <section v-if="history.length">
         <div class="mb-4">
-          <div class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">History</div>
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Past challenges</h2>
+          <div class="text-label">History</div>
+          <h2 class="heading-card">Past challenges</h2>
         </div>
         <div class="card overflow-hidden">
           <ul class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -201,9 +191,9 @@ function unitLabel(challenge) {
 }
 
 function iconClass(challenge) {
-  if (challenge.user_status === 'completed') return 'bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400'
+  if (challenge.user_status === 'completed') return 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'
   if (challenge.locked) return 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
-  return 'bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-400'
+  return 'bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-400'
 }
 
 function progressValue(challenge) {

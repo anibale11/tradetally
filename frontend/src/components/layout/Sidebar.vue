@@ -11,7 +11,7 @@
     <div
       v-if="drawerOpen"
       @click="closeDrawer"
-      class="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden"
+      class="fixed inset-0 z-30 bg-gray-900/50 dark:bg-gray-950/70 lg:hidden"
     ></div>
   </transition>
 
@@ -19,10 +19,7 @@
   <aside
     ref="sidebarRef"
     class="sidebar fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-gray-200/80 bg-white shadow-xl transform transition-all duration-300 ease-out lg:translate-x-0 lg:shadow-none dark:border-gray-800/60 dark:bg-gray-900"
-    :class="[
-      collapsed ? 'lg:w-16' : 'lg:w-64',
-      drawerOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-    ]"
+    :class="[ collapsed ? 'lg:w-16' : 'lg:w-64', drawerOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0' ]"
   >
     <!-- Brand header -->
     <div
@@ -45,7 +42,7 @@
       </router-link>
       <button
         @click="closeDrawer"
-        class="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 lg:hidden dark:hover:bg-gray-800 dark:hover:text-gray-300"
+        class="btn-icon lg:hidden"
         aria-label="Close menu"
       >
         <XMarkIcon class="h-5 w-5" />
@@ -66,22 +63,25 @@
           :to="item.to"
           @click="closeDrawer"
           class="nav-item group/nav relative"
-          :class="[
-            isCollapsed ? 'justify-center px-0' : '',
-            $route.name === item.route ? 'nav-item--active' : ''
-          ]"
+          :class="[ isCollapsed ? 'justify-center px-0' : '', isItemActive(item) ? 'nav-item--active' : '' ]"
           :title="isCollapsed ? item.name : ''"
         >
           <span
             class="absolute left-0 top-1.5 bottom-1.5 w-[2px] origin-center rounded-r-sm bg-primary-500 transition-transform duration-200 ease-out"
-            :class="$route.name === item.route ? 'scale-y-100' : 'scale-y-0 group-hover/nav:scale-y-100'"
+            :class="isItemActive(item) ? 'scale-y-100' : 'scale-y-0 group-hover/nav:scale-y-100'"
           ></span>
           <component
             :is="item.icon"
             class="h-5 w-5 shrink-0 transition-colors"
-            :class="$route.name === item.route ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400 group-hover/nav:text-gray-600 dark:text-gray-500 dark:group-hover/nav:text-gray-300'"
+            :class="isItemActive(item) ? 'text-primary-700 dark:text-primary-400' : 'text-gray-400 group-hover/nav:text-gray-600 dark:text-gray-500 dark:group-hover/nav:text-gray-300'"
           />
           <span v-if="!isCollapsed" class="flex-1">{{ item.name }}</span>
+          <span
+            v-if="!isCollapsed && item.badge === 'pro'"
+            class="badge-neutral shrink-0 px-1.5 py-0 text-[10px] uppercase tracking-wider"
+          >
+            Pro
+          </span>
         </router-link>
 
         <!-- Expandable group -->
@@ -89,10 +89,7 @@
           <button
             @click="handleGroupClick(item)"
             class="nav-item group/nav relative w-full"
-            :class="[
-              isCollapsed ? 'justify-center px-0' : '',
-              isGroupActive(item) ? 'nav-item--group-active' : ''
-            ]"
+            :class="[ isCollapsed ? 'justify-center px-0' : '', isGroupActive(item) ? 'nav-item--group-active' : '' ]"
             :title="isCollapsed ? item.name : ''"
           >
             <span
@@ -102,7 +99,7 @@
             <component
               :is="item.icon"
               class="h-5 w-5 shrink-0 transition-colors"
-              :class="isGroupActive(item) ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400 group-hover/nav:text-gray-600 dark:text-gray-500 dark:group-hover/nav:text-gray-300'"
+              :class="isGroupActive(item) ? 'text-primary-700 dark:text-primary-400' : 'text-gray-400 group-hover/nav:text-gray-600 dark:text-gray-500 dark:group-hover/nav:text-gray-300'"
             />
             <span v-if="!isCollapsed" class="flex-1 text-left">{{ item.name }}</span>
             <ChevronRightIcon
@@ -139,13 +136,13 @@
                     :to="sub.to"
                     @click="closeDrawer"
                     class="nav-sub-item group/sub"
-                    :class="$route.name === sub.route ? 'nav-sub-item--active' : ''"
+                    :class="isItemActive(sub) ? 'nav-sub-item--active' : ''"
                     :style="{ animationDelay: `${subIdx * 25}ms` }"
                   >
                     <span class="flex-1 truncate">{{ sub.name }}</span>
                     <span
                       v-if="sub.badge === 'pro'"
-                      class="shrink-0 rounded-[3px] bg-primary-500/15 px-1.5 py-0 text-[9px] font-bold uppercase leading-[14px] tracking-wider text-primary-700 dark:bg-primary-400/15 dark:text-primary-300"
+                      class="badge-neutral shrink-0 px-1.5 py-0 text-[10px] uppercase tracking-wider"
                     >
                       Pro
                     </span>
@@ -163,12 +160,12 @@
       <router-link
         to="/pricing"
         @click="closeDrawer"
-        class="upgrade-card group relative block overflow-hidden rounded-xl bg-gradient-to-br from-primary-50 to-orange-100 p-3 ring-1 ring-primary-200/80 transition-all hover:ring-primary-300 dark:from-primary-950/40 dark:to-primary-900/20 dark:ring-primary-900/40 dark:hover:ring-primary-800/60"
+        class="upgrade-card group relative block overflow-hidden rounded-lg bg-gradient-to-br from-primary-50 to-primary-100 p-3 ring-1 ring-primary-200/80 transition-all hover:ring-primary-300 dark:from-primary-950/40 dark:to-primary-900/20 dark:ring-primary-900/40 dark:hover:ring-primary-800/60"
       >
         <div class="relative">
           <div class="flex items-start justify-between gap-2">
             <div class="min-w-0 flex-1">
-              <div class="text-[10px] font-semibold uppercase tracking-wide text-primary-600 dark:text-primary-400">
+              <div class="text-[10px] font-semibold uppercase tracking-wide text-primary-700 dark:text-primary-400">
                 Free Plan
               </div>
               <div class="mt-1 text-xs font-semibold text-gray-900 dark:text-white">
@@ -179,10 +176,10 @@
               </div>
             </div>
             <div class="shrink-0 rounded-md bg-white/60 p-1 ring-1 ring-primary-200 dark:bg-gray-900/40 dark:ring-primary-900/40">
-              <ArrowUpRightIcon class="h-3.5 w-3.5 text-primary-600 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 dark:text-primary-400" />
+              <ArrowUpRightIcon class="h-3.5 w-3.5 text-primary-700 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 dark:text-primary-400" />
             </div>
           </div>
-          <div class="mt-3 flex w-full items-center justify-center gap-1.5 rounded-md bg-primary-600 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors group-hover:bg-primary-700">
+          <div class="mt-3 flex w-full items-center justify-center gap-1.5 rounded-md bg-primary-700 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors group-hover:bg-primary-800">
             Upgrade
           </div>
         </div>
@@ -194,10 +191,7 @@
       <button
         @click.stop="toggleUserMenu"
         class="group flex w-full items-center text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50"
-        :class="[
-          isCollapsed ? 'justify-center px-2 py-2.5' : 'gap-3 px-3 py-3',
-          userMenuOpen ? 'bg-gray-50 dark:bg-gray-800/50' : ''
-        ]"
+        :class="[ isCollapsed ? 'justify-center px-2 py-2.5' : 'gap-3 px-3 py-3', userMenuOpen ? 'bg-gray-50 dark:bg-gray-800/50' : '' ]"
         :aria-expanded="userMenuOpen"
         aria-haspopup="true"
         :title="isCollapsed ? displayName : ''"
@@ -214,7 +208,7 @@
               <p class="truncate text-sm font-semibold text-gray-900 dark:text-white">{{ displayName }}</p>
               <span
                 v-if="roleBadge"
-                class="shrink-0 rounded-[3px] bg-primary-500/15 px-1 py-0 text-[8px] font-bold uppercase leading-[13px] tracking-wider text-primary-700 dark:bg-primary-400/15 dark:text-primary-300"
+                class="badge-neutral shrink-0 px-1.5 py-0 text-[10px] uppercase tracking-wider"
               >
                 {{ roleBadge }}
               </span>
@@ -238,7 +232,7 @@
       >
         <div
           v-if="userMenuOpen"
-          class="user-popover absolute bottom-full left-2 right-2 z-50 mb-2 origin-bottom-left overflow-hidden rounded-xl bg-white/95 shadow-2xl ring-1 ring-gray-200/80 backdrop-blur-xl lg:left-3 lg:right-auto lg:w-72 dark:bg-gray-900/95 dark:ring-gray-700/60"
+          class="user-popover absolute bottom-full left-2 right-2 z-40 mb-2 origin-bottom-left popover overflow-hidden lg:left-3 lg:right-auto lg:w-72 dark:bg-gray-900/95 dark:ring-gray-700/60"
         >
           <!-- Header -->
           <div class="px-5 pt-4 pb-4">
@@ -256,7 +250,7 @@
                   <p class="truncate text-sm font-semibold text-gray-900 dark:text-white">{{ displayName }}</p>
                   <span
                     v-if="roleBadge"
-                    class="shrink-0 rounded-[3px] bg-primary-500/15 px-1.5 py-0 text-[9px] font-bold uppercase leading-[14px] tracking-wider text-primary-700 dark:bg-primary-400/15 dark:text-primary-300"
+                    class="badge-neutral shrink-0 px-1.5 py-0 text-[10px] uppercase tracking-wider"
                   >
                     {{ roleBadge }}
                   </span>
@@ -264,7 +258,7 @@
                 <p v-if="authStore.user?.email" class="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">
                   {{ authStore.user.email }}
                 </p>
-                <p v-if="authStore.user?.username" class="mt-1.5 truncate text-[11px] text-gray-400 dark:text-gray-500">
+                <p v-if="authStore.user?.username" class="mt-1.5 truncate text-[11px] text-gray-500 dark:text-gray-400">
                   @{{ authStore.user.username }}
                 </p>
               </div>
@@ -313,25 +307,6 @@
             </router-link>
 
             <router-link
-              to="/settings"
-              @click="closeUserMenu"
-              class="popover-item group/item"
-              :class="{ 'popover-item--active': $route.name === 'settings' }"
-              :style="{ animationDelay: '70ms' }"
-            >
-              <span
-                class="popover-accent"
-                :class="$route.name === 'settings' ? 'scale-y-100' : 'scale-y-0 group-hover/item:scale-y-100'"
-              ></span>
-              <Cog6ToothIcon
-                class="h-4 w-4 shrink-0 transition-colors"
-                :class="$route.name === 'settings' ? 'text-primary-500 dark:text-primary-400' : 'text-gray-400 group-hover/item:text-primary-500 dark:text-gray-500 dark:group-hover/item:text-primary-400'"
-              />
-              <span class="flex-1">Settings</span>
-              <ChevronRightIcon class="popover-chevron" />
-            </router-link>
-
-            <router-link
               v-if="isAdmin"
               to="/admin/users"
               @click="closeUserMenu"
@@ -368,12 +343,27 @@
       </transition>
     </div>
 
+    <!-- Settings link -->
+    <router-link
+      to="/settings"
+      @click="closeDrawer"
+      class="nav-item group/nav border-t border-gray-200/80 dark:border-gray-800/60"
+      :class="[ isCollapsed ? 'justify-center px-0' : '', $route.name === 'settings' ? 'nav-item--active' : '' ]"
+      :title="isCollapsed ? 'Settings' : ''"
+    >
+      <Cog6ToothIcon
+        class="h-5 w-5 shrink-0 transition-colors"
+        :class="$route.name === 'settings' ? 'text-primary-700 dark:text-primary-400' : 'text-gray-400 group-hover/nav:text-gray-600 dark:text-gray-500 dark:group-hover/nav:text-gray-300'"
+      />
+      <span v-if="!isCollapsed" class="flex-1">Settings</span>
+    </router-link>
+
     <!-- API Docs link -->
     <a
       :href="apiDocsUrl"
       target="_blank"
       rel="noopener noreferrer"
-      class="nav-item group/nav border-t border-gray-200/80 dark:border-gray-800/60"
+      class="nav-item group/nav"
       :class="isCollapsed ? 'justify-center px-0' : ''"
       :title="isCollapsed ? 'API Docs' : ''"
     >
@@ -394,7 +384,7 @@
       <NotificationBell placement="top-left" />
       <button
         @click="toggleDarkMode"
-        class="rounded-md p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+        class="btn-icon p-2"
         :aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
         :title="isDark ? 'Light mode' : 'Dark mode'"
       >
@@ -403,7 +393,7 @@
       </button>
       <button
         @click="toggleCollapsed"
-        class="hidden rounded-md p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 lg:inline-flex dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+        class="btn-icon hidden lg:inline-flex"
         :aria-label="isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
         :title="isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
       >
@@ -427,6 +417,11 @@ import {
   PresentationChartLineIcon,
   BeakerIcon,
   CalendarIcon,
+  BookOpenIcon,
+  ChatBubbleLeftRightIcon,
+  BriefcaseIcon,
+  BanknotesIcon,
+  UserGroupIcon,
   ArrowUpTrayIcon,
   ShieldCheckIcon,
   ChevronRightIcon,
@@ -486,39 +481,41 @@ const apiDocsUrl = computed(() => {
 
 const navItems = computed(() => {
   const items = [
+    { name: 'Dashboard', icon: HomeIcon, to: '/dashboard', route: 'dashboard' },
     {
-      name: 'Dashboard',
-      icon: HomeIcon,
-      items: [
-        { name: 'Trading Dashboard', to: '/dashboard', route: 'dashboard' },
-        { name: 'Trading Journal', to: '/diary', route: 'diary' },
-        { name: 'Account & Cashflow', to: '/cashflow', route: 'cashflow' },
-        { name: 'Leaderboard', to: '/leaderboard', route: 'leaderboard' },
-        { name: 'Public Trades', to: '/public', route: 'public-trades' },
-        { name: 'Community Forum', href: 'https://tradetally.io/forum', external: true }
-      ]
+      name: 'Trades',
+      icon: ChartBarSquareIcon,
+      to: '/trades',
+      route: 'trades',
+      activeRoutes: ['trade-create', 'trade-detail', 'trade-edit', 'trade-replay']
     },
-    { name: 'Trades', icon: ChartBarSquareIcon, to: '/trades', route: 'trades' },
     {
-      name: 'Metrics',
+      name: 'Journal',
+      icon: BookOpenIcon,
+      to: '/diary',
+      route: 'diary',
+      activeRoutes: ['diary-create', 'diary-edit']
+    },
+    { name: 'Calendar', icon: CalendarIcon, to: '/calendar', route: 'calendar' },
+    { name: 'AI Chat', icon: ChatBubbleLeftRightIcon, to: '/ai-chat', route: 'ai-chat', badge: 'pro' },
+    {
+      name: 'Reports',
       icon: PresentationChartLineIcon,
       items: [
         { name: 'Performance', to: '/metrics', route: 'metrics' },
         { name: 'Monthly', to: '/metrics/monthly', route: 'monthly-performance' },
-        { name: 'Edge Report', to: '/metrics/edge-report', route: 'edge-report' },
+        { name: 'Edge Report', to: '/metrics/edge-report', route: 'edge-report', badge: 'pro' },
+        { name: 'Tax Report', to: '/metrics/tax-report', route: 'tax-report' },
+        { name: 'Trade Management', to: '/analysis/trade-management', route: 'trade-management', badge: 'pro' },
         { name: 'Partial Exits', to: '/metrics/partial-exits', route: 'partial-exit-analytics', badge: 'pro' },
         { name: 'Behavioral', to: '/metrics/behavioral', route: 'behavioral-analytics', badge: 'pro' },
         { name: 'Health', to: '/metrics/health', route: 'health-analytics', badge: 'pro' }
       ]
     },
     {
-      name: 'Analysis',
+      name: 'Strategy',
       icon: BeakerIcon,
       items: [
-        { name: 'Investments', to: '/analysis', route: 'analysis', badge: 'pro' },
-        { name: 'Retirement Planner', to: '/analysis/retirement', route: 'retirement-planner', badge: 'pro' },
-        { name: 'Watchlists', to: '/markets', route: 'markets', badge: 'pro' },
-        { name: 'Trade Management', to: '/analysis/trade-management', route: 'trade-management', badge: 'pro' },
         { name: 'Playbooks & Grading', to: '/analysis/playbooks', route: 'playbooks', badge: 'pro' },
         { name: 'Backtest Sandbox', to: '/analysis/backtest', route: 'backtest', badge: 'pro' },
         { name: 'Backtest Bots', to: '/analysis/backtest-bots', route: 'backtest-bots' },
@@ -528,19 +525,54 @@ const navItems = computed(() => {
         { name: 'Prop Firm', to: '/analysis/prop-firm', route: 'prop-firm' }
       ]
     },
-    { name: 'Calendar', icon: CalendarIcon, to: '/calendar', route: 'calendar' },
+    {
+      name: 'Investing',
+      icon: BriefcaseIcon,
+      items: [
+        {
+          name: 'Investments',
+          to: '/analysis',
+          route: 'analysis',
+          badge: 'pro',
+          activeRoutes: ['stock-analysis', 'holding-detail', 'analysis-compare']
+        },
+        { name: 'Watchlists', to: '/markets', route: 'markets', badge: 'pro', activeRoutes: ['watchlist-detail'] },
+        { name: 'Retirement Planner', to: '/analysis/retirement', route: 'retirement-planner', badge: 'pro' }
+      ]
+    },
+    {
+      name: 'Accounts',
+      icon: BanknotesIcon,
+      items: [
+        { name: 'Account & Cashflow', to: '/cashflow', route: 'cashflow' },
+        { name: 'Trading Accounts', to: '/accounts', route: 'accounts' },
+        { name: 'Equity History', to: '/equity-history', route: 'equity-history' }
+      ]
+    },
     {
       name: 'Import',
       icon: ArrowUpTrayIcon,
       items: [
         { name: 'CSV Import', to: '/import', route: 'import' },
-        { name: 'Broker Sync', to: '/broker-sync', route: 'broker-sync' }
+        { name: 'Broker Sync', to: '/broker-sync', route: 'broker-sync', activeRoutes: ['settings-broker-sync'] }
+      ]
+    },
+    {
+      name: 'Community',
+      icon: UserGroupIcon,
+      items: [
+        { name: 'Leaderboard', to: '/leaderboard', route: 'leaderboard' },
+        { name: 'Community Forum', href: 'https://tradetally.io/forum', external: true }
       ]
     }
   ]
 
   return items
 })
+
+// Detail/edit pages (e.g. a single trade) keep their parent menu item highlighted
+const isItemActive = (item) =>
+  route.name === item.route || (item.activeRoutes?.includes(route.name) ?? false)
 
 const showUpgradeCard = computed(() => {
   if (!isBillingEnabled.value) return false
@@ -588,7 +620,7 @@ const roleBadge = computed(() => {
 
 const isGroupActive = (item) => {
   if (!item.items) return false
-  return item.items.some((sub) => route.name === sub.route)
+  return item.items.some(isItemActive)
 }
 
 const isGroupExpanded = (name) => expandedGroups.value[name] === true
@@ -644,7 +676,7 @@ watch(
   (newRoute) => {
     if (!newRoute) return
     navItems.value.forEach((item) => {
-      if (item.items?.some((sub) => sub.route === newRoute)) {
+      if (item.items?.some(isItemActive)) {
         expandedGroups.value[item.name] = true
       }
     })
@@ -703,13 +735,13 @@ onUnmounted(() => {
 
 .nav-item--active {
   background-color: theme('colors.primary.500 / 8%');
-  color: rgb(194 65 12);
+  color: theme('colors.primary.700');
 }
 
 :global(.dark) .nav-item--active,
 .dark .nav-item--active {
   background-color: theme('colors.primary.500 / 12%');
-  color: rgb(253 186 116);
+  color: theme('colors.primary.300');
 }
 
 .nav-item--group-active {
@@ -752,14 +784,14 @@ onUnmounted(() => {
 
 .nav-sub-item--active {
   background-color: theme('colors.primary.500 / 8%');
-  color: rgb(194 65 12);
+  color: theme('colors.primary.700');
   font-weight: 600;
 }
 
 :global(.dark) .nav-sub-item--active,
 .dark .nav-sub-item--active {
   background-color: theme('colors.primary.500 / 12%');
-  color: rgb(253 186 116);
+  color: theme('colors.primary.300');
 }
 
 /* Popover items */

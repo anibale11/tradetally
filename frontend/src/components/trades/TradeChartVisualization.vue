@@ -3,7 +3,7 @@
     <div class="card-body">
       <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white">Trade Visualization</h3>
+          <h3 class="heading-card">Trade Visualization</h3>
           <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Review price action, execution timing, indicators, and your own annotations.
           </p>
@@ -14,58 +14,14 @@
           </span>
           <span
             v-if="chartData.trade?.instrumentType === 'option'"
-            class="rounded-full bg-primary-100 px-2 py-1 text-xs font-medium text-primary-800 dark:bg-primary-900/40 dark:text-primary-200"
+            class="badge-primary"
           >
             Underlying price
           </span>
           <span
             v-if="chartData.source"
-            class="rounded-full bg-primary-100 px-2 py-1 text-xs font-medium text-primary-800 dark:bg-primary-900/40 dark:text-primary-200"
-            :class="{ 'cursor-help': sourceTitle }"
-            :title="sourceTitle"
-          >
-            {{ sourceLabel }}<template v-if="sourceTitle"> ·  fallback</template>
-          </span>
-        </div>
-      </div>
-
-      <ProUpgradePrompt
-        v-if="requiresProUpgrade"
-        variant="compact"
-        description="Trade charts with high-precision candlestick data are available with a Pro subscription."
-      />
-
-      <div v-else-if="!showChart && !loading" class="rounded-lg border border-dashed border-gray-300 px-6 py-12 text-center dark:border-gray-600">
-        <PresentationChartLineIcon class="mx-auto h-12 w-12 text-gray-400" />
-        <h4 class="mt-4 text-lg font-medium text-gray-900 dark:text-white">Open interactive chart</h4>
-        <p class="mx-auto mt-2 max-w-lg text-sm text-gray-600 dark:text-gray-400">
-          Inspect the trade with editable trend lines, price levels, Fibonacci tools, moving averages, and execution markers.
-        </p>
-        <button type="button" class="btn-primary mt-5" @click="loadChart">
-          Load Chart
-        </button>
-        <p class="mt-3 text-xs text-gray-500 dark:text-gray-500">
-          <span v-if="isBillingEnabled">Uses the configured high-precision market data provider.</span>
-          <span v-else>Uses configured providers first, with no-cost fallbacks when available.</span>
-        </p>
-      </div>
-
-      <div v-if="loading" class="flex justify-center py-16">
-        <div class="h-12 w-12 animate-spin rounded-full border-b-2 border-primary-600"></div>
-      </div>
-
-      <div v-else-if="!isConfigured" class="rounded-lg border border-gray-200 py-14 text-center dark:border-gray-700">
-        <PresentationChartLineIcon class="mx-auto h-12 w-12 text-gray-400" />
-        <p class="mt-3 font-medium text-gray-900 dark:text-white">Chart service not configured</p>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Configure a supported market-data provider to enable trade charts.</p>
-      </div>
-
-      <div v-else-if="error" class="rounded-lg border border-red-200 bg-red-50 px-5 py-10 text-center dark:border-red-800 dark:bg-red-900/20">
-        <p class="font-medium text-red-700 dark:text-red-300">{{ error }}</p>
-        <button
-          type="button"
-          class="btn-secondary mt-4 text-sm"
-          :disabled="error.includes('limit') || error.includes('not configured')"
+            class="badge-primary"
+            :class="{ 'cursor-help': sourceTitle }" :title="sourceTitle" > {{ sourceLabel }}<template v-if="sourceTitle"> · fallback</template> </span> </div> </div> <ProUpgradePrompt v-if="requiresProUpgrade" variant="compact" description="Trade charts with high-precision candlestick data are available with a Pro subscription." /> <div v-else-if="!showChart && !loading" class="rounded-lg border border-dashed border-gray-300 px-6 py-12 text-center dark:border-gray-600"> <PresentationChartLineIcon class="mx-auto h-12 w-12 text-gray-400" /> <h4 class="heading-card mt-4">Open interactive chart</h4> <p class="mx-auto mt-2 max-w-lg text-sm text-gray-600 dark:text-gray-400"> Inspect the trade with editable trend lines, price levels, Fibonacci tools, moving averages, and execution markers. </p> <button type="button" class="btn-primary mt-5" @click="loadChart"> Load Chart </button> <p class="mt-3 text-xs text-gray-500 dark:text-gray-500"> <span v-if="isBillingEnabled">Uses the configured high-precision market data provider.</span> <span v-else>Uses configured providers first, with no-cost fallbacks when available.</span> </p> </div> <div v-if="initialLoading" class="flex justify-center py-16"> <div class="spinner spinner-lg"></div> </div> <div v-else-if="!isConfigured" class="rounded-lg border border-gray-200 py-14 text-center dark:border-gray-700"> <PresentationChartLineIcon class="mx-auto h-12 w-12 text-gray-400" /> <p class="mt-3 font-medium text-gray-900 dark:text-white">Chart service not configured</p> <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Configure a supported market-data provider to enable trade charts.</p> </div> <div v-else-if="error" class="callout-danger py-10 text-center"> <p class="font-medium text-red-600 dark:text-red-300">{{ error }}</p> <button type="button" class="btn-secondary mt-4" :disabled="error.includes('limit') || error.includes('not configured')"
           @click="loadChart"
         >
           Try Again
@@ -75,14 +31,14 @@
       <div v-else-if="showChart && chartData">
         <div
           v-if="chartData.trade?.instrumentType === 'option'"
-          class="mb-3 rounded-lg border border-primary-200 bg-primary-50 p-3 text-sm text-primary-900 dark:border-primary-800 dark:bg-primary-900/20 dark:text-primary-100"
+          class="callout-info mb-3"
         >
           This chart displays the underlying security. Execution markers show option fill timing; contract prices remain in the execution table.
         </div>
 
         <div
           v-if="chartData.futures_continuous"
-          class="mb-3 rounded-lg border border-primary-200 bg-primary-50 p-3 text-sm text-primary-900 dark:border-primary-800 dark:bg-primary-900/20 dark:text-primary-100"
+          class="callout-info mb-3"
         >
           This chart displays continuous front-month data
           <template v-if="chartData.chart_symbol">({{ chartData.chart_symbol }})</template>.
@@ -91,13 +47,13 @@
 
         <div
           v-if="degradationNotice"
-          class="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-100"
+          class="callout-warning mb-3"
         >
           {{ degradationNotice }}
         </div>
 
         <KLineTradeChart
-          :chart-data="chartData"
+          :chart-data="price_chart_data"
           :timezone="userTimezone || 'UTC'"
           :selected-resolution="selectedResolution"
           :available-resolutions="availableResolutions"
@@ -109,7 +65,7 @@
         <dl v-if="chartData.trade" class="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
           <div class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-800/70">
             <dt class="text-gray-500 dark:text-gray-400">Entry</dt>
-            <dd class="mt-0.5 font-semibold text-gray-900 dark:text-white">{{ formatTradeCurrency(chartData.trade.entryPrice) }}</dd>
+            <dd class="mt-0.5 font-semibold text-gray-900 dark:text-white">{{ formatTradePrice(chartData.trade, 'entry_price') }}</dd>
           </div>
           <div class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-800/70">
             <dt class="text-gray-500 dark:text-gray-400">Exit</dt>
@@ -130,12 +86,16 @@
 </template>
 
 <script setup>
+import { pnlClass } from '@/utils/metricTone'
+import { formatDecimal } from '@/utils/formatters'
 import { computed, h, markRaw, onMounted, ref, shallowRef, watch } from 'vue'
 import { PresentationChartLineIcon } from '@heroicons/vue/24/outline'
 import api from '@/services/api'
 import ProUpgradePrompt from '@/components/ProUpgradePrompt.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useCurrencyFormatter } from '@/composables/useCurrencyFormatter'
+import { useTradePriceFormatter } from '@/composables/useTradePriceFormatter'
+import { withNativeTradePrices } from '@/utils/nativeTradePrices'
 import { useNotification } from '@/composables/useNotification'
 import { useUserTimezone } from '@/composables/useUserTimezone'
 import {
@@ -183,10 +143,12 @@ const props = defineProps({
 
 const authStore = useAuthStore()
 const { currencyCode, formatCurrency } = useCurrencyFormatter()
+const { formatTradePrice } = useTradePriceFormatter()
 const { showError, showWarning } = useNotification()
 const { userTimezone, timezoneLabel } = useUserTimezone()
 
 const loading = ref(false)
+const initialLoading = ref(true)
 const error = ref(null)
 const isConfigured = ref(true)
 const chartData = ref(null)
@@ -228,8 +190,7 @@ const intervalLabel = computed(() => {
 })
 
 // An open trade has no exit yet; say so rather than formatting a null.
-// Format in the currency the trade was actually executed in, matching the
-// Trade Details panel, rather than the account's display currency.
+// P&L remains in the reporting currency; quote prices use native snapshots.
 const tradeCurrency = computed(() => {
   const currency = chartData.value?.trade?.effective_currency || chartData.value?.trade?.currency
   return currency ? String(currency).toUpperCase() : currencyCode.value
@@ -237,6 +198,10 @@ const tradeCurrency = computed(() => {
 const candles_currency = computed(() => (
   chartData.value?.candles_currency || chartData.value?.display_currency || currencyCode.value
 ))
+const price_chart_data = computed(() => ({
+  ...chartData.value,
+  trade: withNativeTradePrices(chartData.value?.trade)
+}))
 
 function formatTradeCurrency(value) {
   return formatCurrency(value, { currency: tradeCurrency.value })
@@ -245,7 +210,7 @@ function formatTradeCurrency(value) {
 const exitLabel = computed(() => {
   const exitPrice = chartData.value?.trade?.exitPrice
   if (exitPrice === null || exitPrice === undefined) return 'Open'
-  return formatTradeCurrency(exitPrice)
+  return formatTradePrice(chartData.value.trade, 'exit_price')
 })
 
 // Surface a degraded chart instead of quietly rendering fallback data: a
@@ -278,7 +243,7 @@ const sourceLabel = computed(() => {
 })
 
 function metricClass(value) {
-  return Number(value) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+  return pnlClass(Number(value))
 }
 
 function formatPercent(value) {
@@ -287,7 +252,7 @@ function formatPercent(value) {
   if (value === null || value === undefined || value === '') return 'N/A'
   const number = Number(value)
   if (!Number.isFinite(number)) return 'N/A'
-  return `${number >= 0 ? '+' : ''}${number.toFixed(2)}%`
+  return `${formatDecimal(number, { digits: 1, showSign: true })}%`
 }
 
 function resolutionForInterval(interval) {
@@ -331,6 +296,7 @@ async function fetchChartData() {
     }
   } finally {
     loading.value = false
+    initialLoading.value = false
   }
 }
 

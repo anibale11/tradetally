@@ -26,7 +26,7 @@
                     </svg>
                 </div>
                 <h3
-                    class="text-lg font-medium text-gray-900 dark:text-white mb-2"
+                    class="heading-card mb-2"
                 >
                     Self-Hosted Instance
                 </h3>
@@ -41,7 +41,7 @@
         <div v-else-if="loading" class="card">
             <div class="card-body text-center py-12">
                 <div
-                    class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"
+                    class="spinner spinner-md inline-block"
                 ></div>
                 <p class="mt-4 text-gray-600 dark:text-gray-400">
                     Loading subscription details...
@@ -58,12 +58,8 @@
                         <h3 class="heading-card">Current Plan</h3>
                         <span
                             v-if="subscription.subscription"
-                            :class="
-                                getStatusBadgeClass(
-                                    subscription.subscription.status,
-                                )
-                            "
-                            class="px-3 py-1 rounded-full text-sm font-medium"
+                            :class="getStatusBadgeClass( subscription.subscription.status, )"
+                            class="badge"
                         >
                             {{ formatStatus(subscription.subscription.status) }}
                         </span>
@@ -75,7 +71,7 @@
                     >
                         <div>
                             <h4
-                                class="text-sm font-medium text-gray-900 dark:text-white mb-2"
+                                class="heading-sub mb-2"
                             >
                                 Plan Details
                             </h4>
@@ -102,7 +98,7 @@
 
                         <div>
                             <h4
-                                class="text-sm font-medium text-gray-900 dark:text-white mb-2"
+                                class="heading-sub mb-2"
                             >
                                 Billing Cycle
                             </h4>
@@ -135,7 +131,7 @@
                                     class="flex justify-between"
                                 >
                                     <span>Cancels On:</span>
-                                    <span class="font-medium text-red-600">{{
+                                    <span class="font-medium text-red-600 dark:text-red-400">{{
                                         formatDate(
                                             subscription.subscription
                                                 .current_period_end,
@@ -164,7 +160,7 @@
                             </svg>
                         </div>
                         <h4
-                            class="text-lg font-medium text-gray-900 dark:text-white mb-2"
+                            class="heading-card mb-2"
                         >
                             No Active Subscription
                         </h4>
@@ -183,7 +179,7 @@
             <div v-if="subscription.subscription" class="card">
                 <div class="card-body">
                     <h3
-                        class="text-lg font-medium text-gray-900 dark:text-white mb-6"
+                        class="heading-card mb-6"
                     >
                         Manage Subscription
                     </h3>
@@ -196,7 +192,7 @@
                         >
                             <span
                                 v-if="portalLoading"
-                                class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"
+                                class="spinner spinner-xs spinner-current inline-block mr-2"
                             ></span>
                             Customer Portal
                         </button>
@@ -221,7 +217,7 @@
                         >
                             <span
                                 v-if="reactivateLoading"
-                                class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"
+                                class="spinner spinner-xs spinner-current inline-block mr-2"
                             ></span>
                             Reactivate Subscription
                         </button>
@@ -251,7 +247,7 @@
             >
                 <div class="card-body">
                     <div class="flex items-center">
-                        <div class="animate-spin rounded-full h-6 w-6 border-2 border-primary-200 border-t-primary-600 mr-3"></div>
+                        <div class="spinner spinner-sm mr-3"></div>
                         <p class="text-primary-800 dark:text-primary-200 font-medium">
                             Verifying your payment...
                         </p>
@@ -262,18 +258,18 @@
             <!-- Checkout Error -->
             <div
                 v-if="checkoutError"
-                class="card border-amber-200 bg-amber-50 dark:bg-amber-900/20"
+                class="card border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20"
             >
                 <div class="card-body">
                     <div class="flex items-start">
-                        <svg class="w-6 h-6 text-amber-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-6 h-6 text-yellow-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
                         </svg>
                         <div>
-                            <h4 class="text-sm font-medium text-amber-800 dark:text-amber-200">
+                            <h4 class="heading-sub text-yellow-800 dark:text-yellow-200">
                                 Payment Verification
                             </h4>
-                            <p class="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                            <p class="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
                                 {{ checkoutError }}
                             </p>
                         </div>
@@ -288,7 +284,7 @@
             >
                 <div class="card-body">
                     <div class="flex items-center">
-                        <div class="text-green-500 mr-3">
+                        <div class="text-green-700 dark:text-green-400 mr-3">
                             <svg
                                 class="w-6 h-6"
                                 fill="none"
@@ -305,7 +301,7 @@
                         </div>
                         <div>
                             <h4
-                                class="text-lg font-medium text-green-800 dark:text-green-200"
+                                class="heading-sub text-green-800 dark:text-green-200"
                             >
                                 Subscription Activated!
                             </h4>
@@ -328,11 +324,11 @@
         <!-- Cancel Confirmation Modal -->
         <div
             v-if="showCancelModal"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+            class="modal-overlay flex items-center justify-center"
             @click.self="closeCancelModal"
         >
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
-                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+            <div role="dialog" aria-modal="true" class="modal-panel max-w-md w-full mx-4 p-6">
+                <h3 class="modal-title mb-2">
                     Cancel Subscription
                 </h3>
                 <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
@@ -362,7 +358,7 @@
                                 v-model="cancelReason"
                                 :value="option.value"
                                 type="radio"
-                                class="mt-1"
+                                class="radio mt-1"
                             />
                             <span class="text-sm text-gray-700 dark:text-gray-300">
                                 {{ option.label }}
@@ -386,7 +382,7 @@
                         placeholder="What was missing, frustrating, or not worth the cost?"
                     ></textarea>
                 </div>
-                <div class="flex justify-end space-x-3">
+                <div class="modal-footer">
                     <button
                         @click="closeCancelModal"
                         class="btn btn-secondary"
@@ -396,11 +392,11 @@
                     <button
                         @click="cancelSubscription"
                         :disabled="cancelLoading || !cancelReason"
-                        class="btn bg-red-600 text-white hover:bg-red-700"
+                        class="btn-danger"
                     >
                         <span
                             v-if="cancelLoading"
-                            class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"
+                            class="spinner spinner-xs spinner-current inline-block mr-2"
                         ></span>
                         Confirm Cancellation
                     </button>
@@ -415,6 +411,7 @@ import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAnalytics } from "@/composables/useAnalytics";
 import api from "@/services/api";
+import { formatDecimal } from "@/utils/formatters";
 
 const cancellationReasonOptions = [
     { value: "too_expensive", label: "Too expensive" },
@@ -584,7 +581,7 @@ export default {
             const classes = {
                 active: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
                 trialing:
-                    "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+                    "bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200",
                 past_due:
                     "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
                 canceled:
@@ -625,7 +622,7 @@ export default {
                 return "0";
             const firstItem = subscription.value.subscription.items[0];
             if (!firstItem || !firstItem.amount) return "0";
-            return (firstItem.amount / 100).toFixed(0); // Convert from cents to dollars
+            return formatDecimal(firstItem.amount / 100, { digits: 0 }); // Convert from cents to dollars
         };
 
         const getSubscriptionInterval = () => {

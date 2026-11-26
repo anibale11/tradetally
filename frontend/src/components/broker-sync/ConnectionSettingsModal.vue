@@ -3,26 +3,26 @@
         <div class="flex min-h-full items-center justify-center p-4">
             <!-- Backdrop -->
             <div
-                class="fixed inset-0 bg-black/50 transition-opacity"
+                class="modal-backdrop"
                 @click="emit('close')"
             ></div>
 
             <!-- Modal -->
-            <div
-                class="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg max-h-[calc(100vh-2rem)] flex flex-col"
+            <div role="dialog" aria-modal="true"
+                class="modal-panel w-full max-w-lg max-h-[calc(100vh-2rem)] flex flex-col"
             >
                 <!-- Header -->
                 <div
                     class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700"
                 >
                     <h3
-                        class="text-lg font-semibold text-gray-900 dark:text-white"
+                        class="modal-title"
                     >
                         Connection Settings
                     </h3>
                     <button
                         @click="emit('close')"
-                        class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+                        class="btn-ghost btn-sm"
                     >
                         <svg
                             class="w-6 h-6"
@@ -59,7 +59,7 @@
                         </div>
                         <div>
                             <h4
-                                class="font-medium text-gray-900 dark:text-white"
+                                class="heading-card"
                             >
                                 {{ brokerStyles.name }}
                             </h4>
@@ -84,6 +84,13 @@
                         </p>
                     </div>
 
+                    <div v-if="connection.brokerType === 'ibkr'">
+                        <label for="settingsConfirmationQuery" class="label">Trade Confirmation Flex Query ID (optional)</label>
+                        <input id="settingsConfirmationQuery" v-model="form.ibkr_trade_confirmation_query_id" class="input" type="text" placeholder="For same-day fills" />
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Uses your saved Flex token. Confirmation checks use their own interval, separately from the Activity schedule below. Clear this field to stop confirmation imports.</p>
+                        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Use Executions detail, intraday coverage, and the same account and date/time settings as your Activity query. <a class="text-primary-700 underline dark:text-primary-400" href="https://www.ibkrguides.com/clientportal/performanceandstatements/tradeflex.htm" target="_blank" rel="noopener noreferrer">IBKR setup guide</a></p>
+                    </div>
+                    <IBKRConfirmationInterval v-if="connection.brokerType === 'ibkr' && form.ibkr_trade_confirmation_query_id.trim()" id="settingsConfirmationInterval" v-model="form.ibkr_confirmation_interval_minutes" />
                     <!-- Auto-Sync Toggle -->
                     <div class="flex items-center justify-between">
                         <div>
@@ -96,25 +103,14 @@
                                 Automatically sync trades on schedule
                             </p>
                         </div>
-                        <button
-                            type="button"
+                        <button                             type="button"
                             @click="
                                 form.autoSyncEnabled = !form.autoSyncEnabled
                             "
-                            :class="[
-                                form.autoSyncEnabled
-                                    ? 'bg-primary-600'
-                                    : 'bg-gray-200 dark:bg-gray-600',
-                                'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2',
-                            ]"
+                            :class="[ form.autoSyncEnabled ? 'switch-on' : '', 'switch', ]"
                         >
                             <span
-                                :class="[
-                                    form.autoSyncEnabled
-                                        ? 'translate-x-5'
-                                        : 'translate-x-0',
-                                    'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
-                                ]"
+                                :class="[ form.autoSyncEnabled ? 'translate-x-5' : 'translate-x-0', 'switch-knob', ]"
                             />
                         </button>
                     </div>
@@ -174,12 +170,7 @@
                                 :key="preset.id"
                                 type="button"
                                 @click="applySyncRangePreset(preset.id)"
-                                :class="[
-                                    'px-3 py-1 text-sm rounded-full border transition-colors',
-                                    activePreset === preset.id
-                                        ? 'bg-primary-600 border-primary-600 text-white'
-                                        : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600',
-                                ]"
+                                :class="[ 'px-3 py-1 text-sm rounded-full border transition-colors', activePreset === preset.id ? 'bg-primary-700 border-primary-600 text-white' : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600', ]"
                             >
                                 {{ preset.label }}
                             </button>
@@ -208,7 +199,7 @@
                     >
                         <div class="flex items-start justify-between gap-4">
                             <div>
-                                <h4 class="text-sm font-medium text-gray-900 dark:text-white">
+                                <h4 class="heading-sub">
                                     Accounts included in sync
                                 </h4>
                                 <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -217,7 +208,7 @@
                             </div>
                             <button
                                 type="button"
-                                class="text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 disabled:opacity-50"
+                                class="btn-link"
                                 :disabled="accountsLoading"
                                 @click="emit('refresh-accounts')"
                             >
@@ -229,13 +220,13 @@
                             <div
                                 v-for="index in 2"
                                 :key="index"
-                                class="h-12 rounded-lg bg-gray-100 dark:bg-gray-700 animate-pulse"
+                                class="skeleton h-12"
                             ></div>
                         </div>
 
                         <div
                             v-else-if="accountsError && schwabAccounts.length === 0"
-                            class="mt-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+                            class="callout-danger mt-4"
                         >
                             <p class="text-sm text-red-700 dark:text-red-300">{{ accountsError }}</p>
                         </div>
@@ -244,12 +235,12 @@
                             <label
                                 v-for="account in schwabAccounts"
                                 :key="account.account_identifier"
-                                class="flex items-center justify-between gap-4 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer hover:border-primary-300 dark:hover:border-primary-700"
+                                class="card flex items-center justify-between gap-4 p-3 cursor-pointer hover:border-primary-300 dark:hover:border-primary-700"
                             >
                                 <div class="flex items-center gap-3 min-w-0">
                                     <input
                                         type="checkbox"
-                                        class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                        class="checkbox"
                                         :checked="!isAccountExcluded(account.account_identifier)"
                                         @change="setAccountIncluded(account.account_identifier, $event.target.checked)"
                                     />
@@ -259,9 +250,7 @@
                                 </div>
                                 <span
                                     class="text-xs font-medium"
-                                    :class="isAccountExcluded(account.account_identifier)
-                                        ? 'text-gray-500 dark:text-gray-400'
-                                        : 'text-primary-600 dark:text-primary-400'"
+                                    :class="isAccountExcluded(account.account_identifier) ? 'text-gray-500 dark:text-gray-400' : 'text-primary-700 dark:text-primary-400'"
                                 >
                                     {{ isAccountExcluded(account.account_identifier) ? 'Excluded' : 'Included' }}
                                 </span>
@@ -282,7 +271,7 @@
                         class="pt-4 border-t border-gray-200 dark:border-gray-700"
                     >
                         <h4
-                            class="text-sm font-medium text-gray-900 dark:text-white mb-3"
+                            class="heading-sub mb-3"
                         >
                             Connection Status
                         </h4>
@@ -293,7 +282,7 @@
                                 </dt>
                                 <dd>
                                     <span
-                                        class="px-2 py-0.5 rounded-full text-xs"
+                                        class="badge"
                                         :class="statusClass"
                                     >
                                         {{ connection.connectionStatus }}
@@ -342,12 +331,12 @@
                     </button>
                     <button
                         @click="handleSave"
-                        :disabled="loading"
+                        :disabled="loading || (connection.brokerType === 'ibkr' && form.ibkr_trade_confirmation_query_id.trim().length > 0 && !validConfirmationInterval(form.ibkr_confirmation_interval_minutes))"
                         class="btn-primary"
                     >
                         <span v-if="loading" class="flex items-center">
                             <div
-                                class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"
+                                class="spinner spinner-xs spinner-light mr-2"
                             ></div>
                             Saving...
                         </span>
@@ -360,6 +349,8 @@
 </template>
 
 <script setup>
+import IBKRConfirmationInterval from './IBKRConfirmationInterval.vue'
+import { validConfirmationInterval } from '@/utils/ibkrConfirmationInterval'
 import { ref, computed, watch } from "vue";
 import BaseSelect from "@/components/common/BaseSelect.vue";
 import { useUserTimezone } from "@/composables/useUserTimezone";
@@ -398,6 +389,8 @@ function initialSyncStartDate(value) {
 
 const form = ref({
     accountLabel: props.connection.accountLabel || "",
+    ibkr_trade_confirmation_query_id: props.connection.ibkr_trade_confirmation_query_id || "",
+    ibkr_confirmation_interval_minutes: props.connection.ibkr_confirmation_interval_minutes ?? 15,
     autoSyncEnabled: props.connection.autoSyncEnabled,
     syncFrequency: props.connection.syncFrequency,
     syncTime: props.connection.syncTime?.substring(0, 5) || "06:00",
@@ -418,6 +411,8 @@ watch(
     (newConnection) => {
         form.value = {
             accountLabel: newConnection.accountLabel || "",
+            ibkr_trade_confirmation_query_id: newConnection.ibkr_trade_confirmation_query_id || "",
+            ibkr_confirmation_interval_minutes: newConnection.ibkr_confirmation_interval_minutes ?? 15,
             autoSyncEnabled: newConnection.autoSyncEnabled,
             syncFrequency: newConnection.syncFrequency,
             syncTime: newConnection.syncTime?.substring(0, 5) || "06:00",
@@ -441,8 +436,8 @@ const brokerStyles = computed(() => {
             return {
                 name: "Charles Schwab",
                 abbrev: "CS",
-                bgClass: "bg-blue-100 dark:bg-blue-900/30",
-                textClass: "text-blue-600 dark:text-blue-400",
+                bgClass: "bg-primary-100 dark:bg-primary-900/30",
+                textClass: "text-primary-700 dark:text-primary-400",
             };
         case "tradovate":
             return {
@@ -450,8 +445,14 @@ const brokerStyles = computed(() => {
                     ? "Tradovate Demo"
                     : "Tradovate",
                 abbrev: "TV",
-                bgClass: "bg-indigo-100 dark:bg-indigo-900/30",
-                textClass: "text-indigo-600 dark:text-indigo-400",
+                bgClass: "bg-primary-100 dark:bg-primary-900/30",
+                textClass: "text-primary-700 dark:text-primary-400",
+            };
+        case "oanda":
+            return {
+                name: props.connection.brokerEnvironment === "practice" ? "OANDA Practice" : "OANDA Live",
+                abbrev: "OA", bgClass: "bg-primary-100 dark:bg-primary-900/30",
+                textClass: "text-primary-700 dark:text-primary-400",
             };
         case "trading212":
             return {
@@ -460,7 +461,7 @@ const brokerStyles = computed(() => {
                     : "Trading 212 Live",
                 abbrev: "T2",
                 bgClass: "bg-primary-100 dark:bg-primary-900/30",
-                textClass: "text-primary-600 dark:text-primary-400",
+                textClass: "text-primary-700 dark:text-primary-400",
             };
         default:
             return {
@@ -507,6 +508,7 @@ function setAccountIncluded(accountIdentifier, included) {
 }
 
 function handleSave() {
+    if (props.connection.brokerType === 'ibkr' && form.value.ibkr_trade_confirmation_query_id.trim() && !validConfirmationInterval(form.value.ibkr_confirmation_interval_minutes)) return;
     const updates = {
         accountLabel: form.value.accountLabel,
         autoSyncEnabled: form.value.autoSyncEnabled,
@@ -514,8 +516,14 @@ function handleSave() {
         syncTime: form.value.syncTime + ":00",
         syncStartDate: form.value.syncStartDate,
     };
+    if (props.connection.brokerType === "ibkr" && (form.value.ibkr_trade_confirmation_query_id.trim() !== (props.connection.ibkr_trade_confirmation_query_id || '') || props.connection.brokerMetadata?.ibkr_confirmation?.suspended)) {
+        updates.ibkr_trade_confirmation_query_id = form.value.ibkr_trade_confirmation_query_id.trim() || null;
+    }
     if (props.connection.brokerType === "schwab") {
         updates.excluded_account_identifiers = form.value.excluded_account_identifiers;
+    }
+    if (props.connection.brokerType === 'ibkr' && form.value.ibkr_trade_confirmation_query_id.trim() && form.value.ibkr_confirmation_interval_minutes !== (props.connection.ibkr_confirmation_interval_minutes ?? 15)) {
+        updates.ibkr_confirmation_interval_minutes = form.value.ibkr_confirmation_interval_minutes;
     }
     emit("save", updates);
 }

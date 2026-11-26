@@ -13,19 +13,17 @@
             v-for="option in rangeOptions"
             :key="option.days"
             @click="setRange(option.days)"
-            class="px-2.5 py-1 text-xs font-medium rounded-md transition-colors"
-            :class="selectedDays === option.days
-              ? 'bg-primary-600 text-white'
-              : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
+            class="segment"
+            :class="selectedDays === option.days ? 'segment-active' : ''"
           >
             {{ option.label }}
           </button>
         </div>
       </div>
 
-      <p v-if="loading && !initialLoading" class="text-xs text-primary-600 mb-2" role="status">Updating...</p>
+      <p v-if="loading && !initialLoading" class="text-xs text-primary-700 mb-2" role="status">Updating...</p>
       <div v-if="initialLoading" class="flex justify-center py-10">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+        <div class="spinner spinner-md"></div>
       </div>
 
       <div v-else-if="filledSeries.length < 2" class="text-center py-8">

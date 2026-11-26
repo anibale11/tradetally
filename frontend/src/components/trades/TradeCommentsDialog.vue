@@ -3,27 +3,27 @@
         <div v-if="isOpen" class="fixed inset-0 z-50 overflow-y-auto">
             <!-- Backdrop -->
             <div
-                class="fixed inset-0 bg-black bg-opacity-25 transition-opacity"
+                class="modal-backdrop"
                 @click="closeDialog"
             ></div>
 
             <!-- Modal -->
             <div class="flex min-h-full items-center justify-center p-4">
-                <div
-                    class="relative w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 p-6 text-left shadow-xl transition-all"
+                <div role="dialog" aria-modal="true"
+                    class="modal-panel p-6 w-full p-6 max-w-2xl"
                     @click.stop
                 >
                     <!-- Title -->
                     <div class="flex items-center justify-between mb-4">
                         <h3
-                            class="text-lg font-medium leading-6 text-gray-900 dark:text-white flex items-center gap-2"
+                            class="modal-title flex items-center gap-2"
                         >
                             <ChatBubbleLeftIcon class="h-5 w-5" />
                             Comments
                         </h3>
                         <button
                             @click="closeDialog"
-                            class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+                            class="btn-ghost btn-sm"
                         >
                             <svg
                                 class="h-6 w-6"
@@ -43,9 +43,9 @@
 
                     <!-- Comments List -->
                     <div class="mt-4 max-h-96 overflow-y-auto">
-                        <div v-if="loading" class="text-center py-4">
+                        <div v-if="initialLoading" class="text-center py-4">
                             <div
-                                class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"
+                                class="spinner spinner-md mx-auto"
                             ></div>
                         </div>
 
@@ -120,7 +120,7 @@
                                                 @click="
                                                     startEditComment(comment)
                                                 "
-                                                class="text-xs text-gray-500 hover:text-primary-600 transition-colors"
+                                                class="btn-link"
                                             >
                                                 Edit
                                             </button>
@@ -128,7 +128,7 @@
                                                 @click="
                                                     deleteComment(comment.id)
                                                 "
-                                                class="text-xs text-red-500 hover:text-red-700 transition-colors"
+                                                class="text-xs text-red-600 dark:text-red-400 hover:text-red-700 transition-colors"
                                             >
                                                 Delete
                                             </button>
@@ -142,7 +142,7 @@
                                         <textarea
                                             v-model="editCommentText"
                                             rows="3"
-                                            class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-600 dark:text-white shadow-sm focus:border-primary-500 focus:ring-primary-500 px-3 py-2"
+                                            class="input w-full"
                                             :disabled="submitting"
                                             @keydown="handleEditKeydown"
                                         ></textarea>
@@ -151,7 +151,7 @@
                                         >
                                             <button
                                                 @click="cancelEdit"
-                                                class="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                                                class="btn-ghost btn-sm"
                                             >
                                                 Cancel
                                             </button>
@@ -163,7 +163,7 @@
                                                     submitting ||
                                                     !editCommentText.trim()
                                                 "
-                                                class="text-xs bg-primary-600 text-white px-3 py-1 rounded hover:bg-primary-700 disabled:opacity-50 transition-colors"
+                                                class="btn-primary btn-sm"
                                             >
                                                 Save
                                             </button>
@@ -193,17 +193,17 @@
                                     id="comment"
                                     v-model="newComment"
                                     rows="3"
-                                    class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-primary-500 focus:ring-primary-500 px-3 py-2"
+                                    class="input w-full"
                                     placeholder="Add a comment..."
                                     required
                                     @keydown="handleCommentKeydown"
                                 ></textarea>
                             </div>
-                            <div class="mt-3 flex justify-end">
+                            <div class="modal-footer">
                                 <button
                                     type="submit"
                                     :disabled="submitting || !newComment.trim()"
-                                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    class="btn-primary"
                                 >
                                     <span v-if="submitting">Posting...</span>
                                     <span v-else>Post Comment</span>
@@ -243,6 +243,7 @@ const authStore = useAuthStore();
 const comments = ref([]);
 const newComment = ref("");
 const loading = ref(false);
+const initialLoading = ref(true);
 const submitting = ref(false);
 const editingCommentId = ref(null);
 const editCommentText = ref("");
@@ -263,7 +264,8 @@ async function loadComments() {
     } catch (error) {
         showError("Error", "Failed to load comments");
     } finally {
-        loading.value = false;
+        loading.value = false
+        initialLoading.value = false;
     }
 }
 

@@ -1,10 +1,10 @@
 <template>
-  <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg">
+  <div class="card text-mono-num">
     <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-      <h3 class="text-lg font-medium text-gray-900 dark:text-white">Trade Summary</h3>
+      <h3 class="heading-card">Trade Summary</h3>
       <router-link
         :to="{ name: 'trade-detail', params: { id: trade.id } }"
-        class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 border border-primary-300 dark:border-primary-600 rounded-md hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+        class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-primary-700 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 border border-primary-300 dark:border-primary-600 rounded-md hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
       >
         <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -18,7 +18,7 @@
       <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
         <!-- Entry Price -->
         <div>
-          <div class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Entry Price</div>
+          <div class="text-label mb-1">Entry Price</div>
           <div class="text-lg font-semibold text-gray-900 dark:text-white">
             {{ formatCurrency(trade.entry_price) }}
           </div>
@@ -26,17 +26,17 @@
 
         <!-- Exit Price -->
         <div>
-          <div class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Exit Price</div>
-          <div class="text-lg font-semibold" :class="pnlClass">
+          <div class="text-label mb-1">Exit Price</div>
+          <div class="text-lg font-semibold" :class="trade_pnl_class">
             {{ formatCurrency(trade.exit_price) }}
           </div>
         </div>
 
         <!-- Stop Loss (Editable) -->
         <div>
-          <div class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+          <div class="text-label mb-1">
             Stop Loss
-            <button v-if="!editingStopLoss" type="button" @click="startEditingStopLoss" class="ml-1 text-primary-500 hover:text-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 rounded" aria-label="Edit stop loss">(edit)</button>
+            <button v-if="!editingStopLoss" type="button" @click="startEditingStopLoss" class="ml-1 text-primary-700 hover:text-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-500 rounded dark:text-primary-400" aria-label="Edit stop loss">(edit)</button>
           </div>
           <div v-if="editingStopLoss" class="space-y-2">
             <div class="relative">
@@ -46,13 +46,13 @@
                 v-model="editStopLoss"
                 type="number"
                 step="0.01"
-                class="w-full pl-6 pr-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                class="input input-sm w-full pl-6 pr-2"
                 @keyup.enter="saveStopLoss"
                 @keyup.escape="cancelEditingStopLoss"
               />
             </div>
             <div class="flex items-center gap-2">
-              <button @click="saveStopLoss" :disabled="saving" class="text-xs px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded flex items-center gap-1">
+              <button @click="saveStopLoss" :disabled="saving" class="btn-primary btn-sm gap-1">
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                 </svg>
@@ -77,9 +77,9 @@
         <div class="space-y-3">
           <!-- TP1 (from take_profit field only when NO take_profit_targets exist - neither in DB nor locally) -->
           <div v-if="!hasMultipleTpTargets && editableTakeProfitTargets.length === 0">
-            <div class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+            <div class="text-label mb-1">
               Take Profit (TP1)
-              <button v-if="!editingTakeProfit" type="button" @click="startEditingTakeProfit" class="ml-1 text-primary-500 hover:text-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 rounded" aria-label="Edit take profit">(edit)</button>
+              <button v-if="!editingTakeProfit" type="button" @click="startEditingTakeProfit" class="ml-1 text-primary-700 hover:text-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-500 rounded dark:text-primary-400" aria-label="Edit take profit">(edit)</button>
             </div>
             <div v-if="editingTakeProfit" class="space-y-2">
               <div class="flex items-center gap-2">
@@ -90,7 +90,7 @@
                     v-model="editTakeProfit"
                     type="number"
                     step="0.01"
-                    class="w-full pl-6 pr-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                    class="input input-sm w-full pl-6 pr-2"
                     placeholder="Price"
                     @keyup.enter="saveTakeProfit"
                     @keyup.escape="cancelEditingTakeProfit"
@@ -101,7 +101,7 @@
                   type="number"
                   step="1"
                   min="1"
-                  class="w-14 px-1 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                  class="input input-sm w-14"
                   placeholder="Qty"
                   title="Number of shares"
                   @keyup.enter="saveTakeProfit"
@@ -109,7 +109,7 @@
                 />
               </div>
               <div class="flex items-center gap-2">
-                <button @click="saveTakeProfit" :disabled="saving" class="text-xs px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded flex items-center gap-1">
+                <button @click="saveTakeProfit" :disabled="saving" class="btn-primary btn-sm gap-1">
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                   </svg>
@@ -122,9 +122,9 @@
             </div>
             <div v-else>
               <div v-if="trade.take_profit">
-                <div class="text-lg font-semibold text-primary-600 dark:text-primary-400">
+                <div class="text-lg font-semibold text-primary-700 dark:text-primary-400">
                   {{ formatCurrency(trade.take_profit) }}
-                  <span v-if="tp1R" class="text-sm font-medium ml-1">({{ tp1R }}R)</span>
+                  <span v-if="tp1R" class="text-sm font-medium ml-1">({{ formatR(Number(tp1R)) }})</span>
                 </div>
                 <div class="text-xs text-gray-500 dark:text-gray-400">
                   <span v-if="tp1Qty">{{ tp1Qty }} shares · </span>
@@ -140,17 +140,17 @@
           <!-- All TP Targets (TP1, TP2, etc. from take_profit_targets array) -->
           <div v-for="(target, index) in editableTakeProfitTargets" :key="index">
             <div class="flex items-center gap-1 mb-1">
-              <span class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">TP{{ index + 1 }}</span>
+              <span class="text-label">TP{{ index + 1 }}</span>
               <!-- Show calculated R for this target (moved to header line) -->
-              <span v-if="target.price && calculateTargetR(target.price)" class="text-xs text-primary-600 dark:text-primary-400 font-medium">
-                ({{ calculateTargetR(target.price) }}R)
+              <span v-if="target.price && calculateTargetR(target.price)" class="text-xs text-primary-700 dark:text-primary-400 font-medium">
+                ({{ formatR(Number(calculateTargetR(target.price))) }})
               </span>
               <span v-if="target.status === 'hit'" :class="`${getTargetStatusClass('hit')} ml-2`">
                 Hit
               </span>
               <button
                 @click="removeTakeProfitTarget(index)"
-                class="p-0.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 ml-auto"
+                class="btn-icon ml-auto hover:!text-red-600 dark:hover:!text-red-400"
                 title="Remove target"
               >
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -165,7 +165,7 @@
                   v-model.number="target.price"
                   type="number"
                   step="0.01"
-                  class="w-full pl-5 pr-2 py-0.5 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                  class="input input-sm w-full pl-5 pr-2"
                   placeholder="Price"
                   @focus="isEditingTargets = true"
                   @blur="handleTargetBlur"
@@ -177,7 +177,7 @@
                 type="number"
                 step="1"
                 min="1"
-                class="w-14 px-1 py-0.5 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                class="input input-sm w-14"
                 placeholder="Qty"
                 title="Number of shares"
                 @focus="isEditingTargets = true"
@@ -190,7 +190,7 @@
           <!-- Add Target Button -->
           <button
             @click="addTakeProfitTarget"
-            class="text-xs text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 flex items-center gap-1"
+            class="text-xs text-primary-700 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 flex items-center gap-1"
           >
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -201,7 +201,7 @@
       </div>
 
       <!-- Error Message -->
-      <div v-if="error" class="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-sm text-red-700 dark:text-red-300">
+      <div v-if="error" class="callout-danger mt-4">
         {{ error }}
       </div>
 
@@ -210,7 +210,7 @@
       <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
         <!-- Risk Amount -->
         <div>
-          <div class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Risk Amount</div>
+          <div class="text-label mb-1">Risk Amount</div>
           <div class="text-lg font-semibold text-gray-900 dark:text-white">
             {{ formatCurrency(analysis.risk_amount) }}
           </div>
@@ -221,19 +221,19 @@
 
         <!-- Actual P&L -->
         <div>
-          <div class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Actual P&L</div>
-          <div class="text-lg font-semibold" :class="pnlClass">
+          <div class="text-label mb-1">Actual P&L</div>
+          <div class="text-lg font-semibold" :class="trade_pnl_class">
             {{ formatCurrency(analysis.actual_pl_amount) }}
           </div>
-          <div class="text-xs" :class="pnlClass">
+          <div class="text-xs" :class="trade_pnl_class">
             {{ formatPercent(trade.pnl_percent) }}
           </div>
         </div>
 
         <!-- Target P&L -->
         <div v-if="potentialPL !== null">
-          <div class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Target P&L</div>
-          <div class="text-lg font-semibold text-primary-600 dark:text-primary-400">
+          <div class="text-label mb-1">Target P&L</div>
+          <div class="text-lg font-semibold text-primary-700 dark:text-primary-400">
             {{ formatCurrency(potentialPL) }}
           </div>
           <div class="text-xs text-gray-500 dark:text-gray-400">
@@ -241,7 +241,7 @@
           </div>
         </div>
         <div v-else>
-          <div class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Target P&L</div>
+          <div class="text-label mb-1">Target P&L</div>
           <div class="text-lg text-gray-400 dark:text-gray-500">
             N/A
           </div>
@@ -249,7 +249,7 @@
 
         <!-- Risk:Reward -->
         <div>
-          <div class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Risk:Reward</div>
+          <div class="text-label mb-1">Risk:Reward</div>
           <div class="text-lg font-semibold text-gray-900 dark:text-white">
             {{ riskRewardActual }}
           </div>
@@ -264,21 +264,21 @@
 
       <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
         <div>
-          <div class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Symbol</div>
+          <div class="text-label mb-1">Symbol</div>
           <div class="text-lg font-semibold text-gray-900 dark:text-white">{{ trade.symbol }}</div>
         </div>
         <div>
-          <div class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Side</div>
-          <div class="text-lg font-semibold capitalize" :class="trade.side === 'long' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+          <div class="text-label mb-1">Side</div>
+          <div class="text-lg font-semibold capitalize" :class="trade.side === 'long' ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
             {{ trade.side }}
           </div>
         </div>
         <div>
-          <div class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Quantity</div>
-          <div class="text-lg font-semibold text-gray-900 dark:text-white">{{ trade.quantity }}</div>
+          <div class="text-label mb-1">Quantity</div>
+          <div class="text-lg font-semibold text-gray-900 dark:text-white">{{ formatQuantity(trade.quantity) }}</div>
         </div>
         <div>
-          <div class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Trade Date & Time</div>
+          <div class="text-label mb-1">Trade Date & Time</div>
           <div class="text-lg font-semibold text-gray-900 dark:text-white">{{ formatDateWithTime(trade) }}</div>
         </div>
       </div>
@@ -296,9 +296,9 @@
       <div v-show="analysis?.management_r !== null && analysis?.management_r !== undefined" class="border-t border-gray-200 dark:border-gray-700 mt-6 pt-6">
         <div class="flex items-center justify-between p-4 rounded-lg" :class="getManagementRBgClass">
           <div>
-            <div class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Trade Management Impact</div>
+            <div class="text-label mb-1">Trade Management Impact</div>
             <div class="text-lg font-semibold" :class="getManagementRTextClass">
-              {{ analysis?.management_r >= 0 ? '+' : '' }}{{ analysis?.management_r }}R
+              {{ analysis?.management_r > 0 ? '+' : '' }}{{ analysis?.management_r }}R
             </div>
           </div>
           <div class="text-sm text-gray-600 dark:text-gray-400 text-right max-w-xs">
@@ -320,8 +320,10 @@
 
 <script setup>
 import { ref, computed, nextTick, watch } from 'vue'
+import { pnlClass } from '@/utils/metricTone'
 import { formatTradeDate } from '@/utils/date'
-import { formatPercent as formatPercentBase } from '@/utils/formatters'
+import { formatDecimal, formatPercent as formatPercentBase, formatQuantity } from '@/utils/formatters'
+import { formatR } from '@/utils/rFormat'
 import api from '@/services/api'
 import { useUserTimezone } from '@/composables/useUserTimezone'
 import { useCurrencyFormatter } from '@/composables/useCurrencyFormatter'
@@ -375,11 +377,11 @@ const hasMultipleTpTargets = computed(() => {
 function getTargetStatusClass(status) {
   switch (status) {
     case 'hit':
-      return 'px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+      return 'badge bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
     case 'cancelled':
-      return 'px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+      return 'badge bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
     default:
-      return 'px-2 py-0.5 text-xs font-medium rounded-full bg-primary-100 text-primary-800 dark:bg-primary-900/30 dark:text-primary-400'
+      return 'badge bg-primary-100 text-primary-800 dark:bg-primary-900/30 dark:text-primary-400'
   }
 }
 
@@ -387,14 +389,14 @@ function getTargetStatusClass(status) {
 const getManagementRBgClass = computed(() => {
   const r = props.analysis?.management_r
   if (r > 0) return 'bg-green-50 dark:bg-green-900/20'
-  if (r < 0) return 'bg-amber-50 dark:bg-amber-900/20'
+  if (r < 0) return 'bg-yellow-50 dark:bg-yellow-900/20'
   return 'bg-gray-50 dark:bg-gray-700/50'
 })
 
 const getManagementRTextClass = computed(() => {
   const r = props.analysis?.management_r
-  if (r > 0) return 'text-green-600 dark:text-green-400'
-  if (r < 0) return 'text-amber-600 dark:text-amber-400'
+  if (r > 0) return 'text-green-700 dark:text-green-400'
+  if (r < 0) return 'text-yellow-600 dark:text-yellow-400'
   return 'text-gray-600 dark:text-gray-400'
 })
 
@@ -631,11 +633,9 @@ async function saveTakeProfitTargets() {
 const stopLossInput = ref(null)
 const takeProfitInput = ref(null)
 
-const pnlClass = computed(() => {
+const trade_pnl_class = computed(() => {
   const pnl = parseFloat(props.trade.pnl)
-  return pnl >= 0
-    ? 'text-green-600 dark:text-green-400'
-    : 'text-red-600 dark:text-red-400'
+  return pnlClass(pnl)
 })
 
 const stopLossPercent = computed(() => {
@@ -693,7 +693,7 @@ const tp1Qty = computed(() => {
 const riskRewardActual = computed(() => {
   const actualR = props.analysis.actual_r
   if (actualR === null || actualR === undefined) return 'N/A'
-  return `1:${actualR.toFixed(2)}`
+  return `1:${formatDecimal(actualR)}`
 })
 
 // Calculate weighted average R for planned risk:reward
@@ -746,7 +746,7 @@ const riskRewardPlanned = computed(() => {
   // Use backend-calculated values to match the Target R card exactly
   const targetR = props.analysis.weighted_target_r ?? props.analysis.target_r
   if (targetR === null || targetR === undefined) return null
-  return `1:${targetR.toFixed(2)}`
+  return `1:${formatDecimal(targetR)}`
 })
 
 // Stop Loss editing

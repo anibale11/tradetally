@@ -14,56 +14,49 @@
           <!-- View Toggle -->
           <div class="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0">
             <div class="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1 min-w-max">
-              <button
+              <button class="btn-link"
                 @click="currentView = 'list'"
-                :class="[
-                  'px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap flex items-center',
-                  currentView === 'list'
-                    ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                ]"
+                :class="[ 'px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap flex items-center', currentView === 'list' ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300' ]"
               >
                 <ListBulletIcon class="w-4 h-4 mr-1" />
                 List
               </button>
-              <button
+              <button class="btn-link"
                 @click="currentView = 'calendar'"
-                :class="[
-                  'px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap flex items-center',
-                  currentView === 'calendar'
-                    ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                ]"
+                :class="[ 'px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap flex items-center', currentView === 'calendar' ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300' ]"
               >
                 <CalendarDaysIcon class="w-4 h-4 mr-1" />
                 Calendar
               </button>
-              <button
+              <button class="btn-link"
                 @click="currentView = 'templates'"
-                :class="[
-                  'px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap flex items-center',
-                  currentView === 'templates'
-                    ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                ]"
+                :class="[ 'px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap flex items-center', currentView === 'templates' ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300' ]"
               >
                 <DocumentTextIcon class="w-4 h-4 mr-1" />
                 Templates
               </button>
-              <button
+              <button class="btn-link"
                 @click="currentView = 'analysis'"
-                :class="[
-                  'px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap flex items-center',
-                  currentView === 'analysis'
-                    ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                ]"
+                :class="[ 'px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap flex items-center', currentView === 'analysis' ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300' ]"
               >
                 <SparklesIcon class="w-4 h-4 mr-1" />
                 AI Analysis
+                <span
+                  v-if="showProLock"
+                  class="badge ml-1.5 bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
+                >Pro</span>
               </button>
             </div>
           </div>
+
+          <!-- Quick Session Wrap-Up Button -->
+          <button
+            type="button"
+            class="btn-secondary flex-shrink-0"
+            @click="showSessionWrapUp = true"
+          >
+            Wrap up today
+          </button>
 
           <!-- Create Entry Button -->
           <router-link
@@ -90,7 +83,7 @@
     />
 
     <!-- Filters -->
-    <div class="mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+    <div class="card mb-6 p-4">
       <div class="flex flex-col sm:flex-row gap-4">
         <!-- Entry Type Filter -->
         <div>
@@ -143,7 +136,7 @@
             v-model="filters.startDate"
             @input="selected_date_preset = 'custom'"
             @change="selected_date_preset = 'custom'; applyFilters()"
-            class="input text-sm"
+            class="input input-sm"
           />
         </div>
 
@@ -156,7 +149,7 @@
             v-model="filters.endDate"
             @input="selected_date_preset = 'custom'"
             @change="selected_date_preset = 'custom'; applyFilters()"
-            class="input text-sm"
+            class="input input-sm"
           />
         </div>
 
@@ -173,14 +166,14 @@
               @focus="showTagSuggestions = searchQuery.includes('#')"
               @blur="hideTagSuggestions"
               placeholder="Search entries or #tag..."
-              class="input text-sm pl-10"
+              class="input input-sm pl-10"
             />
             <MagnifyingGlassIcon class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
 
             <!-- Tag Suggestions Dropdown -->
             <div
               v-if="showTagSuggestions && filteredTags.length > 0"
-              class="absolute z-50 top-full mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto"
+              class="dropdown-menu absolute z-50 top-full mt-1 w-full max-h-48 overflow-y-auto"
             >
               <button
                 v-for="tag in filteredTags"
@@ -198,7 +191,7 @@
         <div class="flex items-end">
           <button
             @click="clearFilters"
-            class="btn-secondary text-sm"
+            class="btn-secondary"
           >
             Clear
           </button>
@@ -212,19 +205,19 @@
            content, so scroll position is preserved (see CLAUDE.md pattern) -->
       <div v-if="loading && !initialLoading" class="absolute top-0 right-0 z-10">
         <div class="flex items-center space-x-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm border border-gray-200 dark:border-gray-700">
-          <div class="animate-spin rounded-full h-4 w-4 border-2 border-primary-600 border-t-transparent"></div>
+          <div class="spinner spinner-xs"></div>
           <span class="text-xs text-gray-600 dark:text-gray-400">Updating...</span>
         </div>
       </div>
 
       <!-- Loading State (initial load only) -->
       <div v-if="initialLoading" class="flex justify-center py-12">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <div class="spinner spinner-lg"></div>
       </div>
 
       <!-- Error State -->
       <div v-else-if="error" class="text-center py-12">
-        <ExclamationTriangleIcon class="w-12 h-12 text-red-400 mx-auto mb-4" />
+        <ExclamationTriangleIcon class="w-12 h-12 text-red-600 dark:text-red-400 mx-auto mb-4" />
         <p class="text-red-600 dark:text-red-400">{{ error }}</p>
         <button @click="loadEntries" class="btn-primary mt-4">Try Again</button>
       </div>
@@ -258,12 +251,7 @@
                 </span>
                 
                 <span
-                  :class="[
-                    'px-2 py-1 text-xs font-medium rounded-full',
-                    entry.entry_type === 'diary'
-                      ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400'
-                      : 'bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-400'
-                  ]"
+                  :class="[ 'px-2 py-1 text-xs font-medium rounded-full', entry.entry_type === 'diary' ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-800 dark:text-primary-400' : 'bg-primary-100 dark:bg-primary-900/20 text-primary-800 dark:text-primary-400' ]"
                 >
                   {{ entry.entry_type === 'diary' ? 'Diary' : 'Playbook' }}
                 </span>
@@ -271,7 +259,7 @@
                 <span
                   v-if="entry.market_bias"
                   :class="marketBiasClasses(entry.market_bias)"
-                  class="px-2 py-1 text-xs font-medium rounded-full"
+                  class="badge"
                 >
                   {{ entry.market_bias.charAt(0).toUpperCase() + entry.market_bias.slice(1) }}
                 </span>
@@ -279,7 +267,7 @@
               
               <h3
                 v-if="entry.title"
-                class="text-lg font-medium text-gray-900 dark:text-white mb-2"
+                class="heading-card mb-2"
               >
                 {{ entry.title }}
               </h3>
@@ -311,21 +299,33 @@
             <div
               v-for="(contentPart, idx) in splitContent(entry.content)"
               :key="idx"
-              :class="[
-                'text-sm text-gray-700 dark:text-gray-300 prose prose-sm max-w-none dark:prose-invert',
-                splitContent(entry.content).length > 1 ? 'bg-gray-50 dark:bg-gray-700/30 p-4 rounded-lg mb-3 last:mb-0' : ''
-              ]"
-              v-html="truncateHtml(parseMarkdown(contentPart), 300)"
+              :class="[ 'text-sm text-gray-700 dark:text-gray-300 prose prose-sm max-w-none dark:prose-invert', splitContent(entry.content).length > 1 ? 'bg-gray-50 dark:bg-gray-700/30 p-4 rounded-lg mb-3 last:mb-0' : '' ]"
+              v-html="previewHtml(contentPart, CONTENT_PREVIEW_LENGTH, entry)"
             ></div>
           </div>
 
           <div v-if="entry.key_levels && entry.key_levels.length > 0" class="mb-3">
             <span class="text-xs font-medium text-yellow-600 dark:text-yellow-400">Key Levels:</span>
-            <div class="text-sm text-gray-600 dark:text-gray-400 mt-1" v-html="truncateHtml(parseMarkdown(entry.key_levels), 150)"></div>
+            <div class="text-sm text-gray-600 dark:text-gray-400 mt-1" v-html="previewHtml(entry.key_levels, SIDE_PREVIEW_LENGTH, entry)"></div>
           </div>
+
+          <div v-if="entry.lessons_learned && entry.lessons_learned.trim()" class="mb-3">
+            <span class="text-xs font-medium text-green-700 dark:text-green-400">Lessons Learned:</span>
+            <div class="text-sm text-gray-700 dark:text-gray-300 mt-1" v-html="previewHtml(entry.lessons_learned, SIDE_PREVIEW_LENGTH, entry)"></div>
+          </div>
+
+          <button
+            v-if="entryIsTruncatable(entry)"
+            type="button"
+            class="text-sm text-primary-700 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 mb-3"
+            :aria-expanded="isEntryExpanded(entry)"
+            @click="toggleEntryExpanded(entry)"
+          >
+            {{ isEntryExpanded(entry) ? 'Show less' : 'Show more' }}
+          </button>
           
           <div v-if="entry.watchlist && entry.watchlist.length > 0" class="mb-3">
-            <span class="text-xs font-medium text-blue-600 dark:text-blue-400 mr-2">Watchlist:</span>
+            <span class="text-xs font-medium text-primary-700 dark:text-primary-400 mr-2">Watchlist:</span>
             <div class="inline-flex flex-wrap gap-1">
               <WatchlistSymbol
                 v-for="(symbol, index) in entry.watchlist.slice(0, 5)"
@@ -344,7 +344,7 @@
           </div>
 
           <div v-if="entry.linked_trades && entry.linked_trades.length > 0" class="mb-3">
-            <span class="text-xs font-medium text-purple-600 dark:text-purple-400 mr-2">Linked Trades:</span>
+            <span class="text-xs font-medium text-primary-700 dark:text-primary-400 mr-2">Linked Trades:</span>
             <LinkedTradesList :trade-ids="entry.linked_trades" />
           </div>
 
@@ -352,7 +352,7 @@
             <span
               v-for="tag in entry.tags.slice(0, 3)"
               :key="tag"
-              class="inline-flex items-center px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs"
+              class="badge-neutral"
             >
               #{{ tag }}
             </span>
@@ -390,7 +390,7 @@
         <!-- No Entries State -->
         <div v-if="!loading && entries.length === 0" class="text-center py-12">
           <BookOpenIcon class="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">No journal entries found</h3>
+          <h3 class="heading-card mb-2">No journal entries found</h3>
           <p class="text-gray-500 dark:text-gray-400 mb-6">
             {{ hasActiveFilters ? 'Try adjusting your filters or' : '' }}
             Start documenting your trading journey with your first entry.
@@ -403,7 +403,7 @@
         </div>
 
         <!-- Calendar View -->
-        <div v-else-if="currentView === 'calendar'" class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div v-else-if="currentView === 'calendar'" class="card card-body">
         <!-- Calendar Header -->
         <div class="flex justify-between items-center mb-6">
           <h2 class="heading-section">
@@ -412,19 +412,19 @@
           <div class="flex items-center space-x-2">
             <button
               @click="changeMonth(-1)"
-              class="p-2 rounded-md text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+              class="btn-icon p-2"
             >
               <ChevronLeftIcon class="w-5 h-5" />
             </button>
             <button
               @click="goToToday"
-              class="px-3 py-1 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
+              class="btn-secondary btn-sm"
             >
               Today
             </button>
             <button
               @click="changeMonth(1)"
-              class="p-2 rounded-md text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+              class="btn-icon p-2"
             >
               <ChevronRightIcon class="w-5 h-5" />
             </button>
@@ -447,21 +447,13 @@
             v-for="day in calendarDays"
             :key="`${day.date.getMonth()}-${day.date.getDate()}`"
             class="relative min-h-[100px] p-2 border border-gray-200 dark:border-gray-600"
-            :class="{
-              'bg-gray-50 dark:bg-gray-700': !day.isCurrentMonth,
-              'bg-blue-50 dark:bg-blue-900': day.isToday,
-              'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700': day.isCurrentMonth
-            }"
+            :class="{ 'bg-gray-50 dark:bg-gray-700': !day.isCurrentMonth, 'bg-primary-50 dark:bg-primary-900': day.isToday, 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700': day.isCurrentMonth }"
             @click="selectDate(day.date)"
           >
             <!-- Day Number -->
             <div
               class="text-sm font-medium mb-1"
-              :class="{
-                'text-gray-400': !day.isCurrentMonth,
-                'text-blue-600 dark:text-blue-400': day.isToday,
-                'text-gray-900 dark:text-white': day.isCurrentMonth && !day.isToday
-              }"
+              :class="{ 'text-gray-400': !day.isCurrentMonth, 'text-primary-700 dark:text-primary-400': day.isToday, 'text-gray-900 dark:text-white': day.isCurrentMonth && !day.isToday }"
             >
               {{ day.date.getDate() }}
             </div>
@@ -496,13 +488,13 @@
         <!-- Empty State for Calendar -->
         <div v-if="entries.length === 0" class="text-center py-12">
           <BookOpenIcon class="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">No Diary Entries</h3>
+          <h3 class="heading-card mb-2">No Diary Entries</h3>
           <p class="text-gray-500 dark:text-gray-400 mb-4">
             Create your first entry to see it on the calendar.
           </p>
           <router-link
             to="/diary/new"
-            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700"
+            class="btn-primary"
           >
             <PlusIcon class="w-4 h-4 mr-2" />
             Create Your First Entry
@@ -517,7 +509,12 @@
 
         <!-- AI Analysis View -->
         <div v-else-if="currentView === 'analysis'">
-          <DiaryAnalysis />
+          <DiaryAnalysis v-if="isProUser" />
+          <ProUpgradePrompt
+            v-else-if="showProLock"
+            variant="card"
+            description="Let AI analyze your journal entries to surface recurring patterns, emotional triggers, and areas to improve."
+          />
         </div>
       </div>
     </div>
@@ -528,7 +525,7 @@
         <button
           @click="changePage(pagination.page - 1)"
           :disabled="pagination.page <= 1"
-          class="px-3 py-2 text-sm font-medium text-gray-500 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          class="btn-secondary"
         >
           Previous
         </button>
@@ -540,7 +537,7 @@
         <button
           @click="changePage(pagination.page + 1)"
           :disabled="pagination.page >= pagination.pages"
-          class="px-3 py-2 text-sm font-medium text-gray-500 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          class="btn-secondary"
         >
           Next
         </button>
@@ -550,18 +547,18 @@
     <!-- Delete Confirmation Modal -->
     <div
       v-if="showDeleteModal"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      class="modal-overlay flex items-center justify-center"
       @click="showDeleteModal = false"
     >
-      <div
-        class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full mx-4"
+      <div role="dialog" aria-modal="true"
+        class="modal-panel p-6 max-w-md w-full mx-4"
         @click.stop
       >
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Delete Entry</h3>
+        <h3 class="modal-title mb-4">Delete Entry</h3>
         <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">
           Are you sure you want to delete this journal entry? This action cannot be undone.
         </p>
-        <div class="flex justify-end space-x-3">
+        <div class="modal-footer">
           <button
             @click="showDeleteModal = false"
             class="btn-secondary"
@@ -582,7 +579,7 @@
     <!-- Image Preview Modal -->
     <div
       v-if="previewImage"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75"
+      class="modal-overlay flex items-center justify-center"
       @click="previewImage = null"
     >
       <div class="relative max-w-4xl max-h-[90vh] p-4">
@@ -602,6 +599,8 @@
         />
       </div>
     </div>
+
+    <SessionWrapUpModal v-model="showSessionWrapUp" @saved="loadEntries" />
   </div>
 </template>
 
@@ -617,8 +616,11 @@ import { formatTradeDate } from '@/utils/date'
 import { debounce } from '@/utils/debounce'
 import { parseMarkdown, truncateHtml as truncateHtmlUtil } from '@/utils/markdown'
 import DiaryAnalysis from '@/components/diary/DiaryAnalysis.vue'
+import ProUpgradePrompt from '@/components/ProUpgradePrompt.vue'
+import { useProAccess } from '@/composables/useProAccess'
 import GeneralNotes from '@/components/diary/GeneralNotes.vue'
 import TemplateManager from '@/components/diary/TemplateManager.vue'
+import SessionWrapUpModal from '@/components/diary/SessionWrapUpModal.vue'
 import LinkedTradesList from '@/components/diary/LinkedTradesList.vue'
 import WatchlistSymbol from '@/components/diary/WatchlistSymbol.vue'
 import OnboardingCard from '@/components/onboarding/OnboardingCard.vue'
@@ -639,6 +641,7 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const authStore = useAuthStore()
+const { isProUser, showProLock } = useProAccess()
 const diaryStore = useDiaryStore()
 const uiPreferencesStore = useUiPreferencesStore()
 const router = useRouter()
@@ -646,6 +649,7 @@ const router = useRouter()
 // Component state - load saved view from localStorage
 const savedView = localStorage.getItem('diaryView')
 const currentView = ref(savedView || 'list')
+const showSessionWrapUp = ref(false)
 const savedSearchQuery = localStorage.getItem('diarySearchQuery')
 const searchQuery = ref(savedSearchQuery || '')
 const showDeleteModal = ref(false)
@@ -771,6 +775,37 @@ const marketBiasClasses = (bias) => {
 
 const truncateHtml = (html, maxLength) => {
   return truncateHtmlUtil(html, maxLength)
+}
+
+// Entry previews are shortened on the list; "Show more" renders the full notes.
+const CONTENT_PREVIEW_LENGTH = 300
+const SIDE_PREVIEW_LENGTH = 150
+const expandedEntryIds = ref({})
+
+const isEntryExpanded = (entry) => !!expandedEntryIds.value[entry.id]
+
+const toggleEntryExpanded = (entry) => {
+  expandedEntryIds.value = {
+    ...expandedEntryIds.value,
+    [entry.id]: !expandedEntryIds.value[entry.id]
+  }
+}
+
+const previewHtml = (markdown, maxLength, entry) => {
+  const html = parseMarkdown(markdown)
+  return isEntryExpanded(entry) ? html : truncateHtml(html, maxLength)
+}
+
+const isTruncated = (markdown, maxLength) => {
+  if (!markdown) return false
+  const html = parseMarkdown(markdown)
+  return truncateHtml(html, maxLength) !== html
+}
+
+const entryIsTruncatable = (entry) => {
+  return splitContent(entry.content).some(part => isTruncated(part, CONTENT_PREVIEW_LENGTH)) ||
+    isTruncated(entry.key_levels, SIDE_PREVIEW_LENGTH) ||
+    isTruncated(entry.lessons_learned, SIDE_PREVIEW_LENGTH)
 }
 
 const selected_date_preset = ref(localStorage.getItem('diaryDatePreset') || 'custom')
@@ -901,7 +936,7 @@ const getEntryDisplayClass = (entry) => {
   } else if (entry.market_bias === 'neutral') {
     return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
   } else {
-    return 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
+    return 'bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200'
   }
 }
 
@@ -1065,7 +1100,4 @@ watch(currentView, (newView) => {
   margin-bottom: 0.25rem;
 }
 
-.btn-danger {
-  @apply bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
-}
 </style>

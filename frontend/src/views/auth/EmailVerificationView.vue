@@ -3,7 +3,7 @@
     <div class="sm:mx-auto sm:w-full sm:max-w-md">
       <div class="flex items-center justify-center gap-2 sm:gap-3">
         <img src="/favicon.svg?v=2" alt="TradeTally Logo" class="h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0" />
-        <span class="text-xl sm:text-2xl md:text-3xl font-bold text-primary-600 dark:text-primary-400 whitespace-nowrap" style="font-family: 'Bebas Neue', Arial, sans-serif; letter-spacing: 0.05em;">DOMINATE WITH DATA</span>
+        <span class="brand-tagline">DOMINATE WITH DATA</span>
       </div>
       <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
         Email Verification
@@ -11,19 +11,19 @@
     </div>
 
     <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-      <div class="bg-white dark:bg-gray-800 py-8 px-4 shadow sm:rounded-lg sm:px-10">
+      <div class="card py-8 px-4 sm:px-10">
         <!-- Loading State -->
-        <div v-if="loading" class="text-center">
-          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+        <div v-if="initialLoading" class="text-center">
+          <div class="spinner spinner-lg mx-auto"></div>
           <p class="mt-4 text-sm text-gray-600 dark:text-gray-400">Verifying your email...</p>
         </div>
 
         <!-- Success State -->
         <div v-else-if="verified" class="text-center">
           <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 dark:bg-green-900/20">
-            <CheckIcon class="h-6 w-6 text-green-600 dark:text-green-400" />
+            <CheckIcon class="h-6 w-6 text-green-700 dark:text-green-400" />
           </div>
-          <h3 class="mt-4 text-lg font-medium text-gray-900 dark:text-white">
+          <h3 class="heading-card mt-4">
             Email Verified!
           </h3>
           <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
@@ -41,7 +41,7 @@
           <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/20">
             <XMarkIcon class="h-6 w-6 text-red-600 dark:text-red-400" />
           </div>
-          <h3 class="mt-4 text-lg font-medium text-gray-900 dark:text-white">Verification Failed</h3>
+          <h3 class="heading-card mt-4">Verification Failed</h3>
           <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
             {{ error }}
           </p>
@@ -108,6 +108,7 @@ const { showSuccess, showError } = useNotification()
 const authStore = useAuthStore()
 
 const loading = ref(true)
+const initialLoading = ref(true)
 const verified = ref(false)
 const error = ref(null)
 const showResendForm = ref(false)
@@ -129,6 +130,7 @@ async function verifyEmail() {
   if (!token) {
     error.value = 'Invalid verification link'
     loading.value = false
+    initialLoading.value = false
     return
   }
 
@@ -150,6 +152,7 @@ async function verifyEmail() {
     error.value = err.response?.data?.error || 'Verification failed'
   } finally {
     loading.value = false
+    initialLoading.value = false
   }
 }
 

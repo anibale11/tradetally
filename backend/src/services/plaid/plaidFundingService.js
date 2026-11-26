@@ -5,8 +5,11 @@ const PlaidBalanceSnapshot = require('../../models/PlaidBalanceSnapshot');
 const PlaidConnection = require('../../models/PlaidConnection');
 const PlaidSecurity = require('../../models/PlaidSecurity');
 const plaidClient = require('./plaidClient');
+const TierService = require('../tierService');
 const plaidClassificationService = require('./plaidClassificationService');
 const plaidHoldingsSyncService = require('./plaidHoldingsSyncService');
+const plaidLiabilitiesSyncService = require('./plaidLiabilitiesSyncService');
+const cashflowClassificationService = require('../cashflowClassificationService');
 const { derivePlaidAccountIdentifier } = require('./plaidAccountIdentifier');
 
 function formatDate(value) {
@@ -56,6 +59,16 @@ function emptyReviewData() {
     }
   };
 }
+
+const MAX_SYNC_RESTARTS = 3;
+
+// Plaid responses that mean the Item is already gone on their side, so the
+// local row can be deleted without a successful /item/remove.
+const ITEM_ALREADY_GONE_CODES = new Set([
+  'ITEM_NOT_FOUND',
+  'INVALID_ACCESS_TOKEN',
+  'ITEM_NO_ERROR'
+]);
 
 class PlaidFundingService {
   ensureConfigured() {
@@ -183,8 +196,32 @@ class PlaidFundingService {
     });
   }
 
+  /**
+   * Disconnect a Plaid connection. The Item is removed at Plaid first so it
+   * stops accruing per-Item product fees; only then is the local row deleted.
+   * If Plaid reports the Item is already gone the local delete proceeds. Any
+   * other Plaid failure aborts so the user can retry instead of leaving an
+   * orphaned, still-billed Item behind.
+   */
   async deleteConnection(userId, connectionId) {
     await this.ensureSchemaReady();
+    const connection = await PlaidConnection.findById(connectionId, userId, true);
+    if (!connection) {
+      throw new Error('Plaid connection not found');
+    }
+
+    if (connection.accessToken && plaidClient.isConfigured()) {
+      try {
+        await plaidClient.removeItem(connection.accessToken);
+      } catch (error) {
+        if (!ITEM_ALREADY_GONE_CODES.has(error.plaid?.errorCode)) {
+          error.message = `Plaid could not remove this connection (${error.message}). Nothing was deleted; try again in a moment.`;
+          throw error;
+        }
+        console.log(`[PLAID] Item for connection ${connectionId} already removed at Plaid (${error.plaid.errorCode})`);
+      }
+    }
+
     const deleted = await PlaidConnection.delete(connectionId, userId);
     if (!deleted) {
       throw new Error('Plaid connection not found');
@@ -309,6 +346,22 @@ class PlaidFundingService {
       throw new Error('Plaid connection not found');
     }
 
+    // Plaid sync is Pro-only, like broker sync (same grace period). This is
+    // the funnel for scheduled, webhook-triggered and manual syncs. A gated
+    // user is skipped cleanly: no Plaid API calls and no failure recorded, so
+    // the connection is not marked as errored and resumes after an upgrade.
+    const syncAccess = await TierService.canSyncBrokerConnection(connection.userId);
+    if (!syncAccess.allowed) {
+      console.log(`[INFO] [PLAID] Skipping sync for connection ${connection.id}: Plaid sync is Pro-only for this user`);
+      return {
+        processedCount: 0,
+        skippedForTier: true,
+        reason: 'tier_pro_required',
+        code: syncAccess.code,
+        message: syncAccess.message
+      };
+    }
+
     try {
       const accountsResponse = await plaidClient.getAccounts(connection.accessToken);
       const syncedAccounts = await PlaidConnection.upsertAccounts(
@@ -334,11 +387,30 @@ class PlaidFundingService {
       let processedCount = 0;
       let nextCursor = connection.lastSyncCursor;
       let holdingsMessage = '';
+      let transactionsNotReady = false;
 
       if (connection.targetType === 'bank') {
         const bankResult = await this.syncBankTransactions(connection, plaidAccountMap);
         processedCount = bankResult.processedCount;
         nextCursor = bankResult.nextCursor;
+        transactionsNotReady = Boolean(bankResult.notReady);
+
+        // Liabilities and cash-flow categories feed the retirement planner.
+        // Neither may fail the transaction sync that already committed.
+        try {
+          const liabilityCount = await plaidLiabilitiesSyncService.syncLiabilities(connection, plaidAccountMap);
+          if (liabilityCount !== null) {
+            holdingsMessage = `, ${liabilityCount} liabilit${liabilityCount === 1 ? 'y' : 'ies'} synced`;
+          }
+        } catch (error) {
+          console.warn('[PLAID] Liabilities sync failed:', error.message);
+        }
+        try {
+          await cashflowClassificationService.classifyWithRules(connection.userId);
+        } catch (error) {
+          console.warn('[PLAID] Cash-flow rule classification failed:', error.message);
+        }
+        require('../retirementAffordabilityService').invalidate(connection.userId);
       } else {
         const investmentResult = await this.syncInvestmentTransactions(connection, plaidAccountMap);
         processedCount = investmentResult.processedCount;
@@ -359,7 +431,9 @@ class PlaidFundingService {
 
       await PlaidConnection.updateAfterSync(connection.id, {
         lastSyncCursor: nextCursor,
-        message: `Processed ${processedCount} Plaid transaction update${processedCount === 1 ? '' : 's'}${holdingsMessage}`
+        message: transactionsNotReady
+          ? `Plaid is still preparing this account's transaction history. Sync again in a few minutes.${holdingsMessage}`
+          : `Processed ${processedCount} Plaid transaction update${processedCount === 1 ? '' : 's'}${holdingsMessage}`
       });
 
       return {
@@ -372,12 +446,37 @@ class PlaidFundingService {
   }
 
   async syncBankTransactions(connection, plaidAccountMap) {
-    let cursor = connection.lastSyncCursor || null;
+    const startCursor = connection.lastSyncCursor || null;
+    let cursor = startCursor;
     let hasMore = true;
     let processedCount = 0;
+    let restarts = 0;
 
     while (hasMore) {
-      const response = await plaidClient.syncTransactions(connection.accessToken, cursor);
+      let response;
+      try {
+        response = await plaidClient.syncTransactions(connection.accessToken, cursor);
+      } catch (error) {
+        const code = error.plaid?.errorCode;
+        // Plaid changed the underlying data mid-pagination (common on a brand
+        // new Item while its history is still loading). Plaid's guidance is to
+        // restart from the last cursor that completed a full pagination.
+        // Upserts are idempotent, so replaying pages is safe.
+        if (code === 'TRANSACTIONS_SYNC_MUTATION_DURING_PAGINATION' && restarts < MAX_SYNC_RESTARTS) {
+          restarts += 1;
+          cursor = startCursor;
+          console.warn(`[PLAID] Transactions changed during pagination; restarting sync (${restarts}/${MAX_SYNC_RESTARTS})`);
+          continue;
+        }
+        // The Item exists but Plaid has not finished its initial pull yet.
+        // Keep the connection healthy and let the next sync pick it up.
+        if (code === 'PRODUCT_NOT_READY') {
+          console.log('[PLAID] Transactions not ready yet for connection', connection.id);
+          return { processedCount, nextCursor: startCursor, notReady: true };
+        }
+        throw error;
+      }
+
       const changedTransactions = [
         ...(response.added || []),
         ...(response.modified || [])

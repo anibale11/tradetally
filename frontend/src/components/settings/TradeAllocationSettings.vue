@@ -7,7 +7,7 @@
       @click="expanded = !expanded"
     >
       <div>
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Optional accounting tools</h3>
+        <h3 class="heading-card">Optional accounting tools</h3>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
           Additional tools for specialized recordkeeping workflows.
         </p>
@@ -21,7 +21,7 @@
     <div v-if="expanded" class="border-t border-gray-200 px-6 py-6 dark:border-gray-700">
       <div class="flex items-start justify-between gap-6">
         <div class="max-w-2xl">
-          <h4 class="text-sm font-semibold text-gray-900 dark:text-white">Trade allocations</h4>
+          <h4 class="heading-sub">Trade allocations</h4>
           <p class="mt-1.5 text-sm leading-relaxed text-gray-500 dark:text-gray-400">
             Divide a trade proportionally across private accounting groups. This does not alter
             brokerage records, legal ownership, tax lots, or your existing tags.
@@ -29,8 +29,8 @@
         </div>
         <button
           type="button"
-          class="relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2"
-          :class="enabled ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-700'"
+          class="switch"
+          :class="enabled ? 'switch-on' : ''"
           role="switch"
           :aria-checked="enabled"
           :disabled="savingFeature || loading"
@@ -43,14 +43,14 @@
         </button>
       </div>
 
-      <div v-if="error" class="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">
+      <div v-if="error" class="callout-danger mt-4">
         {{ error }}
       </div>
 
       <div v-if="enabled" class="mt-6 border-t border-gray-200 pt-6 dark:border-gray-700">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h4 class="text-sm font-semibold text-gray-900 dark:text-white">Allocation groups</h4>
+            <h4 class="heading-sub">Allocation groups</h4>
             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
               Create at least two groups before allocating a trade.
             </p>
@@ -66,7 +66,7 @@
         </div>
 
         <div v-if="loadingGroups" class="flex justify-center py-8">
-          <div class="h-7 w-7 animate-spin rounded-full border-2 border-primary-600 border-t-transparent"></div>
+          <div class="spinner spinner-md"></div>
         </div>
 
         <div v-else class="mt-5 space-y-3">
@@ -99,7 +99,7 @@
             <button type="button" class="btn-secondary" @click="saveGroup(group)">Save</button>
             <button
               type="button"
-              class="rounded-md px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+              class="btn-ghost btn-sm"
               @click="archiveGroup(group)"
             >
               Archive

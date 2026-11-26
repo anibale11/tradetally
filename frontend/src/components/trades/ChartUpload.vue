@@ -1,9 +1,9 @@
 <template>
   <div class="space-y-4">
     <div>
-      <label class="label">TradingView Charts</label>
+      <label class="label">Chart Links</label>
       <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
-        Add TradingView chart URLs to display with this trade. You can add multiple charts.
+        Add TradingView snapshots, your own chart images, or YouTube recordings. You can add multiple links.
       </p>
 
       <!-- Chart URL input form -->
@@ -17,7 +17,7 @@
             v-model="newChart.url"
             type="url"
             placeholder="https://www.tradingview.com/x/..."
-            class="mt-1 shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+            class="input mt-1 w-full"
             @keypress.enter="addChart"
           />
         </div>
@@ -31,7 +31,7 @@
             v-model="newChart.title"
             type="text"
             placeholder="Entry setup, Exit point, etc."
-            class="mt-1 shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+            class="input mt-1 w-full"
             @keypress.enter="addChart"
           />
         </div>
@@ -50,7 +50,7 @@
 
     <!-- Pending charts (create mode) -->
     <div v-if="pendingCharts.length > 0" class="space-y-2">
-      <h4 class="text-sm font-medium text-gray-900 dark:text-white">Pending Charts ({{ pendingCharts.length }})</h4>
+      <h4 class="heading-sub">Pending Charts ({{ pendingCharts.length }})</h4>
       <div class="space-y-2">
         <div
           v-for="(chart, index) in pendingCharts"
@@ -66,7 +66,7 @@
           <button
             type="button"
             @click="removePendingChart(index)"
-            class="ml-3 text-red-500 hover:text-red-700 flex-shrink-0"
+            class="ml-3 text-red-600 dark:text-red-400 hover:text-red-700 flex-shrink-0"
           >
             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
@@ -78,6 +78,7 @@
 
     <!-- Help text -->
     <div class="text-xs text-gray-500 dark:text-gray-400 space-y-1">
+      <p>Image links display a preview, including links without a file extension. YouTube recordings appear as video links and open in a new tab.</p>
       <p>To get a TradingView chart URL:</p>
       <ol class="list-decimal list-inside ml-2 space-y-1">
         <li>Open your chart on TradingView</li>

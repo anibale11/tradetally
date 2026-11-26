@@ -375,6 +375,7 @@ describe('Schwab parseTransactions (full payload -> trades)', () => {
         price: 100.25,
         quantity: 10,
         side: 'long',
+        action: 'buy',
         type: 'entry',
         orderId: '1006200000001'
       },
@@ -383,6 +384,7 @@ describe('Schwab parseTransactions (full payload -> trades)', () => {
         price: 103.75,
         quantity: 10,
         side: 'short', // CLOSING with negative amount maps to a sell-direction execution
+        action: 'sell', // stated explicitly so the P&L engine never infers it from side
         type: 'exit',
         orderId: '1006200000002'
       }
@@ -678,6 +680,68 @@ describe('Schwab parseTransactions (full payload -> trades)', () => {
     });
   });
 
+  test('a close larger than the in-window lots keeps the unmatched remainder as its own trade', () => {
+    // Regression: a 100-share sale against a 70-share synced lot matched 70
+    // and silently dropped the other 30 (opened before the sync window).
+    const trades = schwabService.parseTransactions([
+      schwabEquityTx({
+        orderId: 'mstr-buy-70',
+        time: '2026-01-05T15:49:00Z',
+        symbol: 'MSTR',
+        price: 166.57,
+        amount: 70,
+        positionEffect: 'OPENING',
+        netAmount: -11659.9,
+        feeItems: [{ feeType: 'SEC_FEE', cost: 0.1 }]
+      }),
+      schwabEquityTx({
+        orderId: 'mstr-sell-100',
+        time: '2026-11-04T12:39:00Z',
+        symbol: 'MSTR',
+        price: 136.71,
+        amount: -100,
+        positionEffect: 'CLOSING',
+        netAmount: 13671,
+        commissionCost: 1,
+        feeItems: [{ feeType: 'SEC_FEE', cost: 0.2 }]
+      })
+    ]);
+
+    expect(trades).toHaveLength(2);
+    const matched = trades.find(t => t.entryPrice !== null);
+    const remainder = trades.find(t => t.entryPrice === null);
+
+    expect(matched).toMatchObject({
+      symbol: 'MSTR',
+      quantity: 70,
+      entryPrice: 166.57,
+      exitPrice: 136.71,
+      exitTime: '2026-11-04T12:39:00Z'
+    });
+    expect(matched.commission).toBeCloseTo(0.7, 10); // 70% of the $1 exit commission
+    expect(matched.fees).toBeCloseTo(0.1 + 0.14, 10); // all entry fee + 70% of exit fee
+
+    expect(remainder).toMatchObject({
+      symbol: 'MSTR',
+      side: 'long',
+      quantity: 30,
+      entryPrice: null,
+      exitPrice: 136.71,
+      entryTime: null,
+      exitTime: '2026-11-04T12:39:00Z',
+      tradeDate: '2026-11-04'
+    });
+    expect(remainder.commission).toBeCloseTo(0.3, 10);
+    expect(remainder.fees).toBeCloseTo(0.06, 10);
+    expect(remainder.pnl).toBeCloseTo(13671 * 0.3, 6);
+    expect(remainder.executionData).toEqual([
+      expect.objectContaining({ type: 'exit', quantity: 30, action: 'sell', orderId: 'mstr-sell-100' })
+    ]);
+
+    // Nothing is left open: the 70-share lot was fully consumed.
+    expect(trades.filter(t => t.exitPrice === null)).toHaveLength(0);
+  });
+
   test('unclosed opening transaction maps to an open trade with null exit fields', () => {
     const trades = schwabService.parseTransactions([
       schwabEquityTx({
@@ -842,5 +906,69 @@ describe('Schwab dedupe key construction (exit orderId|datetime)', () => {
     otherAccount.account_identifier = '****9999';
 
     expect(schwabService.isDuplicateTrade(trade, [otherAccount])).toBe(false);
+  });
+
+  // Schwab reports delisted equities by CUSIP. The first sync stored
+  // 00507V109, the resolver renamed it to ATVI, and the next sync re-imported
+  // the same fills because the raw symbols no longer matched.
+  test('a re-synced CUSIP trade matches the row already renamed to its ticker', () => {
+    const trade = buildRoundTripTrade();
+    trade.symbol = '00507V109';
+    trade.cusip = '00507V109';
+    const existing = asExistingRow(buildRoundTripTrade());
+    existing.symbol = 'ATVI';
+
+    // Without a known alias the raw symbols differ and nothing else can tie them together.
+    expect(schwabService.isDuplicateTrade(trade, [existing])).toBe(false);
+
+    trade.resolvedSymbol = 'ATVI';
+    expect(schwabService.isDuplicateTrade(trade, [existing])).toBe(true);
+  });
+
+  test('an incoming ticker trade matches a stored row that still carries its CUSIP', () => {
+    const trade = buildRoundTripTrade();
+    trade.symbol = 'ATVI';
+    trade.cusip = '00507V109';
+    const existing = asExistingRow(buildRoundTripTrade());
+    existing.symbol = '00507V109';
+
+    expect(schwabService.isDuplicateTrade(trade, [existing])).toBe(true);
+  });
+
+  test('CUSIP aliases never bridge option trades to an equity row', () => {
+    const trade = buildRoundTripTrade();
+    trade.symbol = '00507V109';
+    trade.resolvedSymbol = 'ATVI';
+    trade.instrumentType = 'option';
+    const existing = asExistingRow(buildRoundTripTrade());
+    existing.symbol = 'ATVI';
+
+    expect(schwabService.isDuplicateTrade(trade, [existing])).toBe(false);
+  });
+
+  test('annotateCusipAliases attaches known tickers to incoming CUSIP symbols only', async () => {
+    const db = require('../../src/config/database');
+    db.query.mockResolvedValueOnce({ rows: [{ cusip: '00507V109', ticker: 'ATVI' }] });
+
+    const cusipTrade = { symbol: '00507V109' };
+    const tickerTrade = { symbol: 'AAPL' };
+    const unknownCusip = { symbol: '92840Q103' };
+
+    await schwabService.annotateCusipAliases('user-1', [cusipTrade, tickerTrade, unknownCusip]);
+
+    expect(db.query).toHaveBeenCalledTimes(1);
+    expect(db.query.mock.calls[0][1]).toEqual([['00507V109', '92840Q103'], 'user-1']);
+    expect(cusipTrade.resolvedSymbol).toBe('ATVI');
+    expect(tickerTrade.resolvedSymbol).toBeUndefined();
+    expect(unknownCusip.resolvedSymbol).toBeUndefined();
+  });
+
+  test('annotateCusipAliases skips the lookup when no incoming symbol is a CUSIP', async () => {
+    const db = require('../../src/config/database');
+    db.query.mockClear();
+
+    await schwabService.annotateCusipAliases('user-1', [{ symbol: 'AAPL' }, { symbol: 'MSFT' }]);
+
+    expect(db.query).not.toHaveBeenCalled();
   });
 });

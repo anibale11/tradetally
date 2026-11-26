@@ -1,14 +1,14 @@
 <template>
-  <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg">
+  <div class="card">
     <!-- Header -->
     <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-      <h2 class="text-lg font-medium text-gray-900 dark:text-white">Select a Trade to Analyze</h2>
+      <h2 class="heading-card">Select a Trade to Analyze</h2>
       <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Use the Filters panel above to narrow this list.</p>
     </div>
 
     <!-- Loading State -->
     <div v-if="loading && trades.length === 0" class="p-8 text-center">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
+      <div class="spinner spinner-md mx-auto mb-4"></div>
       <p class="text-gray-600 dark:text-gray-400">Loading trades...</p>
     </div>
 
@@ -27,10 +27,7 @@
         v-for="trade in trades"
         :key="trade.id"
         @click="selectTrade(trade)"
-        :class="[
-          'w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left',
-          selectedTradeId === trade.id ? 'bg-primary-50 dark:bg-primary-900/20' : ''
-        ]"
+        :class="[ 'w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left', selectedTradeId === trade.id ? 'bg-primary-50 dark:bg-primary-900/20' : '' ]"
       >
         <div class="flex items-center space-x-4">
           <!-- Trade Number (matches R-Performance chart) -->
@@ -56,14 +53,7 @@
               <!-- Instrument Type Badge -->
               <span
                 v-if="trade.instrument_type && trade.instrument_type !== 'stock'"
-                :class="[
-                  'text-xs px-1.5 py-0.5 rounded font-medium',
-                  trade.instrument_type === 'option'
-                    ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'
-                    : trade.instrument_type === 'future'
-                    ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400'
-                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
-                ]"
+                :class="[ 'text-xs px-1.5 py-0.5 rounded font-medium', trade.instrument_type === 'option' ? 'bg-primary-100 text-primary-800 dark:bg-primary-900/30 dark:text-primary-400' : trade.instrument_type === 'future' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400' ]"
               >
                 {{ formatInstrumentType(trade.instrument_type) }}
               </span>
@@ -99,7 +89,7 @@
             <div
               :class="[
                 'font-medium',
-                parseFloat(trade.pnl) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                pnlClass(parseFloat(trade.pnl))
               ]"
             >
               {{ formatCurrency(trade.pnl) }}
@@ -109,7 +99,7 @@
                 'text-sm',
                 trade.pnl_percent == null
                   ? 'text-gray-400 dark:text-gray-500'
-                  : parseFloat(trade.pnl_percent) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                  : pnlClass(parseFloat(trade.pnl_percent))
               ]"
             >
               {{ formatPercent(trade.pnl_percent) }}
@@ -120,31 +110,28 @@
           <div class="flex items-center space-x-2">
             <span
               v-if="!trade.can_analyze"
-              class="text-xs px-2 py-1 bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 rounded"
+              class="badge-warning"
               title="Stop loss required for analysis"
             >
               Needs SL
             </span>
             <span
               v-else-if="trade.needs_take_profit"
-              class="text-xs px-2 py-1 bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 rounded"
+              class="badge-neutral"
               title="Take profit not set"
             >
               No TP
             </span>
             <span
               v-else
-              class="text-xs px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 rounded"
+              class="badge-primary"
             >
               Ready
             </span>
 
             <!-- Selection Arrow -->
             <svg
-              :class="[
-                'w-5 h-5 transition-transform',
-                selectedTradeId === trade.id ? 'text-primary-600 rotate-90' : 'text-gray-400'
-              ]"
+              :class="[ 'w-5 h-5 transition-transform', selectedTradeId === trade.id ? 'text-primary-700 rotate-90' : 'text-gray-400' ]"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -161,7 +148,7 @@
       <button
         @click="$emit('load-more')"
         :disabled="loading"
-        class="w-full py-2 text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 disabled:opacity-50"
+        class="w-full py-2 text-sm text-primary-700 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 disabled:opacity-50"
       >
         {{ loading ? 'Loading...' : `Load more (${pagination.total - trades.length} remaining)` }}
       </button>
@@ -170,6 +157,7 @@
 </template>
 
 <script setup>
+import { pnlClass } from '@/utils/metricTone'
 import { formatTradeDate } from '@/utils/date'
 import { formatPercent as formatPercentBase } from '@/utils/formatters'
 import { useUserTimezone } from '@/composables/useUserTimezone'
@@ -228,6 +216,7 @@ function formatInstrumentType(type) {
     'option': 'Option',
     'future': 'Future',
     'forex': 'Forex',
+    'cfd': 'CFD / Metal',
     'crypto': 'Crypto',
     'stock': 'Stock'
   }

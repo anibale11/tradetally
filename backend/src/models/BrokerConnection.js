@@ -112,11 +112,13 @@ class BrokerConnection {
         INSERT INTO broker_connections (
           user_id, broker_type, connection_status,
           ibkr_flex_token, ibkr_flex_query_id, account_label,
-          auto_sync_enabled, sync_frequency, sync_time, sync_start_date
+          auto_sync_enabled, sync_frequency, sync_time, sync_start_date, ibkr_trade_confirmation_query_id, ibkr_confirmation_interval_minutes
         )
-        VALUES ($1, $2, 'pending', $3, $4, $5, $6, $7, $8, $9)
+        VALUES ($1, $2, 'pending', $3, $4, $5, $6, $7, $8, $9, $10, $12)
         ON CONFLICT (user_id, ibkr_flex_query_id) WHERE broker_type = 'ibkr' AND ibkr_flex_query_id IS NOT NULL DO UPDATE SET
           ibkr_flex_token = EXCLUDED.ibkr_flex_token,
+          ibkr_trade_confirmation_query_id = CASE WHEN $11 THEN EXCLUDED.ibkr_trade_confirmation_query_id ELSE broker_connections.ibkr_trade_confirmation_query_id END,
+          ibkr_confirmation_interval_minutes = CASE WHEN $13 THEN EXCLUDED.ibkr_confirmation_interval_minutes ELSE broker_connections.ibkr_confirmation_interval_minutes END,
           account_label = EXCLUDED.account_label,
           auto_sync_enabled = EXCLUDED.auto_sync_enabled,
           sync_frequency = EXCLUDED.sync_frequency,
@@ -129,7 +131,11 @@ class BrokerConnection {
       `;
       params = [
         userId, brokerType, encryptedIbkrToken, ibkrFlexQueryId,
-        accountLabel, autoSyncEnabled, syncFrequency, syncTime, syncStartDate
+        accountLabel, autoSyncEnabled, syncFrequency, syncTime, syncStartDate,
+        connectionData.ibkr_trade_confirmation_query_id || null,
+        Object.prototype.hasOwnProperty.call(connectionData, 'ibkr_trade_confirmation_query_id'),
+        connectionData.ibkr_confirmation_interval_minutes ?? 15,
+        Object.prototype.hasOwnProperty.call(connectionData, 'ibkr_confirmation_interval_minutes')
       ];
     } else if (brokerType === 'schwab') {
       // Schwab: keep single connection per user (upsert via partial unique index)
@@ -160,6 +166,22 @@ class BrokerConnection {
         JSON.stringify(brokerMetadata || {}), accountLabel,
         autoSyncEnabled, syncFrequency, syncTime, syncStartDate
       ];
+    } else if (brokerType === 'oanda') {
+      query = `
+        INSERT INTO broker_connections (user_id, broker_type, connection_status,
+          oanda_api_token, external_account_id, broker_environment, broker_metadata,
+          account_label, auto_sync_enabled, sync_frequency, sync_time, sync_start_date)
+        VALUES ($1, $2, 'pending', $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        ON CONFLICT (user_id, broker_environment, external_account_id) WHERE broker_type = 'oanda'
+        DO UPDATE SET oanda_api_token = EXCLUDED.oanda_api_token,
+          broker_metadata = EXCLUDED.broker_metadata, account_label = EXCLUDED.account_label,
+          auto_sync_enabled = EXCLUDED.auto_sync_enabled, sync_frequency = EXCLUDED.sync_frequency,
+          sync_time = EXCLUDED.sync_time, sync_start_date = EXCLUDED.sync_start_date,
+          connection_status = 'pending', consecutive_failures = 0, updated_at = CURRENT_TIMESTAMP
+        RETURNING *`;
+      params = [userId, brokerType, encryptionService.encrypt(connectionData.oanda_api_token),
+        externalAccountId, brokerEnvironment || 'practice', JSON.stringify(brokerMetadata || {}),
+        accountLabel, autoSyncEnabled, syncFrequency, syncTime, syncStartDate];
     } else if (brokerType === 'trading212') {
       query = `
         INSERT INTO broker_connections (
@@ -444,6 +466,30 @@ class BrokerConnection {
     return result.rows.map(row => this.formatConnection(row, true));
   }
 
+  static async findDueForConfirmationSync() {
+    const result = await db.query(`SELECT * FROM broker_connections
+      WHERE broker_type = 'ibkr' AND connection_status = 'active' AND auto_sync_enabled = true
+        AND ibkr_trade_confirmation_query_id IS NOT NULL
+        AND COALESCE(broker_metadata->'ibkr_confirmation'->>'suspended', 'false') <> 'true'
+        AND (ibkr_next_confirmation_sync_at IS NULL OR ibkr_next_confirmation_sync_at <= NOW())
+      ORDER BY ibkr_next_confirmation_sync_at ASC NULLS FIRST`);
+    return result.rows.map(row => this.formatConnection(row, true));
+  }
+
+  static async updateConfirmationSync(connection_id, { success = false, report_available = true, error = null } = {}) {
+    const shared_token_codes = new Set(['1011', '1012', '1013', '1015']);
+    const suspended = error && !error.transient && !shared_token_codes.has(String(error.errorCode));
+    await db.query(`UPDATE broker_connections SET
+      ibkr_last_confirmation_sync_at = CASE WHEN $2 AND $5 THEN NOW() ELSE ibkr_last_confirmation_sync_at END,
+      ibkr_next_confirmation_sync_at = NOW() + (GREATEST(ibkr_confirmation_interval_minutes, $3::int) * INTERVAL '1 minute'),
+      broker_metadata = COALESCE(broker_metadata, '{}'::jsonb) || jsonb_build_object('ibkr_confirmation', $4::jsonb),
+      updated_at = NOW() WHERE id = $1`, [connection_id, success,
+      error ? Math.min(1440, 30 * 2 ** Math.min(6, Number(error.retry_count || 0))) : 15,
+      JSON.stringify(success ? {} : { suspended: Boolean(suspended), error: error?.message || null,
+        error_code: error?.errorCode || null, reference_code: error?.reference_code || null,
+        retry_count: Number(error?.retry_count || 0) + 1 }), report_available]);
+  }
+
   /**
    * Atomically claim active Schwab connections entering their final 24 hours.
    * The claim prevents duplicate reminders across scheduler instances.
@@ -539,6 +585,7 @@ class BrokerConnection {
           last_sync_trades_skipped = $3,
           next_scheduled_sync = $4,
           consecutive_failures = 0,
+          broker_metadata = COALESCE(broker_metadata, '{}'::jsonb) - 'transient_retry_count',
           last_error_at = NULL,
           last_error_message = NULL,
           updated_at = CURRENT_TIMESTAMP
@@ -646,9 +693,47 @@ class BrokerConnection {
   }
 
   /**
-   * Update connection after failed sync
+   * Update connection after failed sync.
+   *
+   * Configuration failures (invalid token, invalid query, auth expired) count
+   * toward consecutive_failures and lock the connection into 'error' on the
+   * third strike so the scheduler stops hammering a broken setup.
+   *
+   * Transient failures (report timeouts, network blips, broker "try again"
+   * codes, database connection timeouts) never escalate: the counter and
+   * status are left alone and the next automatic sync is pushed out with
+   * exponential backoff (30 min, 1 h, 2 h ... capped at 24 h) tracked in
+   * broker_metadata.transient_retry_count. updateAfterSync clears the
+   * counter. Without this distinction a few slow IBKR nights permanently
+   * disabled a connection until the user noticed and reconnected.
    */
-  static async updateAfterFailure(connectionId, errorMessage) {
+  static async updateAfterFailure(connectionId, errorMessage, { transient = false } = {}) {
+    if (transient) {
+      const query = `
+        UPDATE broker_connections
+        SET last_sync_status = 'failed',
+            last_error_at = CURRENT_TIMESTAMP,
+            last_error_message = $2,
+            broker_metadata = COALESCE(broker_metadata, '{}'::jsonb) || jsonb_build_object(
+              'transient_retry_count',
+              COALESCE((broker_metadata->>'transient_retry_count')::int, 0) + 1
+            ),
+            next_scheduled_sync = CASE
+              WHEN auto_sync_enabled THEN NOW() + LEAST(
+                (30 * POWER(2, COALESCE((broker_metadata->>'transient_retry_count')::int, 0)))::int,
+                1440
+              ) * INTERVAL '1 minute'
+              ELSE next_scheduled_sync
+            END,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1
+        RETURNING *
+      `;
+      const result = await db.query(query, [connectionId, errorMessage]);
+      if (result.rows.length === 0) return null;
+      return this.formatConnection(result.rows[0], false);
+    }
+
     const query = `
       UPDATE broker_connections
       SET last_sync_status = 'failed',
@@ -674,15 +759,17 @@ class BrokerConnection {
    * Update connection settings
    */
   static async update(connectionId, updates) {
-    const allowedFields = ['auto_sync_enabled', 'sync_frequency', 'sync_time', 'sync_start_date', 'account_label', 'next_scheduled_sync'];
+    const allowedFields = ['ibkr_confirmation_interval_minutes', 'ibkr_trade_confirmation_query_id', 'ibkr_next_confirmation_sync_at', 'ibkr_last_confirmation_sync_at', 'auto_sync_enabled', 'sync_frequency', 'sync_time', 'sync_start_date', 'account_label', 'next_scheduled_sync'];
     const setClauses = [];
     const values = [];
     let paramCount = 1;
+    let interval_parameter = null;
 
     for (const [key, value] of Object.entries(updates)) {
       const snakeKey = toSnakeCase(key);
       if (allowedFields.includes(snakeKey)) {
         setClauses.push(`${snakeKey} = $${paramCount}`);
+        if (snakeKey === 'ibkr_confirmation_interval_minutes') interval_parameter = paramCount;
         values.push(value);
         paramCount++;
       }
@@ -690,6 +777,11 @@ class BrokerConnection {
 
     if (setClauses.length === 0) return null;
 
+    if (interval_parameter && !Object.prototype.hasOwnProperty.call(updates, 'ibkr_next_confirmation_sync_at')) {
+      const due = `GREATEST(NOW(), COALESCE(ibkr_last_confirmation_sync_at + ($${interval_parameter}::int * INTERVAL '1 minute'), NOW()))`;
+      setClauses.push(`ibkr_next_confirmation_sync_at = CASE WHEN broker_metadata->'ibkr_confirmation'->>'error' IS NOT NULL
+        THEN GREATEST(ibkr_next_confirmation_sync_at, ${due}) ELSE ${due} END`);
+    }
     values.push(connectionId);
 
     const query = `
@@ -940,6 +1032,10 @@ class BrokerConnection {
 
     if (row.broker_type === 'ibkr') {
       connection.ibkrFlexQueryId = row.ibkr_flex_query_id;
+      connection.ibkr_confirmation_interval_minutes = row.ibkr_confirmation_interval_minutes ?? 15;
+      connection.ibkr_trade_confirmation_query_id = row.ibkr_trade_confirmation_query_id || null;
+      connection.ibkr_next_confirmation_sync_at = row.ibkr_next_confirmation_sync_at || null;
+      connection.ibkr_last_confirmation_sync_at = row.ibkr_last_confirmation_sync_at || null;
       connection.brokerMetadata = row.broker_metadata || {};
       connection.ibkrBackfillRetry = connection.brokerMetadata.ibkr_backfill_retry || null;
       // Only include decrypted token if explicitly requested (for sync operations)
@@ -965,6 +1061,13 @@ class BrokerConnection {
         if (row.schwab_refresh_token) {
           connection.schwabRefreshToken = safeDecrypt(row.schwab_refresh_token, 'schwab_refresh_token');
         }
+      }
+    } else if (row.broker_type === 'oanda') {
+      connection.externalAccountId = row.external_account_id;
+      connection.brokerEnvironment = row.broker_environment || 'practice';
+      connection.brokerMetadata = row.broker_metadata || {};
+      if (includeCredentials && row.oanda_api_token) {
+        connection.oanda_api_token = safeDecrypt(row.oanda_api_token, 'oanda_api_token');
       }
     } else if (row.broker_type === 'trading212') {
       connection.externalAccountId = row.external_account_id;

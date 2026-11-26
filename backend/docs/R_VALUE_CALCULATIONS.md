@@ -34,6 +34,19 @@ For Management R calculations, both the actual outcome and the ghost scenario (w
 ### Stop Loss for R Calculations
 R values use the **current** stop loss, not the original. The `risk_level_history` field tracks historical stop loss moves for display purposes (showing "Saved R" from SL moves), but R calculations always use the current stop loss value.
 
+### Point-Based Default Stops
+
+When `default_stop_loss_type` is `points`, `default_stop_loss_points` is the
+price distance from entry. `default_stop_loss_points_by_underlying` overrides
+that distance for an instrument root (for example, ES or NQ). Futures delivery
+months resolve to their root; micro contracts use their own root, such as MES.
+A long stop is `entry_price - points`; a short stop is `entry_price + points`.
+Quantity and point value do not change the stop price. Dollar risk and net R
+continue to use the stored stop with the normal quantity and multiplier.
+
+These defaults apply when creating/importing trades without a stop, or when
+explicitly filling missing stops in the bulk editor. Existing stops are preserved.
+
 ### Dollar-Based Default Stops
 When a user's `default_stop_loss_type` is `dollar`, `default_stop_loss_dollars` supplies a default stop price for new and imported trades. It does **not** override a valid stop stored on an individual trade.
 
@@ -44,6 +57,23 @@ The setting is used by the R surfaces as follows:
 - **Management R** (`TargetHitAnalysisService.calculateManagementR`): uses the same stop-first, dollar-fallback precedence so planned and management R stay consistent with the analysis card.
 
 The fallback keeps trades whose stops have crossed entry from disappearing from analytics, while ensuring imported or manually edited stops control their own analysis. Percent-stop users always use the per-trade `(entry − stop) × qty × multiplier` derivation.
+
+---
+
+## MAE/MFE units (issue #427)
+
+Trade forms and the API can accept excursions in currency, points, or R.
+Excursions remain stored as position-wide monetary amounts. Points use
+`quantity × instrument multiplier`; R uses the same scale multiplied by the
+positive directional distance to the current stop. This matches the existing
+MAE/MFE analytics denominator. Excursions describe gross price movement, so
+commissions and fees are not subtracted from them. Actual R and Target R
+continue to use their existing net calculations.
+
+A missing stop, a breakeven stop, or a stop trailed past entry leaves excursion R
+unavailable; no historical or default dollar risk is substituted. Unit changes
+convert existing entries, and list/detail point and R values are derived before
+display-currency conversion.
 
 ---
 

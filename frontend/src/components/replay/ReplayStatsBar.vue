@@ -1,13 +1,13 @@
 <template>
   <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
     <div>
-      <dt class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">Time</dt>
+      <dt class="text-label">Time</dt>
       <dd class="font-medium text-gray-900 dark:text-white tabular-nums">
         {{ clockLabel }}
       </dd>
     </div>
     <div>
-      <dt class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">Position</dt>
+      <dt class="text-label">Position</dt>
       <dd class="font-medium text-gray-900 dark:text-white tabular-nums">
         <span v-if="stats.position !== 0">
           {{ stats.position > 0 ? '+' : '' }}{{ stats.position }}
@@ -19,27 +19,27 @@
       </dd>
     </div>
     <div>
-      <dt class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">Realized</dt>
+      <dt class="text-label">Realized</dt>
       <dd class="font-medium tabular-nums" :class="pnlClass(stats.realized_pnl)">
         {{ formatSignedCurrency(stats.realized_pnl) }}
       </dd>
     </div>
     <div>
-      <dt class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">Unrealized</dt>
+      <dt class="text-label">Unrealized</dt>
       <dd class="font-medium tabular-nums" :class="pnlClass(stats.unrealized_pnl)">
         {{ formatSignedCurrency(stats.unrealized_pnl) }}
       </dd>
     </div>
     <div>
-      <dt class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">Total P&amp;L</dt>
+      <dt class="text-label">Total P&amp;L</dt>
       <dd class="font-semibold tabular-nums" :class="pnlClass(stats.total_pnl)">
         {{ formatSignedCurrency(stats.total_pnl) }}
       </dd>
     </div>
     <div>
-      <dt class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">R Multiple</dt>
+      <dt class="text-label">R Multiple</dt>
       <dd class="font-medium tabular-nums" :class="stats.r_multiple !== null ? pnlClass(stats.r_multiple) : 'text-gray-500 dark:text-gray-400'">
-        {{ stats.r_multiple !== null ? `${stats.r_multiple >= 0 ? '+' : ''}${stats.r_multiple.toFixed(2)}R` : 'No stop set' }}
+        {{ stats.r_multiple !== null ? formatR(stats.r_multiple) : 'No stop set' }}
       </dd>
     </div>
   </div>
@@ -48,6 +48,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useCurrencyFormatter } from '@/composables/useCurrencyFormatter'
+import { formatR } from '@/utils/rFormat'
 
 const props = defineProps({
   stats: { type: Object, required: true },
@@ -68,6 +69,7 @@ const clockLabel = computed(() => {
     timeZone: props.timezone,
     hour: '2-digit',
     minute: '2-digit',
+    second: '2-digit',
     hour12: false
   })
   // Bug preexistente: el sufijo quedaba hardcodeado en "ET" sin importar
@@ -84,7 +86,7 @@ const clockLabel = computed(() => {
 })
 
 function pnlClass(value) {
-  if (value > 0) return 'text-green-600 dark:text-green-400'
+  if (value > 0) return 'text-green-700 dark:text-green-400'
   if (value < 0) return 'text-red-600 dark:text-red-400'
   return 'text-gray-900 dark:text-white'
 }

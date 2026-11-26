@@ -4,7 +4,7 @@
     <div class="mb-6">
       <button 
         @click="$router.go(-1)"
-        class="inline-flex items-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+        class="btn-ghost btn-sm"
       >
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -13,8 +13,8 @@
       </button>
     </div>
 
-    <div v-if="loading" class="flex justify-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+    <div v-if="initialLoading" class="flex justify-center py-12">
+      <div class="spinner spinner-lg"></div>
     </div>
 
     <div v-else-if="trade" class="space-y-8">
@@ -30,52 +30,97 @@
             <h1 class="heading-page">
               {{ trade.symbol }} Trade
             </h1>
+            <IBKRReconciliationStatus :status="trade.ibkr_reconciliation_status" />
             <p class="mt-1 truncate text-sm text-gray-600 dark:text-gray-400">
               <span v-if="symbolCompanyName">{{ symbolCompanyName }} • </span>{{ formatDate(trade.trade_date) }} • {{ trade.side }}
             </p>
           </div>
         </div>
-        <div v-if="isOwner" class="flex flex-wrap gap-3 sm:justify-end">
+        <!-- Phones: one row (Analyze, Edit, More); the secondary actions move
+             into the More menu so the trade itself stays above the fold.
+             From sm up every action is inline. -->
+        <div v-if="isOwner" class="grid grid-cols-[1fr_auto_auto] gap-2 sm:flex sm:flex-wrap sm:gap-3 sm:justify-end">
           <button
             @click="toggleAIPanel"
-            class="btn-primary inline-flex items-center gap-2"
+            class="btn-primary inline-flex items-center justify-center gap-2"
           >
             <SparklesIcon class="h-4 w-4" />
             <span>{{ showAIPanel ? 'Hide Analysis' : 'Analyze Trade' }}</span>
+            <span
+              v-if="showProLock"
+              class="badge bg-white/20"
+            >Pro</span>
           </button>
-          <button
-            v-if="trade.entry_price !== null && trade.entry_price !== undefined"
-            @click="showShareCard = true"
-            class="btn-secondary inline-flex items-center gap-2"
-          >
-            <ShareIcon class="h-4 w-4" />
-            <span>Share</span>
-          </button>
-          <router-link
-            :to="`/replay/${trade.id}`"
-            class="btn-secondary inline-flex items-center gap-2"
-          >
-            <PlayIcon class="h-4 w-4" />
-            <span>Replay</span>
-          </router-link>
-          <router-link :to="`/analysis/trade-management?tradeId=${trade.id}`" class="btn-secondary">
-            Manage
-          </router-link>
-          <button
-            v-if="allocationEnabled"
-            type="button"
-            class="btn-secondary inline-flex items-center gap-2"
-            @click="showAllocationModal = true"
-          >
-            <ChartPieIcon class="h-4 w-4" />
-            Allocate
-          </button>
-          <router-link :to="{ path: `/trades/${trade.id}/edit`, query: { from: 'trade-detail' } }" class="btn-secondary">
+          <div class="hidden sm:contents">
+            <button
+              v-if="trade.entry_price !== null && trade.entry_price !== undefined"
+              @click="showShareCard = true"
+              class="btn-secondary inline-flex items-center gap-2"
+            >
+              <ShareIcon class="h-4 w-4" />
+              <span>Share</span>
+            </button>
+            <router-link
+              :to="`/replay/${trade.id}`"
+              class="btn-secondary inline-flex items-center gap-2"
+              data-tour="trade-replay"
+            >
+              <PlayIcon class="h-4 w-4" />
+              <span>Replay</span>
+            </router-link>
+            <router-link :to="`/analysis/trade-management?tradeId=${trade.id}`" class="btn-secondary">
+              Manage
+            </router-link>
+            <button
+              v-if="allocationEnabled"
+              type="button"
+              class="btn-secondary inline-flex items-center gap-2"
+              @click="showAllocationModal = true"
+            >
+              <ChartPieIcon class="h-4 w-4" />
+              Allocate
+            </button>
+          </div>
+          <router-link :to="{ path: `/trades/${trade.id}/edit`, query: { from: 'trade-detail' } }" class="btn-secondary justify-center">
             Edit
           </router-link>
-          <button @click="deleteTrade" class="btn-danger">
+          <button @click="deleteTrade" class="btn-danger-outline hidden sm:inline-flex justify-center">
             Delete
           </button>
+          <div ref="moreActionsRef" class="relative sm:hidden">
+            <button
+              type="button"
+              class="btn-icon-outline"
+              aria-label="More actions"
+              :aria-expanded="showMoreActions"
+              @click="showMoreActions = !showMoreActions"
+            >
+              <EllipsisHorizontalIcon class="h-5 w-5" />
+            </button>
+            <template v-if="showMoreActions">
+              <div class="dropdown-menu absolute right-0 z-40 mt-1 w-44">
+                <button
+                  v-if="trade.entry_price !== null && trade.entry_price !== undefined"
+                  type="button"
+                  class="menu-item"
+                  @click="showShareCard = true; showMoreActions = false"
+                >Share</button>
+                <router-link :to="`/replay/${trade.id}`" class="menu-item">Replay</router-link>
+                <router-link :to="`/analysis/trade-management?tradeId=${trade.id}`" class="menu-item">Manage</router-link>
+                <button
+                  v-if="allocationEnabled"
+                  type="button"
+                  class="menu-item"
+                  @click="showAllocationModal = true; showMoreActions = false"
+                >Allocate</button>
+                <button
+                  type="button"
+                  class="menu-item text-red-600 dark:text-red-400"
+                  @click="showMoreActions = false; deleteTrade()"
+                >Delete</button>
+              </div>
+            </template>
+          </div>
         </div>
       </div>
 
@@ -98,10 +143,10 @@
         <div class="card-body">
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Trade allocation</h2>
+              <h2 class="heading-sub">Trade allocation</h2>
               <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">A private proportional accounting split. Tags remain unchanged.</p>
             </div>
-            <router-link to="/metrics/allocations" class="text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400">
+            <router-link to="/metrics/allocations" class="text-sm font-medium text-primary-700 hover:text-primary-800 dark:text-primary-400">
               View allocation report
             </router-link>
           </div>
@@ -116,7 +161,7 @@
                 <span class="truncate text-sm font-medium text-gray-900 dark:text-white">{{ allocation.allocation_group_name }}</span>
                 <span class="ml-auto text-sm text-gray-500 dark:text-gray-400">{{ formatAllocationPercent(allocation.allocation_ratio) }}</span>
               </div>
-              <div v-if="trade.pnl !== null && trade.pnl !== undefined" class="mt-2 text-sm font-semibold" :class="Number(trade.pnl) >= 0 ? 'text-green-600' : 'text-red-600'">
+              <div v-if="trade.pnl !== null && trade.pnl !== undefined" class="mt-2 text-sm font-semibold" :class="pnlClass(Number(trade.pnl))">
                 {{ formatTradeCurrency(Number(trade.pnl) * Number(allocation.allocation_ratio)) }} P&amp;L
               </div>
             </div>
@@ -156,7 +201,7 @@
           </button>
           <button
             @click="clearStoredAIAnalyses"
-            class="btn-secondary inline-flex shrink-0 items-center gap-2 text-xs"
+            class="btn-secondary inline-flex shrink-0 items-center gap-2 btn-sm"
             :disabled="clearingStoredAIAnalyses"
           >
             <TrashIcon class="h-4 w-4" />
@@ -180,7 +225,7 @@
                 </div>
                 <div class="flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                   <span v-if="analysis.position_group"
-                    class="px-1.5 py-0.5 font-semibold rounded-full bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-400 whitespace-nowrap"
+                    class="badge bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-400"
                     :title="`Analyzed as a combined ${analysis.position_group.leg_count}-leg strategy`">
                     {{ formatPositionGroupLabel(analysis.position_group) }}
                   </span>
@@ -188,13 +233,22 @@
                     {{ formatAIModelLabel(analysis.ai_metadata) }}
                   </span>
                   <span v-if="formatAIContextSources(analysis.ai_metadata)"
-                    class="px-1.5 py-0.5 font-semibold rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                    class="badge bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
                     {{ formatAIContextSources(analysis.ai_metadata) }}
                   </span>
                   <span>{{ analysis.response_count }} response{{ analysis.response_count === 1 ? '' : 's' }}</span>
                   <button
+                    v-if="isProUser"
+                    @click="continueStoredAIAnalysis(analysis)"
+                    class="btn-ghost btn-sm gap-1"
+                    :disabled="aiStore.generating"
+                    title="Ask follow-up questions on this analysis"
+                  >
+                    <span>Continue</span>
+                  </button>
+                  <button
                     @click="deleteStoredAIAnalysis(analysis)"
-                    class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-red-700 hover:bg-red-50 disabled:opacity-60 dark:text-red-400 dark:hover:bg-red-900/20"
+                    class="btn-ghost btn-sm gap-1"
                     :disabled="deletingStoredAIAnalysisId === analysis.id"
                     title="Delete stored AI analysis"
                   >
@@ -210,18 +264,21 @@
                 </ul>
               </div>
               <div class="space-y-4">
-                <div
-                  v-for="response in analysis.responses"
-                  :key="response.id"
-                  class="rounded-md bg-gray-50 px-4 py-3 dark:bg-gray-800"
-                >
-                  <div class="mb-2 text-xs text-gray-500 dark:text-gray-400">
-                    {{ formatDateTime(response.created_at) }}
+                <template v-for="response in analysis.responses" :key="response.id">
+                  <div v-if="response.role === 'user'" class="flex justify-end">
+                    <div class="max-w-[85%] rounded-lg bg-primary-700 px-4 py-2 text-white">
+                      <p class="whitespace-pre-wrap text-sm">{{ response.content }}</p>
+                    </div>
                   </div>
-                  <div class="max-h-[65vh] overflow-y-auto pr-2">
-                    <AIReportRenderer :content="response.content" />
+                  <div v-else class="rounded-md bg-gray-50 px-4 py-3 dark:bg-gray-800">
+                    <div class="mb-2 text-xs text-gray-500 dark:text-gray-400">
+                      {{ formatDateTime(response.created_at) }}
+                    </div>
+                    <div class="max-h-[65vh] overflow-y-auto pr-2">
+                      <AIReportRenderer :content="response.content" />
+                    </div>
                   </div>
-                </div>
+                </template>
               </div>
             </div>
           </div>
@@ -229,7 +286,12 @@
       </div>
 
       <!-- AI Single Trade Analysis -->
-      <div v-if="showAIPanel" class="card">
+      <ProUpgradePrompt
+        v-if="showAIPanel && showProLock"
+        variant="card"
+        description="Get an AI review of this trade's executions, setup, news, and charts with TradeTally Pro."
+      />
+      <div v-else-if="showAIPanel && isProUser" ref="aiPanelRef" class="card">
         <AIConversationPanel
           :trade-id="trade.id"
           title="AI Trade Analysis"
@@ -239,46 +301,42 @@
           start-label="Analyze This Trade"
           loading-text="Analyzing this trade..."
           @session-created="loadStoredAIAnalyses"
+          @followup-sent="loadStoredAIAnalyses"
         />
       </div>
 
-      <!-- Incomplete Calculation Banner -->
-      <div v-if="hasIncompleteQuality" class="rounded-md bg-yellow-50 dark:bg-yellow-900/20 p-4 border border-yellow-200 dark:border-yellow-800">
-        <div class="flex">
-          <div class="flex-shrink-0">
-            <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-            </svg>
-          </div>
-          <div class="ml-3">
-            <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-              Incomplete Calculation
-            </h3>
-            <div class="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
-              <p>
-                Some quality metrics could not be retrieved. This may be due to API rate limits, missing data, or future-dated trades. The quality grade shown is based on available metrics only.
-              </p>
-            </div>
-          </div>
+      <!-- Incomplete Calculation: one line, details on demand. -->
+      <div v-if="hasIncompleteQuality" class="callout-warning text-sm">
+        <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+          <span class="font-medium text-yellow-800 dark:text-yellow-200">Quality grade is based on partial data.</span>
+          <button type="button" class="btn-link text-yellow-800 dark:text-yellow-200" :aria-expanded="showIncompleteDetails" @click="showIncompleteDetails = !showIncompleteDetails">
+            {{ showIncompleteDetails ? 'Hide details' : 'Details' }}
+          </button>
         </div>
+        <p v-if="showIncompleteDetails" class="mt-2 text-yellow-700 dark:text-yellow-300">
+          Some quality metrics could not be retrieved. This may be due to API rate limits, missing data, or future-dated trades. The quality grade shown is based on available metrics only.
+        </p>
       </div>
 
       <!-- Trade Details -->
-      <div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <!-- Main Details -->
         <div class="lg:col-span-2 space-y-6">
           <div class="card">
             <div class="card-body">
-              <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Trade Details</h3>
+              <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <h3 class="heading-card">Trade Details</h3>
+                <ExcursionUnitSelect />
+              </div>
               <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-x-4 sm:gap-y-6">
                 <div>
                   <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Symbol</dt>
-                  <dd class="mt-1 text-sm text-gray-900 dark:text-white font-mono">{{ trade.symbol }}</dd>
+                  <dd class="mt-1 text-sm text-gray-900 dark:text-white text-mono-num">{{ trade.symbol }}</dd>
                 </div>
                 <div>
                   <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Side</dt>
                   <dd class="mt-1">
-                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
+                    <span class="badge"
                       :class="[
                         trade.side === 'long'
                           ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
@@ -290,13 +348,13 @@
                 </div>
                 <div>
                   <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Currency</dt>
-                  <dd class="mt-1 text-sm text-gray-900 dark:text-white font-mono">{{ getTradeCurrency() }}</dd>
+                  <dd class="mt-1 text-sm text-gray-900 dark:text-white text-mono-num">{{ trade.price_currency || getTradeCurrency() }}</dd>
                 </div>
                 <!-- Options-specific fields -->
                 <div v-if="trade.instrument_type === 'option'">
                   <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Instrument Type</dt>
                   <dd class="mt-1">
-                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400">
+                    <span class="badge-primary">
                       Option
                     </span>
                   </dd>
@@ -304,19 +362,15 @@
                 <div v-if="trade.instrument_type === 'option' && trade.option_type">
                   <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Option Type</dt>
                   <dd class="mt-1">
-                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
-                      :class="[
-                        trade.option_type === 'call'
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-                          : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
-                      ]">
+                    <span class="badge"
+                      :class="[ 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' ]">
                       {{ trade.option_type.toUpperCase() }}
                     </span>
                   </dd>
                 </div>
                 <div v-if="trade.instrument_type === 'option' && trade.strike_price">
                   <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Strike Price</dt>
-                  <dd class="mt-1 text-sm text-gray-900 dark:text-white font-mono">{{ formatTradeCurrency(trade.strike_price) }}</dd>
+                  <dd class="mt-1 text-sm text-gray-900 dark:text-white text-mono-num">{{ formatTradePrice(trade, 'strike_price') }}</dd>
                 </div>
                 <div v-if="trade.instrument_type === 'option' && trade.expiration_date">
                   <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Expiration Date</dt>
@@ -330,14 +384,14 @@
                   <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">
                     {{ trade.instrument_type === 'option' ? 'Entry Price (per share)' : 'Entry Price' }}
                   </dt>
-                  <dd class="mt-1 text-sm text-gray-900 dark:text-white font-mono">{{ formatTradeCurrency(trade.entry_price) }}</dd>
+                  <dd class="mt-1 text-sm text-gray-900 dark:text-white text-mono-num">{{ formatTradePrice(trade, 'entry_price') }}</dd>
                 </div>
                 <div>
                   <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">
                     {{ trade.instrument_type === 'option' ? 'Exit Price (per share)' : 'Exit Price' }}
                   </dt>
-                  <dd class="mt-1 text-sm text-gray-900 dark:text-white font-mono">
-                    <template v-if="trade.exit_time">{{ formatTradeCurrency(trade.exit_price) }}</template>
+                  <dd class="mt-1 text-sm text-gray-900 dark:text-white text-mono-num">
+                    <template v-if="trade.exit_time">{{ formatTradePrice(trade, 'exit_price') }}</template>
                     <template v-else-if="manualOptionPrice !== null">
                       {{ formatTradeCurrency(manualOptionPrice) }}
                       <span class="text-xs text-gray-500 dark:text-gray-400 font-normal ml-1">(current)</span>
@@ -347,62 +401,56 @@
                 </div>
                 <div v-if="trade.stopLoss || trade.stop_loss">
                   <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Stop Loss</dt>
-                  <dd class="mt-1 text-sm text-gray-900 dark:text-white font-mono">{{ formatTradeCurrency(trade.stop_loss || trade.stopLoss) }}</dd>
+                  <dd class="mt-1 text-sm text-gray-900 dark:text-white text-mono-num">{{ formatTradePrice(trade, 'stop_loss') }}</dd>
                 </div>
                 <div v-if="trade.takeProfit || trade.take_profit || (trade.take_profit_targets && trade.take_profit_targets.length > 0)">
                   <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Take Profit</dt>
-                  <dd class="mt-1 text-sm text-gray-900 dark:text-white font-mono flex flex-wrap gap-x-4 gap-y-1">
+                  <dd class="mt-1 text-sm text-gray-900 dark:text-white text-mono-num flex flex-wrap gap-x-4 gap-y-1">
                     <!-- Show single take_profit as TP1 only when NO take_profit_targets exist -->
                     <span v-if="(trade.take_profit || trade.takeProfit) && (!trade.take_profit_targets || trade.take_profit_targets.length === 0)">
-                      <span class="text-xs text-gray-400 mr-1">TP1:</span>{{ formatTradeCurrency(trade.take_profit || trade.takeProfit) }}
+                      <span class="text-xs text-gray-500 dark:text-gray-400 mr-1">TP1:</span>{{ formatTradePrice(trade, 'take_profit') }}
                     </span>
                     <!-- Show all targets from take_profit_targets as TP1, TP2, etc. -->
                     <span v-for="(target, index) in (trade.take_profit_targets || [])" :key="index">
-                      <span class="text-xs text-gray-400 mr-1">TP{{ index + 1 }}:</span>{{ formatTradeCurrency(target.price) }}
-                      <span v-if="target.shares" class="text-xs text-gray-400 ml-0.5">({{ target.shares }})</span>
+                      <span class="text-xs text-gray-500 dark:text-gray-400 mr-1">TP{{ index + 1 }}:</span>{{ formatTargetPrice(target, index) }}
+                      <span v-if="target.shares" class="text-xs text-gray-400 ml-0.5">({{ formatQuantity(target.shares) }})</span>
                     </span>
                   </dd>
                 </div>
                 <div v-if="trade.rValue !== null && trade.rValue !== undefined">
                   <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">R-Multiple</dt>
                   <dd class="mt-1">
-                    <span class="text-sm font-semibold font-mono"
-                      :class="[
-                        Number(trade.rValue) >= 2
-                          ? 'text-green-600 dark:text-green-400'
-                          : Number(trade.rValue) >= 0
-                          ? 'text-yellow-600 dark:text-yellow-400'
-                          : 'text-red-600 dark:text-red-400'
-                      ]">
-                      {{ Number(trade.rValue).toFixed(1) }}R
+                    <span class="text-sm font-semibold text-mono-num"
+                      :class="pnlClass(Number(trade.rValue))">
+                      {{ formatR(trade.rValue) }}
                     </span>
                     <span class="ml-2 text-xs text-gray-500 dark:text-gray-400">
-                      ({{ Number(trade.rValue) >= 2 ? 'Excellent' : Number(trade.rValue) >= 0 ? 'Good' : 'Loss' }})
+                      ({{ Number(trade.rValue) >= 2 ? 'Excellent' : Number(trade.rValue) > 0 ? 'Good' : Number(trade.rValue) === 0 ? 'Breakeven' : 'Loss' }})
                     </span>
                   </dd>
                 </div>
                 <div v-if="trade.mae !== null && trade.mae !== undefined">
                   <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">MAE</dt>
-                  <dd class="mt-1 text-sm font-mono" :class="trade.mae !== null && trade.mae !== undefined ? 'text-red-600 dark:text-red-400' : 'text-gray-400 dark:text-gray-500'">
-                    {{ trade.mae !== null && trade.mae !== undefined ? formatExcursionValue(trade.mae) : '—' }}
+                  <dd class="mt-1 text-sm text-mono-num" :class="trade.mae !== null && trade.mae !== undefined ? 'text-red-600 dark:text-red-400' : 'text-gray-400 dark:text-gray-500'">
+                    {{ trade.mae !== null && trade.mae !== undefined ? formatExcursionValue(trade, 'mae') : '—' }}
                   </dd>
                 </div>
                 <div v-if="trade.mfe !== null && trade.mfe !== undefined">
                   <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">MFE</dt>
-                  <dd class="mt-1 text-sm font-mono" :class="trade.mfe !== null && trade.mfe !== undefined ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'">
-                    {{ trade.mfe !== null && trade.mfe !== undefined ? formatExcursionValue(trade.mfe) : '—' }}
+                  <dd class="mt-1 text-sm text-mono-num" :class="trade.mfe !== null && trade.mfe !== undefined ? 'text-green-700 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'">
+                    {{ trade.mfe !== null && trade.mfe !== undefined ? formatExcursionValue(trade, 'mfe') : '—' }}
                   </dd>
                 </div>
                 <div v-if="(trade.post_exit_mae ?? trade.postExitMae) !== null && (trade.post_exit_mae ?? trade.postExitMae) !== undefined">
                   <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">After-Trade MAE</dt>
-                  <dd class="mt-1 text-sm font-mono" :class="(trade.post_exit_mae ?? trade.postExitMae) !== null && (trade.post_exit_mae ?? trade.postExitMae) !== undefined ? 'text-red-600 dark:text-red-400' : 'text-gray-400 dark:text-gray-500'">
-                    {{ (trade.post_exit_mae ?? trade.postExitMae) !== null && (trade.post_exit_mae ?? trade.postExitMae) !== undefined ? formatExcursionValue(trade.post_exit_mae ?? trade.postExitMae) : '—' }}
+                  <dd class="mt-1 text-sm text-mono-num" :class="(trade.post_exit_mae ?? trade.postExitMae) !== null && (trade.post_exit_mae ?? trade.postExitMae) !== undefined ? 'text-red-600 dark:text-red-400' : 'text-gray-400 dark:text-gray-500'">
+                    {{ (trade.post_exit_mae ?? trade.postExitMae) !== null && (trade.post_exit_mae ?? trade.postExitMae) !== undefined ? formatExcursionValue(trade, 'post_exit_mae') : '—' }}
                   </dd>
                 </div>
                 <div v-if="(trade.post_exit_mfe ?? trade.postExitMfe) !== null && (trade.post_exit_mfe ?? trade.postExitMfe) !== undefined">
                   <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">After-Trade MFE</dt>
-                  <dd class="mt-1 text-sm font-mono" :class="(trade.post_exit_mfe ?? trade.postExitMfe) !== null && (trade.post_exit_mfe ?? trade.postExitMfe) !== undefined ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'">
-                    {{ (trade.post_exit_mfe ?? trade.postExitMfe) !== null && (trade.post_exit_mfe ?? trade.postExitMfe) !== undefined ? formatExcursionValue(trade.post_exit_mfe ?? trade.postExitMfe) : '—' }}
+                  <dd class="mt-1 text-sm text-mono-num" :class="(trade.post_exit_mfe ?? trade.postExitMfe) !== null && (trade.post_exit_mfe ?? trade.postExitMfe) !== undefined ? 'text-green-700 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'">
+                    {{ (trade.post_exit_mfe ?? trade.postExitMfe) !== null && (trade.post_exit_mfe ?? trade.postExitMfe) !== undefined ? formatExcursionValue(trade, 'post_exit_mfe') : '—' }}
                   </dd>
                 </div>
                 <div>
@@ -427,12 +475,8 @@
                 <div>
                   <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Status</dt>
                   <dd class="mt-1">
-                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
-                      :class="[
-                        trade.exit_time
-                          ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                          : 'bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-400'
-                      ]">
+                    <span class="badge"
+                      :class="[ trade.exit_time ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' : 'bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-400' ]">
                       {{ trade.exit_time ? 'Closed' : 'Open' }}
                     </span>
                   </dd>
@@ -440,32 +484,19 @@
                 <div v-if="trade.confidence">
                   <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Confidence Level</dt>
                   <dd class="mt-1">
-                    <div class="flex items-center space-x-3">
-                      <div class="flex space-x-1">
-                        <div v-for="i in 10" :key="i" class="w-2 h-2 rounded-full"
-                          :class="i <= trade.confidence ? 'bg-primary-500' : 'bg-gray-300 dark:bg-gray-600'">
-                        </div>
-                      </div>
-                      <span class="text-sm font-medium text-gray-900 dark:text-white">{{ trade.confidence }}/10</span>
-                    </div>
+                    <ConfidenceMeter :value="Number(trade.confidence)" />
                   </dd>
                 </div>
                 <div class="sm:col-span-2">
                   <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Setup Quality</dt>
                   <dd class="mt-1">
                     <div v-if="trade.qualityGrade" class="flex items-center space-x-3">
-                      <span class="px-3 py-1 inline-flex text-sm font-semibold rounded"
-                        :class="{
-                          'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400': trade.qualityGrade === 'A',
-                          'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400': trade.qualityGrade === 'B',
-                          'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400': trade.qualityGrade === 'C',
-                          'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400': trade.qualityGrade === 'D',
-                          'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400': trade.qualityGrade === 'F'
-                        }">
+                      <span class="badge"
+                        :class="{ 'bg-primary-700 text-white dark:bg-primary-700 dark:text-white': trade.qualityGrade === 'A', 'bg-white text-primary-700 ring-1 ring-inset ring-primary-400 dark:bg-gray-800 dark:text-primary-300 dark:ring-primary-500': trade.qualityGrade === 'B', 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300': trade.qualityGrade === 'C', 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300': trade.qualityGrade === 'D', 'bg-yellow-200 text-yellow-900 dark:bg-yellow-900/60 dark:text-yellow-200': trade.qualityGrade === 'F' }">
                         Grade {{ trade.qualityGrade }}
                       </span>
                       <span v-if="trade.qualityScore" class="text-sm text-gray-600 dark:text-gray-400">
-                        ({{ Number(trade.qualityScore).toFixed(1) }}/5.0)
+                        ({{ formatDecimal(Number(trade.qualityScore), { digits: 1 }) }}/5.0)
                       </span>
                     </div>
                     <div v-else-if="trade.instrument_type === 'future'">
@@ -476,7 +507,7 @@
                       <button
                         @click="calculateQuality"
                         :disabled="calculatingQuality"
-                        class="text-xs px-3 py-1 bg-primary-600 text-white rounded hover:bg-primary-700 disabled:opacity-50"
+                        class="btn-primary btn-sm"
                       >
                         {{ calculatingQuality ? 'Calculating...' : 'Calculate Setup Quality' }}
                       </button>
@@ -509,7 +540,7 @@
                   </dt>
                   <dd class="mt-1 text-sm" :class="[
                     detailCommission < 0
-                      ? 'text-green-600 dark:text-green-400'
+                      ? 'text-green-700 dark:text-green-400'
                       : detailCommission > 0
                       ? 'text-red-600 dark:text-red-400'
                       : 'text-gray-900 dark:text-white'
@@ -528,7 +559,7 @@
           <!-- Setup Quality Breakdown -->
           <div v-if="trade.qualityMetrics" class="card">
             <div class="card-body">
-              <h3 class="text-lg font-medium text-gray-900 dark:text-white" :class="trade.qualityMetrics.dataSymbol ? 'mb-1' : 'mb-4'">Setup Quality Breakdown</h3>
+              <h3 class="heading-card" :class="trade.qualityMetrics.dataSymbol ? 'mb-1' : 'mb-4'">Setup Quality Breakdown</h3>
               <p v-if="!trade.qualityGrade && trade.qualityMetrics.coverage !== undefined" class="text-xs text-yellow-700 dark:text-yellow-300 mb-3">
                 Setup quality was not graded because only {{ formatPercentValue(trade.qualityMetrics.coverage) }} of the configured metric weight had data. Minimum required coverage is {{ formatPercentValue(trade.qualityMetrics.minimumCoverage ?? 0.4) }}.
               </p>
@@ -540,17 +571,10 @@
               </p>
 
               <div class="space-y-4">
-                <div v-for="metric in qualityBreakdown" :key="metric.key" class="border-l-4 pl-4 py-2"
-                  :class="[
-                    metric.excluded ? 'border-gray-300 dark:border-gray-600' :
-                    metric.score >= 0.8 ? 'border-green-400' :
-                    metric.score >= 0.6 ? 'border-blue-400' :
-                    metric.score >= 0.4 ? 'border-yellow-400' :
-                    'border-red-400'
-                  ]">
+                <div v-for="metric in qualityBreakdown" :key="metric.key" class="py-2">
                   <div class="flex items-center justify-between mb-2">
                     <div>
-                      <h4 class="text-sm font-semibold text-gray-900 dark:text-white">{{ metric.label }}</h4>
+                      <h4 class="heading-sub">{{ metric.label }}</h4>
                       <p class="text-xs text-gray-500 dark:text-gray-400">Weight: {{ metric.weight }}%</p>
                     </div>
                     <div class="text-right">
@@ -558,13 +582,8 @@
                         No data
                       </div>
                       <div v-else class="text-sm font-semibold"
-                        :class="[
-                          metric.score >= 0.8 ? 'text-green-600 dark:text-green-400' :
-                          metric.score >= 0.6 ? 'text-blue-600 dark:text-blue-400' :
-                          metric.score >= 0.4 ? 'text-yellow-600 dark:text-yellow-400' :
-                          'text-red-600 dark:text-red-400'
-                        ]">
-                        {{ (metric.score * 100).toFixed(0) }}%
+                        :class="[ metric.score >= 0.8 ? 'text-primary-700 dark:text-primary-400' : metric.score >= 0.6 ? 'text-primary-700 dark:text-primary-300' : metric.score >= 0.4 ? 'text-yellow-600 dark:text-yellow-400' : 'text-gray-500 dark:text-gray-400' ]">
+                        {{ formatPercent(metric.score, { multiplier: 100 }) }}
                       </div>
                       <div class="text-xs text-gray-500 dark:text-gray-400">
                         {{ metric.excluded ? 'Excluded from score' : metric.display }}
@@ -573,12 +592,7 @@
                   </div>
                   <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                     <div v-if="!metric.excluded" class="h-2 rounded-full transition-all"
-                      :class="[
-                        metric.score >= 0.8 ? 'bg-green-500' :
-                        metric.score >= 0.6 ? 'bg-blue-500' :
-                        metric.score >= 0.4 ? 'bg-yellow-500' :
-                        'bg-red-500'
-                      ]"
+                      :class="[ metric.score >= 0.8 ? 'bg-primary-500' : metric.score >= 0.6 ? 'bg-primary-300' : metric.score >= 0.4 ? 'bg-yellow-400' : 'bg-gray-400' ]"
                       :style="{ width: (metric.score * 100) + '%' }">
                     </div>
                   </div>
@@ -589,7 +603,7 @@
               <div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <div class="flex items-center justify-between">
                   <div>
-                    <h4 class="text-sm font-semibold text-gray-900 dark:text-white">Overall Setup Quality</h4>
+                    <h4 class="heading-sub">Overall Setup Quality</h4>
                     <p class="text-xs text-gray-500 dark:text-gray-400">
                       {{ hasExcludedQualityMetrics
                         ? 'Weighted average of metrics with data - metrics without data are excluded and the remaining weights are rescaled'
@@ -597,17 +611,17 @@
                     </p>
                   </div>
                   <div class="text-right">
-                    <div v-if="trade.qualityGrade" class="text-2xl font-bold"
+                    <div v-if="trade.qualityGrade" class="stat-value"
                       :class="{
-                        'text-green-600 dark:text-green-400': trade.qualityGrade === 'A',
-                        'text-blue-600 dark:text-blue-400': trade.qualityGrade === 'B',
+                        'text-green-700 dark:text-green-400': trade.qualityGrade === 'A',
+                        'text-primary-700 dark:text-primary-400': trade.qualityGrade === 'B',
                         'text-yellow-600 dark:text-yellow-400': trade.qualityGrade === 'C',
-                        'text-orange-600 dark:text-orange-400': trade.qualityGrade === 'D',
+                        'text-yellow-600 dark:text-yellow-400': trade.qualityGrade === 'D',
                         'text-red-600 dark:text-red-400': trade.qualityGrade === 'F'
                       }">
-                      {{ Number(trade.qualityScore).toFixed(1) }}/5.0
+                      {{ formatDecimal(Number(trade.qualityScore), { digits: 1 }) }}/5.0
                     </div>
-                    <div v-else class="text-2xl font-bold text-gray-500 dark:text-gray-400">
+                    <div v-else class="stat-value text-gray-500 dark:text-gray-400">
                       Not graded
                     </div>
                     <div v-if="trade.qualityGrade" class="text-sm font-semibold text-gray-600 dark:text-gray-400">
@@ -626,34 +640,28 @@
             <div class="card-body">
               <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-5">
                 <div>
-                  <h3 class="text-lg font-medium text-gray-900 dark:text-white">Playbook & Manual Grading</h3>
+                  <h3 class="heading-card">Playbook & Manual Grading</h3>
                   <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                     Review this trade against a structured setup or self-grade it against custom criteria.
                   </p>
                 </div>
-                <router-link to="/analysis/playbooks" class="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400">
+                <router-link to="/analysis/playbooks" class="text-sm text-primary-700 hover:text-primary-800 dark:text-primary-400">
                   Manage profiles
                 </router-link>
               </div>
 
-              <div class="mb-5 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+              <div class="mb-5 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
                 <div class="flex flex-wrap items-center gap-3">
                   <div class="text-sm font-medium text-gray-700 dark:text-gray-300">Setup Quality</div>
                   <span
                     v-if="trade.setupQuality?.grade"
-                    class="inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold"
-                    :class="{
-                      'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400': trade.setupQuality.grade === 'A',
-                      'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400': trade.setupQuality.grade === 'B',
-                      'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400': trade.setupQuality.grade === 'C',
-                      'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400': trade.setupQuality.grade === 'D',
-                      'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400': trade.setupQuality.grade === 'F'
-                    }"
+                    class="badge"
+                    :class="{ 'bg-primary-700 text-white dark:bg-primary-700 dark:text-white': trade.setupQuality.grade === 'A', 'bg-white text-primary-700 ring-1 ring-inset ring-primary-400 dark:bg-gray-800 dark:text-primary-300 dark:ring-primary-500': trade.setupQuality.grade === 'B', 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300': trade.setupQuality.grade === 'C', 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300': trade.setupQuality.grade === 'D', 'bg-yellow-200 text-yellow-900 dark:bg-yellow-900/60 dark:text-yellow-200': trade.setupQuality.grade === 'F' }"
                   >
                     Grade {{ trade.setupQuality.grade }}
                   </span>
                   <span v-if="trade.setupQuality?.score" class="text-sm text-gray-500 dark:text-gray-400">
-                    {{ Number(trade.setupQuality.score).toFixed(1) }}/5.0
+                    {{ formatDecimal(Number(trade.setupQuality.score), { digits: 1 }) }}/5.0
                   </span>
                   <span v-else class="text-sm text-gray-500 dark:text-gray-400">
                     Calculate setup quality to pair setup context with adherence.
@@ -671,14 +679,14 @@
                 Loading profiles...
               </div>
 
-              <div v-else-if="playbooks.length === 0" class="rounded-xl border border-dashed border-gray-300 dark:border-gray-700 p-5 text-sm text-gray-500 dark:text-gray-400">
+              <div v-else-if="playbooks.length === 0" class="rounded-lg border border-dashed border-gray-300 dark:border-gray-700 p-5 text-sm text-gray-500 dark:text-gray-400">
                 Create a structured profile first, then return here to score this trade against it.
               </div>
 
               <div v-else class="space-y-6">
-                <div class="rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-5">
+                <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-5">
                   <div>
-                    <h4 class="text-sm font-semibold text-gray-900 dark:text-white">Playbook Assessment</h4>
+                    <h4 class="heading-sub">Playbook Assessment</h4>
                     <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
                       Keep process adherence separate from setup quality. Use this to review whether the trade followed your rules.
                     </p>
@@ -708,7 +716,7 @@
                     </div>
 
                     <div v-if="selectedAdherencePlaybook" class="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-                      <div class="rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                      <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
                         <div class="flex items-center justify-between mb-3">
                           <div>
                             <h5 class="text-sm font-semibold text-gray-900 dark:text-white">Checklist</h5>
@@ -718,14 +726,14 @@
                           </div>
                           <span
                             v-if="selectedAdherenceReview"
-                            class="inline-flex rounded-full px-3 py-1 text-sm font-semibold"
+                            class="badge"
                             :class="selectedAdherenceReview.adherenceScore >= 80
                               ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
                               : selectedAdherenceReview.adherenceScore >= 60
                               ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
                               : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'"
                           >
-                            {{ Number(selectedAdherenceReview.adherenceScore || 0).toFixed(2) }} adherence
+                            {{ formatDecimal(Number(selectedAdherenceReview.adherenceScore || 0)) }} adherence
                           </span>
                         </div>
 
@@ -738,22 +746,22 @@
                             <input
                               v-model="item.checked"
                               type="checkbox"
-                              class="mt-1 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                              class="checkbox mt-1"
                             />
                             <div class="flex-1">
                               <div class="text-sm font-medium text-gray-900 dark:text-white">
                                 {{ item.label }}
                               </div>
                               <div class="mt-1 flex flex-wrap gap-2 text-xs text-gray-500 dark:text-gray-400">
-                                <span>Weight {{ Number(item.weight || 1).toFixed(2) }}</span>
-                                <span v-if="item.isRequired" class="text-orange-600 dark:text-orange-400">Required</span>
+                                <span>Weight {{ formatDecimal(Number(item.weight || 1)) }}</span>
+                                <span v-if="item.isRequired" class="text-yellow-600 dark:text-yellow-400">Required</span>
                               </div>
                             </div>
                           </label>
                         </div>
                       </div>
 
-                      <div class="rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-4">
+                      <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-4">
                         <div>
                           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Followed plan?</label>
                           <BaseSelect
@@ -779,17 +787,17 @@
                         <button
                           @click="saveTradeReview('adherence')"
                           :disabled="savingAdherenceReview || selectedAdherencePlaybook?.isActive === false"
-                          class="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                          class="btn-primary w-full"
                         >
                           {{ savingAdherenceReview ? 'Saving...' : 'Save Playbook Review' }}
                         </button>
-                        <p v-if="selectedAdherencePlaybook?.isActive === false" class="text-xs text-amber-600 dark:text-amber-400">
+                        <p v-if="selectedAdherencePlaybook?.isActive === false" class="text-xs text-yellow-600 dark:text-yellow-400">
                           Archived playbooks remain visible on old reviews but cannot be used for new submissions.
                         </p>
                       </div>
                     </div>
 
-                    <div v-if="selectedAdherencePlaybook" class="rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                    <div v-if="selectedAdherencePlaybook" class="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
                       <div class="flex items-center justify-between mb-3">
                         <div>
                           <h5 class="text-sm font-semibold text-gray-900 dark:text-white">Hard Rule Results</h5>
@@ -807,81 +815,22 @@
                           v-for="rule in selectedAdherenceReview.ruleResults"
                           :key="rule.key"
                           class="rounded-lg border px-3 py-3"
-                          :class="rule.passed
-                            ? 'border-green-200 bg-green-50 dark:border-green-900/40 dark:bg-green-900/10'
-                            : 'border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-900/10'"
+                          :class="rule.passed ? 'border-green-200 bg-green-50 dark:border-green-900/40 dark:bg-green-900/10' : 'border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-900/10'"
                         >
                           <div class="flex items-center justify-between gap-4">
                             <div class="text-sm font-medium text-gray-900 dark:text-white">{{ rule.label }}</div>
-                            <span :class="rule.passed ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'" class="text-xs font-semibold uppercase tracking-wide">
+                            <span :class="rule.passed ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'" class="text-label">
                               {{ rule.passed ? 'Passed' : 'Failed' }}
                             </span>
                           </div>
                           <div class="mt-2 text-xs text-gray-600 dark:text-gray-400">
                             <div><span class="font-medium">Expected:</span> {{ Array.isArray(rule.expected) ? rule.expected.join(', ') : (rule.expected || 'N/A') }}</div>
-                            <div><span class="font-medium">Actual:</span> {{ Array.isArray(rule.actual) ? rule.actual.join(', ') : (rule.actual || 'N/A') }}</div>
-                            <div v-if="rule.violationMessage" class="mt-1 text-red-700 dark:text-red-300">{{ rule.violationMessage }}</div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <p v-else class="text-sm text-gray-500 dark:text-gray-400">
-                        Save a playbook review to evaluate stop loss, target R, side, timeframe, and configured strategy/setup/tag rules.
-                      </p>
-                    </div>
-                  </template>
-                </div>
-
-                <div class="rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-5">
-                  <div>
-                    <h4 class="text-sm font-semibold text-gray-900 dark:text-white">Manual Grading Profile</h4>
-                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      Use structured 0-5 criteria when you want a setup score that is independent from automated market-data coverage.
-                    </p>
-                  </div>
-
-                  <div v-if="manualGradingProfiles.length === 0" class="rounded-lg border border-dashed border-gray-300 dark:border-gray-700 p-4 text-sm text-gray-500 dark:text-gray-400">
-                    Create a 0-5 grading profile to score setup quality manually.
-                  </div>
-
-                  <template v-else>
-                    <div>
-                      <div class="mb-1 flex items-center justify-between gap-3">
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Grading Profile</label>
-                        <span
-                          v-if="trade.suggestedManualGradingProfileId && selectedManualGradingProfileId === trade.suggestedManualGradingProfileId && !trade.manualGradingReview"
-                          class="text-xs font-medium text-primary-700 dark:text-primary-300"
-                        >
-                          Suggested from trade rules
-                        </span>
-                      </div>
-                      <BaseSelect
-                        v-model="selectedManualGradingProfileId"
-                        :options="manualGradingProfileOptions"
-                        placeholder="Select a grading profile"
-                        @change="onManualGradingProfileChange"
-                      />
-                    </div>
-
-                    <div v-if="selectedManualGradingProfile" class="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-                      <div class="rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                        <div class="flex items-center justify-between mb-3">
-                          <div>
-                            <h5 class="text-sm font-semibold text-gray-900 dark:text-white">Grading Criteria</h5>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">
-                              {{ getReviewCompletion(selectedManualGradingProfile, manualGradingReviewForm).label }}
-                            </p>
-                          </div>
-                          <span
-                            v-if="selectedManualGradingReview"
-                            class="inline-flex rounded-full px-3 py-1 text-sm font-semibold"
-                            :class="selectedManualGradingReview.adherenceScore >= 80
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                            <div><span class="font-medium">Actual:</span> {{ Array.isArray(rule.actual) ? rule.actual.join(', ') : (rule.actual || 'N/A') }}</div> <div v-if="rule.violationMessage" class="mt-1 text-red-600 dark:text-red-300">{{ rule.violationMessage }}</div> </div> </div> </div> <p v-else class="text-sm text-gray-500 dark:text-gray-400"> Save a playbook review to evaluate stop loss, target R, side, timeframe, and configured strategy/setup/tag rules. </p> </div> </template> </div> <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-5"> <div> <h4 class="heading-sub">Manual Grading Profile</h4> <p class="mt-1 text-xs text-gray-500 dark:text-gray-400"> Use structured 0-5 criteria when you want a setup score that is independent from automated market-data coverage. </p> </div> <div v-if="manualGradingProfiles.length === 0" class="rounded-lg border border-dashed border-gray-300 dark:border-gray-700 p-4 text-sm text-gray-500 dark:text-gray-400"> Create a 0-5 grading profile to score setup quality manually. </div> <template v-else> <div> <div class="mb-1 flex items-center justify-between gap-3"> <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Grading Profile</label> <span v-if="trade.suggestedManualGradingProfileId && selectedManualGradingProfileId === trade.suggestedManualGradingProfileId && !trade.manualGradingReview" class="text-xs font-medium text-primary-700 dark:text-primary-300" > Suggested from trade rules </span> </div> <BaseSelect v-model="selectedManualGradingProfileId" :options="manualGradingProfileOptions" placeholder="Select a grading profile" @change="onManualGradingProfileChange" /> </div> <div v-if="selectedManualGradingProfile" class="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]"> <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4"> <div class="flex items-center justify-between mb-3"> <div> <h5 class="text-sm font-semibold text-gray-900 dark:text-white">Grading Criteria</h5> <p class="text-xs text-gray-500 dark:text-gray-400"> {{ getReviewCompletion(selectedManualGradingProfile, manualGradingReviewForm).label }} </p> </div> <span v-if="selectedManualGradingReview" class="badge" :class="selectedManualGradingReview.adherenceScore >= 80 ?'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
                               : selectedManualGradingReview.adherenceScore >= 60
                               ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
                               : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'"
                           >
-                            {{ selectedManualGradingReview.grade ? `Grade ${selectedManualGradingReview.grade}` : `${Number(selectedManualGradingReview.adherenceScore || 0).toFixed(2)} score` }}
+                            {{ selectedManualGradingReview.grade ? `Grade ${selectedManualGradingReview.grade}` : `${formatDecimal(Number(selectedManualGradingReview.adherenceScore || 0))} score` }}
                           </span>
                         </div>
 
@@ -897,8 +846,8 @@
                                   {{ item.label }}
                                 </div>
                                 <div class="mt-1 flex flex-wrap gap-2 text-xs text-gray-500 dark:text-gray-400">
-                                  <span>Weight {{ Number(item.weight || 1).toFixed(2) }}</span>
-                                  <span v-if="item.isRequired" class="text-orange-600 dark:text-orange-400">Required</span>
+                                  <span>Weight {{ formatDecimal(Number(item.weight || 1)) }}</span>
+                                  <span v-if="item.isRequired" class="text-yellow-600 dark:text-yellow-400">Required</span>
                                 </div>
                               </div>
                               <div class="flex items-center gap-3 sm:w-56">
@@ -924,7 +873,7 @@
                         </div>
                       </div>
 
-                      <div class="rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-4">
+                      <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-4">
                         <div>
                           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Grading notes</label>
                           <textarea
@@ -938,17 +887,17 @@
                         <button
                           @click="saveTradeReview('manual_grading')"
                           :disabled="savingManualGradingReview || selectedManualGradingProfile?.isActive === false"
-                          class="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                          class="btn-primary w-full"
                         >
                           {{ savingManualGradingReview ? 'Saving...' : 'Save Manual Grade' }}
                         </button>
-                        <p v-if="selectedManualGradingProfile?.isActive === false" class="text-xs text-amber-600 dark:text-amber-400">
+                        <p v-if="selectedManualGradingProfile?.isActive === false" class="text-xs text-yellow-600 dark:text-yellow-400">
                           Archived grading profiles remain visible on old reviews but cannot be used for new submissions.
                         </p>
                       </div>
                     </div>
 
-                    <div v-if="selectedManualGradingProfile" class="rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                    <div v-if="selectedManualGradingProfile" class="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
                       <div class="flex items-center justify-between mb-3">
                         <div>
                           <h5 class="text-sm font-semibold text-gray-900 dark:text-white">Profile Rule Results</h5>
@@ -966,58 +915,21 @@
                           v-for="rule in selectedManualGradingReview.ruleResults"
                           :key="rule.key"
                           class="rounded-lg border px-3 py-3"
-                          :class="rule.passed
-                            ? 'border-green-200 bg-green-50 dark:border-green-900/40 dark:bg-green-900/10'
-                            : 'border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-900/10'"
+                          :class="rule.passed ? 'border-green-200 bg-green-50 dark:border-green-900/40 dark:bg-green-900/10' : 'border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-900/10'"
                         >
                           <div class="flex items-center justify-between gap-4">
                             <div class="text-sm font-medium text-gray-900 dark:text-white">{{ rule.label }}</div>
-                            <span :class="rule.passed ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'" class="text-xs font-semibold uppercase tracking-wide">
+                            <span :class="rule.passed ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'" class="text-label">
                               {{ rule.passed ? 'Passed' : 'Failed' }}
                             </span>
                           </div>
                           <div class="mt-2 text-xs text-gray-600 dark:text-gray-400">
                             <div><span class="font-medium">Expected:</span> {{ Array.isArray(rule.expected) ? rule.expected.join(', ') : (rule.expected || 'N/A') }}</div>
-                            <div><span class="font-medium">Actual:</span> {{ Array.isArray(rule.actual) ? rule.actual.join(', ') : (rule.actual || 'N/A') }}</div>
-                            <div v-if="rule.violationMessage" class="mt-1 text-red-700 dark:text-red-300">{{ rule.violationMessage }}</div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <p v-else class="text-sm text-gray-500 dark:text-gray-400">
-                        Save a manual grading review to evaluate any configured side, timeframe, stop loss, target R, strategy, setup, or tag rules.
-                      </p>
-                    </div>
-                  </template>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Executions -->
-          <div v-if="processedExecutions && processedExecutions.length > 0" class="card">
-            <div class="card-body">
-              <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-medium text-gray-900 dark:text-white">
-                  Executions ({{ processedExecutions.length }})
-                </h3>
-                <div v-if="processedExecutions.length >= 2 && trade.exit_price && trade.exit_time" class="flex items-center space-x-2">
-                  <template v-if="splitMode">
-                    <span class="text-sm text-gray-600 dark:text-gray-400">{{ selectedExecutions.size }} selected</span>
-                    <button
-                      @click="splitSelectedTrades"
-                      :disabled="splittingTrade || selectedExecutions.size === 0 || selectedExecutions.size === entryExecutionIndices.length"
-                      class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md bg-primary-600 text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50"
-                    >
-                      <svg v-if="splittingTrade" class="animate-spin -ml-0.5 mr-1.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      {{ splittingTrade ? 'Splitting...' : 'Split Selected' }}
+                            <div><span class="font-medium">Actual:</span> {{ Array.isArray(rule.actual) ? rule.actual.join(', ') : (rule.actual || 'N/A') }}</div> <div v-if="rule.violationMessage" class="mt-1 text-red-600 dark:text-red-300">{{ rule.violationMessage }}</div> </div> </div> </div> <p v-else class="text-sm text-gray-500 dark:text-gray-400"> Save a manual grading review to evaluate any configured side, timeframe, stop loss, target R, strategy, setup, or tag rules. </p> </div> </template> </div> </div> </div> </div> <!-- Executions --> <div v-if="processedExecutions && processedExecutions.length > 0" class="card"> <div class="card-body"> <div class="flex items-center justify-between mb-4"> <h3 class="heading-card"> Executions ({{ processedExecutions.length }}) </h3> <div v-if="processedExecutions.length >= 2 && trade.exit_price && trade.exit_time" class="flex items-center space-x-2"> <template v-if="splitMode"> <span class="text-sm text-gray-600 dark:text-gray-400">{{ selectedExecutions.size }} selected</span> <button @click="splitSelectedTrades" :disabled="splittingTrade || selectedExecutions.size === 0 || selectedExecutions.size === entryExecutionIndices.length" class="btn-primary btn-sm" > <span v-if="splittingTrade" class="spinner spinner-xs spinner-current mr-2 -ml-0.5"></span> {{ splittingTrade ?'Splitting...' : 'Split Selected' }}
                     </button>
                     <button
                       @click="splitMode = false; selectedExecutions = new Set()"
-                      class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none"
+                      class="btn-secondary btn-sm"
                     >
                       Cancel
                     </button>
@@ -1025,7 +937,7 @@
                   <button
                     v-else
                     @click="splitMode = true"
-                    class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    class="btn-secondary btn-sm"
                   >
                     Select to Split
                   </button>
@@ -1035,37 +947,37 @@
               <!-- Desktop Table View -->
               <div class="hidden md:block overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <thead class="bg-gray-50 dark:bg-gray-800">
+                  <thead class="table-head">
                     <tr>
-                      <th v-if="splitMode" class="px-3 py-3 w-10"></th>
-                      <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <th v-if="splitMode" class="w-10 table-th px-3 py-2"></th>
+                      <th class="text-left table-th px-3 py-2">
                         Action
                       </th>
-                      <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <th class="text-left table-th px-3 py-2">
                         Quantity
                       </th>
-                      <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <th class="text-left table-th px-3 py-2">
                         Entry Price
                       </th>
-                      <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <th class="text-left table-th px-3 py-2">
                         Exit Price
                       </th>
-                      <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <th class="text-left table-th px-3 py-2">
                         Gross P&L
                       </th>
-                      <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <th class="text-left table-th px-3 py-2">
                         Net P&L
                       </th>
-                      <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <th class="text-left table-th px-3 py-2">
                         Commission
                       </th>
-                      <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <th class="text-left table-th px-3 py-2">
                         Fees
                       </th>
-                      <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <th class="text-left table-th px-3 py-2">
                         Entry Time
                       </th>
-                      <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <th class="text-left table-th px-3 py-2">
                         Exit Time
                       </th>
                     </tr>
@@ -1073,18 +985,18 @@
                   <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
                     <tr v-for="(execution, index) in processedExecutions" :key="index"
                         class="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                      <td v-if="splitMode" class="px-3 py-4 whitespace-nowrap">
+                      <td v-if="splitMode" class="whitespace-nowrap px-4 py-3">
                         <input
                           v-if="isEntryExecution(execution)"
                           type="checkbox"
                           :checked="selectedExecutions.has(index)"
                           @change="toggleExecution(index)"
-                          class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                          class="checkbox"
                         />
                         <span v-else class="block h-4 w-4"></span>
                       </td>
-                      <td class="px-3 py-4 whitespace-nowrap">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                      <td class="whitespace-nowrap px-4 py-3">
+                        <span class="badge"
                               :class="[
                                 (execution.action || execution.side || '').toLowerCase() === 'buy' || (execution.action || execution.side || '').toLowerCase() === 'long'
                                   ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
@@ -1095,52 +1007,52 @@
                           {{ ((execution.action || execution.side) || 'N/A').toUpperCase() }}
                         </span>
                       </td>
-                      <td class="px-3 py-4 whitespace-nowrap text-sm font-mono text-gray-900 dark:text-white">
+                      <td class="whitespace-nowrap text-sm text-mono-num text-gray-900 dark:text-white px-4 py-3">
                         {{ formatQuantity(execution.quantity) }}
                       </td>
-                      <td class="px-3 py-4 whitespace-nowrap text-sm font-mono text-gray-900 dark:text-white">
-                        {{ execution.entryPrice !== null && execution.entryPrice !== undefined ? formatTradeCurrency(execution.entryPrice) : '-' }}
+                      <td class="whitespace-nowrap text-sm text-mono-num text-gray-900 dark:text-white px-4 py-3">
+                        {{ execution.entryPrice !== null && execution.entryPrice !== undefined ? formatTradePrice(execution, 'entry_price') : '-' }}
                       </td>
-                      <td class="px-3 py-4 whitespace-nowrap text-sm font-mono text-gray-900 dark:text-white">
-                        {{ execution.exitPrice !== null && execution.exitPrice !== undefined ? formatTradeCurrency(execution.exitPrice) : '-' }}
+                      <td class="whitespace-nowrap text-sm text-mono-num text-gray-900 dark:text-white px-4 py-3">
+                        {{ execution.exitPrice !== null && execution.exitPrice !== undefined ? formatTradePrice(execution, 'exit_price') : '-' }}
                       </td>
-                      <td class="px-3 py-4 whitespace-nowrap text-sm font-mono"
+                      <td class="whitespace-nowrap text-sm text-mono-num px-4 py-3"
                           :class="[
                             execution.grossPnl > 0
-                              ? 'text-green-600 dark:text-green-400'
+                              ? 'text-green-700 dark:text-green-400'
                               : execution.grossPnl < 0
                               ? 'text-red-600 dark:text-red-400'
                               : 'text-gray-900 dark:text-white'
                           ]">
                         {{ execution.grossPnl !== undefined && execution.grossPnl !== null ? formatTradeCurrency(execution.grossPnl) : '-' }}
                       </td>
-                      <td class="px-3 py-4 whitespace-nowrap text-sm font-mono"
+                      <td class="whitespace-nowrap text-sm text-mono-num px-4 py-3"
                           :class="[
                             execution.netPnl > 0
-                              ? 'text-green-600 dark:text-green-400'
+                              ? 'text-green-700 dark:text-green-400'
                               : execution.netPnl < 0
                               ? 'text-red-600 dark:text-red-400'
                               : 'text-gray-900 dark:text-white'
                           ]">
                         {{ execution.netPnl !== undefined && execution.netPnl !== null ? formatTradeCurrency(execution.netPnl) : '-' }}
                       </td>
-                      <td class="px-3 py-4 whitespace-nowrap text-sm font-mono"
+                      <td class="whitespace-nowrap text-sm text-mono-num px-4 py-3"
                           :class="[
                             execution.commission < 0
-                              ? 'text-green-600 dark:text-green-400'
+                              ? 'text-green-700 dark:text-green-400'
                               : execution.commission > 0
                               ? 'text-red-600 dark:text-red-400'
                               : 'text-gray-600 dark:text-gray-400'
                           ]">
                         {{ execution.commission ? formatTradeSignedCurrency(-execution.commission) : '-' }}
                       </td>
-                      <td class="px-3 py-4 whitespace-nowrap text-sm font-mono text-gray-600 dark:text-gray-400">
+                      <td class="whitespace-nowrap text-sm text-mono-num text-gray-600 dark:text-gray-400 px-4 py-3">
                         {{ execution.fees ? formatTradeCurrency(execution.fees) : '-' }}
                       </td>
-                      <td class="px-3 py-4 whitespace-nowrap text-xs text-gray-500 dark:text-gray-400">
+                      <td class="whitespace-nowrap text-xs text-gray-500 dark:text-gray-400 px-4 py-3">
                         {{ execution.entryTime ? formatDateTime(execution.entryTime) : '-' }}
                       </td>
-                      <td class="px-3 py-4 whitespace-nowrap text-xs text-gray-500 dark:text-gray-400">
+                      <td class="whitespace-nowrap text-xs text-gray-500 dark:text-gray-400 px-4 py-3">
                         {{ execution.exitTime ? formatDateTime(execution.exitTime) : '-' }}
                       </td>
                     </tr>
@@ -1159,9 +1071,9 @@
                         type="checkbox"
                         :checked="selectedExecutions.has(index)"
                         @change="toggleExecution(index)"
-                        class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                        class="checkbox"
                       />
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                    <span class="badge"
                           :class="[
                             (execution.action || execution.side || '').toLowerCase() === 'buy' || (execution.action || execution.side || '').toLowerCase() === 'long'
                               ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
@@ -1180,20 +1092,20 @@
                   <div class="grid grid-cols-2 gap-3 text-sm">
                     <div>
                       <div class="text-gray-500 dark:text-gray-400 text-xs">Quantity</div>
-                      <div class="font-mono text-gray-900 dark:text-white">
+                      <div class="text-mono-num text-gray-900 dark:text-white">
                         {{ formatNumber(execution.quantity, 0) }}
                       </div>
                     </div>
                     <div v-if="execution.entryPrice !== null && execution.entryPrice !== undefined">
                       <div class="text-gray-500 dark:text-gray-400 text-xs">Entry Price</div>
-                      <div class="font-mono text-gray-900 dark:text-white">
-                        {{ formatTradeCurrency(execution.entryPrice) }}
+                      <div class="text-mono-num text-gray-900 dark:text-white">
+                        {{ formatTradePrice(execution, 'entry_price') }}
                       </div>
                     </div>
                     <div v-if="execution.exitPrice !== null && execution.exitPrice !== undefined">
                       <div class="text-gray-500 dark:text-gray-400 text-xs">Exit Price</div>
-                      <div class="font-mono text-gray-900 dark:text-white">
-                        {{ formatTradeCurrency(execution.exitPrice) }}
+                      <div class="text-mono-num text-gray-900 dark:text-white">
+                        {{ formatTradePrice(execution, 'exit_price') }}
                       </div>
                     </div>
                     <div v-if="execution.exitTime">
@@ -1204,10 +1116,10 @@
                     </div>
                     <div v-if="execution.grossPnl !== undefined && execution.grossPnl !== null">
                       <div class="text-gray-500 dark:text-gray-400 text-xs">Gross P&L</div>
-                      <div class="font-mono"
+                      <div class="text-mono-num"
                            :class="[
                              execution.grossPnl > 0
-                               ? 'text-green-600 dark:text-green-400'
+                               ? 'text-green-700 dark:text-green-400'
                                : execution.grossPnl < 0
                                ? 'text-red-600 dark:text-red-400'
                                : 'text-gray-900 dark:text-white'
@@ -1217,10 +1129,10 @@
                     </div>
                     <div v-if="execution.netPnl !== undefined && execution.netPnl !== null">
                       <div class="text-gray-500 dark:text-gray-400 text-xs">Net P&L</div>
-                      <div class="font-mono"
+                      <div class="text-mono-num"
                            :class="[
                              execution.netPnl > 0
-                               ? 'text-green-600 dark:text-green-400'
+                               ? 'text-green-700 dark:text-green-400'
                                : execution.netPnl < 0
                                ? 'text-red-600 dark:text-red-400'
                                : 'text-gray-900 dark:text-white'
@@ -1232,9 +1144,9 @@
                       <div class="text-gray-500 dark:text-gray-400 text-xs">
                         {{ execution.commission < 0 ? 'Commission (Rebate)' : 'Commission' }}
                       </div>
-                      <div class="font-mono" :class="[
+                      <div class="text-mono-num" :class="[
                         execution.commission < 0
-                          ? 'text-green-600 dark:text-green-400'
+                          ? 'text-green-700 dark:text-green-400'
                           : execution.commission > 0
                           ? 'text-red-600 dark:text-red-400'
                           : 'text-gray-600 dark:text-gray-400'
@@ -1244,7 +1156,7 @@
                     </div>
                     <div v-if="execution.fees">
                       <div class="text-gray-500 dark:text-gray-400 text-xs">Fees</div>
-                      <div class="font-mono text-gray-600 dark:text-gray-400">
+                      <div class="text-mono-num text-gray-600 dark:text-gray-400">
                         {{ formatTradeCurrency(execution.fees) }}
                       </div>
                     </div>
@@ -1261,25 +1173,25 @@
                   </div>
                   <div>
                     <div class="text-gray-500 dark:text-gray-400 text-xs">Total Volume</div>
-                    <div class="font-semibold font-mono text-gray-900 dark:text-white">
+                    <div class="font-semibold text-mono-num text-gray-900 dark:text-white">
                       {{ formatTradeCurrency(executionSummary.totalVolume) }}
                     </div>
                   </div>
                   <div>
                     <div class="text-gray-500 dark:text-gray-400 text-xs">Total Commission</div>
-                    <div class="font-semibold font-mono text-gray-900 dark:text-white">
+                    <div class="font-semibold text-mono-num text-gray-900 dark:text-white">
                       {{ formatTradeCurrency(executionSummary.totalCommission) }}
                     </div>
                   </div>
                   <div>
                     <div class="text-gray-500 dark:text-gray-400 text-xs">Total Fees</div>
-                    <div class="font-semibold font-mono text-gray-900 dark:text-white">
+                    <div class="font-semibold text-mono-num text-gray-900 dark:text-white">
                       {{ formatTradeCurrency(executionSummary.totalFees) }}
                     </div>
                   </div>
                   <div>
                     <div class="text-gray-500 dark:text-gray-400 text-xs">Shares Held</div>
-                    <div class="font-semibold font-mono text-gray-900 dark:text-white">
+                    <div class="font-semibold text-mono-num text-gray-900 dark:text-white">
                       {{ formatNumber(executionSummary.finalPosition, 0) }}
                     </div>
                   </div>
@@ -1291,12 +1203,12 @@
           <!-- Tags -->
           <div v-if="trade.tags && trade.tags.length > 0" class="card">
             <div class="card-body">
-              <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Tags</h3>
+              <h3 class="heading-card mb-4">Tags</h3>
               <div class="flex flex-wrap gap-2">
                 <span
                   v-for="tag in trade.tags"
                   :key="tag"
-                  class="px-3 py-1 bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-400 text-sm rounded-full"
+                  class="badge bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-400"
                 >
                   {{ tag }}
                 </span>
@@ -1314,7 +1226,7 @@
                 @click="toggleChartSection"
                 class="w-full flex items-center justify-between text-left"
               >
-                <h3 class="text-lg font-medium text-gray-900 dark:text-white">Chart Visualization</h3>
+                <h3 class="heading-card">Chart Visualization</h3>
                 <svg
                   class="h-5 w-5 text-gray-500 dark:text-gray-400 transition-transform duration-200"
                   :class="{ 'rotate-180': !chartSectionCollapsed }"
@@ -1334,7 +1246,7 @@
           <!-- Notes -->
           <div v-if="trade.notes" class="card">
             <div class="card-body">
-              <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Notes</h3>
+              <h3 class="heading-card mb-4">Notes</h3>
               <p class="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ trade.notes }}</p>
             </div>
           </div>
@@ -1363,7 +1275,7 @@
                 @click="toggleCommentsSection"
                 class="w-full flex items-center justify-between text-left"
               >
-                <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+                <h3 class="heading-card">
                   Comments ({{ comments.length }})
                 </h3>
                 <svg
@@ -1379,7 +1291,7 @@
 
               <div v-show="!commentsSectionCollapsed" class="mt-4">
                 <div v-if="loadingComments" class="flex justify-center py-8">
-                  <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                  <div class="spinner spinner-md"></div>
                 </div>
 
                 <div v-else>
@@ -1416,7 +1328,7 @@
                       <div class="flex-1">
                         <div class="flex items-center justify-between">
                           <div class="flex items-center space-x-2">
-                            <h4 class="text-sm font-medium text-gray-900 dark:text-white">
+                            <h4 class="heading-sub">
                               {{ comment.username }}
                             </h4>
                             <span class="text-xs text-gray-500 dark:text-gray-400">
@@ -1427,13 +1339,13 @@
                           <div v-if="comment.user_id === authStore.user?.id" class="flex items-center space-x-2">
                             <button
                               @click="startEditComment(comment)"
-                              class="text-xs text-gray-500 hover:text-primary-600 transition-colors"
+                              class="btn-link"
                             >
                               Edit
                             </button>
                             <button
                               @click="deleteTradeComment(comment.id)"
-                              class="text-xs text-red-500 hover:text-red-700 transition-colors"
+                              class="text-xs text-red-600 dark:text-red-400 hover:text-red-700 transition-colors"
                             >
                               Delete
                             </button>
@@ -1445,21 +1357,21 @@
                           <textarea
                             v-model="editCommentText"
                             rows="3"
-                            class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-600 dark:text-white shadow-sm focus:border-primary-500 focus:ring-primary-500 px-3 py-2"
+                            class="input w-full"
                             :disabled="submittingComment"
                             @keydown="handleEditKeydown"
                           ></textarea>
                           <div class="mt-2 flex justify-end space-x-2">
                             <button
                               @click="cancelEditComment"
-                              class="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                              class="btn-ghost btn-sm"
                             >
                               Cancel
                             </button>
                             <button
                               @click="saveEditComment(comment.id)"
                               :disabled="submittingComment || !editCommentText.trim()"
-                              class="text-xs bg-primary-600 text-white px-3 py-1 rounded hover:bg-primary-700 disabled:opacity-50 transition-colors"
+                              class="btn-primary btn-sm"
                             >
                               Save
                             </button>
@@ -1484,7 +1396,7 @@
                         id="comment"
                         v-model="newComment"
                         rows="3"
-                        class="shadow-sm block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white px-3 py-2"
+                        class="input w-full"
                         placeholder="Share your thoughts..."
                         :disabled="submittingComment"
                         @keydown="handleCommentKeydown"
@@ -1508,19 +1420,21 @@
           </div>
         </div>
 
-        <!-- Performance Summary -->
-        <div class="space-y-6">
-          <div class="card">
+        <!-- Performance Summary. On phones the side column dissolves into the
+             grid (display: contents) and the Performance card moves first, so
+             the outcome shows before the instrument fields. -->
+        <div class="contents lg:block lg:space-y-6">
+          <div class="card order-first lg:order-none">
             <div class="card-body">
-              <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Performance</h3>
+              <h3 class="heading-card mb-4">Performance</h3>
               <dl class="space-y-4">
                 <div>
                   <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">
                     Net P&L
                     <span v-if="!trade.exit_time && openUnrealizedPnL !== null" class="text-xs font-normal text-gray-400">(unrealized)</span>
                   </dt>
-                  <dd class="mt-1 text-2xl font-semibold" :class="[
-                    (trade.exit_time ? displayPnl : openUnrealizedPnL) >= 0 ? 'text-green-600' : 'text-red-600'
+                  <dd class="mt-1 stat-value" :class="[
+                    (trade.exit_time ? pnlClass(displayPnl) : pnlClass(openUnrealizedPnL))
                   ]">
                     <template v-if="trade.exit_time">{{ formatTradeCurrency(displayPnl) }}</template>
                     <template v-else-if="openUnrealizedPnL !== null">{{ formatTradeCurrency(openUnrealizedPnL) }}</template>
@@ -1530,22 +1444,22 @@
                 <div v-if="trade.pnl_percent || openUnrealizedPnLPercent !== null">
                   <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">P&L %</dt>
                   <dd class="mt-1 text-lg font-semibold" :class="[
-                    (trade.exit_time ? trade.pnl_percent : openUnrealizedPnLPercent) >= 0 ? 'text-green-600' : 'text-red-600'
+                    pnlClass(trade.exit_time ? trade.pnl_percent : openUnrealizedPnLPercent)
                   ]">
-                    <template v-if="trade.exit_time">{{ trade.pnl_percent > 0 ? '+' : '' }}{{ formatNumber(trade.pnl_percent) }}%</template>
+                    <template v-if="trade.exit_time">{{ formatDecimal(Number(trade.pnl_percent), { digits: 1, showSign: true }) }}%</template>
                     <template v-else>{{ openUnrealizedPnLPercent > 0 ? '+' : '' }}{{ formatNumber(openUnrealizedPnLPercent) }}%</template>
                   </dd>
                 </div>
                 <div>
                   <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Price Change</dt>
-                  <dd class="mt-1 text-sm text-gray-900 dark:text-white">
+                  <dd class="mt-1 text-sm" :class="String(calculateRiskReward()).startsWith('-') ? 'text-red-600 dark:text-red-400' : 'text-green-700 dark:text-green-400'">
                     {{ calculateRiskReward() }}
                   </dd>
                 </div>
                 <div>
-                  <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Value</dt>
-                  <dd class="mt-1 text-sm text-gray-900 dark:text-white">
-                    {{ formatTradeCurrency(trade.entry_price * trade.quantity) }}
+                  <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Entry Value</dt>
+                  <dd class="mt-1 text-sm text-gray-900 dark:text-white text-mono-num">
+                    {{ formatTradeCurrency(trade.entry_price * trade.quantity * tradeValueMultiplier) }}
                   </dd>
                 </div>
               </dl>
@@ -1555,7 +1469,7 @@
           <!-- Timeline -->
           <div class="card">
             <div class="card-body">
-              <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Timeline</h3>
+              <h3 class="heading-card mb-4">Timeline</h3>
               <dl class="space-y-3">
                 <div v-if="trade.entry_time">
                   <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -1583,40 +1497,33 @@
             </div>
           </div>
 
-          <!-- News Section -->
-          <div v-if="trade.has_news && trade.news_events && trade.news_events.length > 0" class="card">
+          <!-- News Section (Pro only) -->
+          <div v-if="showProLock && trade.has_news && trade.news_events && trade.news_events.length > 0" class="card">
+            <div class="card-body">
+              <h3 class="heading-card">Breaking News</h3>
+              <ProUpgradePrompt
+                variant="compact"
+                description="See the news and sentiment around this trade with TradeTally Pro."
+              />
+            </div>
+          </div>
+          <div v-else-if="isProUser && trade.has_news && trade.news_events && trade.news_events.length > 0" class="card">
             <div class="card-body">
               <div class="flex items-center justify-between mb-4">
                 <h3 class="heading-card">Breaking News</h3>
-                <span class="px-3 py-1 text-xs font-semibold rounded-full"
-                  :class="[
-                    trade.news_sentiment === 'positive' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' :
-                    trade.news_sentiment === 'negative' ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' :
-                    trade.news_sentiment === 'mixed' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' :
-                    'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                  ]">
+                <span :class="tradeBadgeClass(newsBadgeTone(trade.news_sentiment))">
                   {{ trade.news_sentiment || 'neutral' }} sentiment
                 </span>
               </div>
               
               <div class="space-y-4">
                 <div v-for="(article, index) in trade.news_events" :key="index" 
-                     class="border-l-4 pl-4 py-3"
-                     :class="[
-                       article.sentiment === 'positive' ? 'border-green-400' :
-                       article.sentiment === 'negative' ? 'border-red-400' :
-                       'border-gray-400'
-                     ]">
+                     class="py-3">
                   <div class="flex items-start justify-between">
-                    <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                    <h4 class="heading-sub mb-2">
                       {{ article.headline }}
                     </h4>
-                    <span class="flex-shrink-0 ml-2 px-2 py-1 text-xs rounded-full"
-                      :class="[
-                        article.sentiment === 'positive' ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400' :
-                        article.sentiment === 'negative' ? 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400' :
-                        'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
-                      ]">
+                    <span class="flex-shrink-0 ml-2" :class="tradeBadgeClass(newsBadgeTone(article.sentiment))">
                       {{ article.sentiment }}
                     </span>
                   </div>
@@ -1635,7 +1542,7 @@
                        :href="article.url" 
                        target="_blank" 
                        rel="noopener noreferrer"
-                       class="inline-flex items-center text-xs text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300">
+                       class="inline-flex items-center text-xs text-primary-700 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300">
                       Read full article
                       <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
@@ -1651,7 +1558,7 @@
     </div>
 
     <div v-else class="text-center py-12">
-      <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">Trade not found</h3>
+      <h3 class="heading-sub mt-2">Trade not found</h3>
       <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
         The trade you're looking for doesn't exist or you don't have permission to view it.
       </p>
@@ -1665,14 +1572,23 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, nextTick, computed, reactive, defineAsyncComponent } from 'vue'
+import IBKRReconciliationStatus from '@/components/trades/IBKRReconciliationStatus.vue'
+import ExcursionUnitSelect from '@/components/trades/ExcursionUnitSelect.vue'
+import { useExcursionDisplay } from '@/composables/useExcursionDisplay'
+import { pnlClass } from '@/utils/metricTone'
+import { formatR } from '@/utils/rFormat'
+import { formatDecimal, formatPercent } from '@/utils/formatters'
+import { newsBadgeTone, tradeBadgeClass } from '@/utils/tradeBadges'
+import { ref, watch, onMounted, onBeforeUnmount, nextTick, computed, reactive, defineAsyncComponent } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTradesStore } from '@/stores/trades'
 import { useNotification } from '@/composables/useNotification'
 import { useUserTimezone } from '@/composables/useUserTimezone'
 import { format, formatDistanceToNow, formatDistance } from 'date-fns'
-import { ChartPieIcon, DocumentIcon, ChatBubbleLeftIcon, SparklesIcon, ShareIcon, TrashIcon, PlayIcon } from '@heroicons/vue/24/outline'
+import { ChartPieIcon, DocumentIcon, ChatBubbleLeftIcon, SparklesIcon, ShareIcon, TrashIcon, PlayIcon, EllipsisHorizontalIcon } from '@heroicons/vue/24/outline'
+import ConfidenceMeter from '@/components/common/ConfidenceMeter.vue'
 import { useCurrencyFormatter } from '@/composables/useCurrencyFormatter'
+import { useTradePriceFormatter } from '@/composables/useTradePriceFormatter'
 import api from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import StockLogo from '@/components/common/StockLogo.vue'
@@ -1681,6 +1597,7 @@ import TradeChartVisualization from '@/components/trades/TradeChartVisualization
 import TradeImages from '@/components/trades/TradeImages.vue'
 import TradeCharts from '@/components/trades/TradeCharts.vue'
 import ProUpgradePrompt from '@/components/ProUpgradePrompt.vue'
+import { useProAccess } from '@/composables/useProAccess'
 import BaseSelect from '@/components/common/BaseSelect.vue'
 import { useAIStore } from '@/stores/ai'
 import { getTradeDateOnlyParts } from '@/utils/date'
@@ -1703,6 +1620,7 @@ const aiStore = useAIStore()
 const { showSuccess, showError, showConfirmation, showDangerConfirmation } = useNotification()
 const { formatDateTime: formatDateTimeTz, formatTime: formatTimeTz, timezoneLabel } = useUserTimezone()
 const { formatCurrency, currencySymbol, formatSignedCurrency } = useCurrencyFormatter()
+const { formatTradePrice } = useTradePriceFormatter()
 
 function reloadScrollStorageKey() {
   return `trade_detail_scroll:${route.params.id}`
@@ -1741,42 +1659,20 @@ function formatTradeSignedCurrency(value, options = {}) {
   return formatSignedCurrency(value, { ...options, currency: getTradeCurrency() })
 }
 
-function formatExcursionValue(value) {
-  const numeric = Number(value)
-  if (!Number.isFinite(numeric)) return '—'
-  const currentTrade = trade.value || {}
-  if ((currentTrade.instrument_type ?? currentTrade.instrumentType) !== 'future') return formatCurrency(numeric)
-
-  const quantity = Math.abs(Number(currentTrade.quantity) || 0)
-  const pointValue = Number(currentTrade.point_value ?? currentTrade.pointValue) || 0
-  if (quantity <= 0 || pointValue <= 0) return formatCurrency(numeric)
-
-  const scale = quantity * pointValue
-  const captured = getCapturedMoveDollars(currentTrade, scale)
-  const legacyPointUnits = hasLegacyFuturesExcursionUnits(currentTrade, captured, scale)
-  const points = legacyPointUnits ? numeric : numeric / scale
-  const dollars = legacyPointUnits ? numeric * scale : numeric
-  return `${points.toFixed(2)} pts (${formatCurrency(dollars)})`
+function formatTargetPrice(target, index) {
+  return formatTradePrice({
+    ...target,
+    native_prices: trade.value?.native_prices?.take_profit_targets?.[index],
+    price_currency: trade.value?.price_currency,
+    effective_currency: getTradeCurrency()
+  }, 'price')
 }
 
-function getCapturedMoveDollars(currentTrade, scale) {
-  const entry = Number(currentTrade.entry_price ?? currentTrade.entryPrice)
-  const exit = Number(currentTrade.exit_price ?? currentTrade.exitPrice)
-  if (!Number.isFinite(entry) || !Number.isFinite(exit)) return null
-  const move = currentTrade.side === 'short' ? entry - exit : exit - entry
-  return Math.max(0, move * scale)
-}
-
-function hasLegacyFuturesExcursionUnits(currentTrade, captured, scale) {
-  if (!captured || captured <= 0 || scale <= 1) return false
-  const candidates = [
-    currentTrade.mfe,
-    currentTrade.post_exit_mfe ?? currentTrade.postExitMfe
-  ].map(Number).filter(value => Number.isFinite(value) && value > 0)
-  return candidates.some(value => value < captured - 0.005 && value * scale >= captured - 0.005)
-}
+const { formatExcursionValue } = useExcursionDisplay((value, current_trade) =>
+  formatCurrency(value, { currency: getTradeCurrency() }))
 
 const loading = ref(true)
+const initialLoading = ref(true)
 const trade = ref(null)
 const allocationEnabled = ref(false)
 const allocationGroups = ref([])
@@ -1792,6 +1688,33 @@ const symbolCompanyName = computed(() => {
 // True only for the trade's owner. Guests/other users viewing a public trade get
 // a read-only view: owner actions and owner-only data fetches are skipped.
 const isOwner = computed(() => !!authStore.user && !!trade.value && trade.value.user_id === authStore.user.id)
+const showMoreActions = ref(false)
+const showIncompleteDetails = ref(false)
+const moreActionsRef = ref(null)
+// Close the phone action menu on any click outside it or on Escape.
+function onMoreActionsPointer(event) {
+  if (!moreActionsRef.value?.contains(event.target)) showMoreActions.value = false
+}
+function onMoreActionsKey(event) {
+  if (event.key === 'Escape') showMoreActions.value = false
+}
+watch(showMoreActions, open => {
+  const method = open ? 'addEventListener' : 'removeEventListener'
+  document[method]('click', onMoreActionsPointer, true)
+  document[method]('keydown', onMoreActionsKey)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('click', onMoreActionsPointer, true)
+  document.removeEventListener('keydown', onMoreActionsKey)
+})
+// Notional at entry: options carry contract_size, futures point_value.
+const tradeValueMultiplier = computed(() => {
+  const t = trade.value
+  if (!t) return 1
+  if (t.instrument_type === 'option' && Number(t.contract_size) > 0) return Number(t.contract_size)
+  if (t.instrument_type === 'future' && Number(t.point_value) > 0) return Number(t.point_value)
+  return 1
+})
 const allocationModalGroups = computed(() => {
   const byId = new Map(allocationGroups.value.map((group) => [group.id, group]))
   for (const allocation of tradeAllocations.value) {
@@ -1858,6 +1781,7 @@ const loadingPlaybooks = ref(false)
 const savingAdherenceReview = ref(false)
 const savingManualGradingReview = ref(false)
 const showAIPanel = ref(false)
+const aiPanelRef = ref(null)
 const showShareCard = ref(false)
 const storedAIAnalyses = ref([])
 const storedAIExpanded = ref(false)
@@ -1876,10 +1800,8 @@ const manualGradingReviewForm = reactive({
   reviewNotes: ''
 })
 
-const isPlaybookFeatureAvailable = computed(() => {
-  if (!authStore.user) return false
-  return authStore.user.billingEnabled === false || authStore.user.tier === 'pro' || authStore.user.role === 'admin'
-})
+const { isProUser, showProLock } = useProAccess()
+const isPlaybookFeatureAvailable = isProUser
 
 const selectedAdherencePlaybook = computed(() => {
   return adherencePlaybooks.value.find(playbook => playbook.id === selectedAdherencePlaybookId.value) || null
@@ -1935,7 +1857,7 @@ const formatFloat = (value) => {
   if (value === null || value === undefined || value === 0) return 'N/A'
   const num = Number(value)
   if (isNaN(num)) return 'N/A'
-  return num.toFixed(2) + 'M'
+  return formatDecimal(num) + 'M'
 }
 
 // User's quality grading weights, for the breakdown display (defaults until fetched)
@@ -1975,22 +1897,22 @@ const qualityBreakdown = computed(() => {
   const profileType = m.profile === 'option' ? 'option' : 'stock'
   const w = qualityProfiles.value?.[profileType] || {}
 
-  const signedPct = (v) => (Number(v) > 0 ? '+' : '') + Number(v).toFixed(2) + '%'
+  const signedPct = (v) => formatDecimal(Number(v), { digits: 1, showSign: true }) + '%'
 
   if (profileType === 'option') {
     return [
-      { key: 'newsSentiment', label: 'News Sentiment', weight: w.news ?? 25, valueField: 'newsSentiment', scoreField: 'newsSentimentScore', format: v => Number(v).toFixed(2) },
+      { key: 'newsSentiment', label: 'News Sentiment', weight: w.news ?? 25, valueField: 'newsSentiment', scoreField: 'newsSentimentScore', format: v => formatDecimal(Number(v)) },
       { key: 'gap', label: 'Underlying Gap', weight: w.gap ?? 15, valueField: 'gap', scoreField: 'gapScore', format: signedPct },
-      { key: 'relativeVolume', label: 'Underlying Relative Volume', weight: w.relativeVolume ?? 15, valueField: 'relativeVolume', scoreField: 'relativeVolumeScore', format: v => Number(v).toFixed(1) + 'x' },
+      { key: 'relativeVolume', label: 'Underlying Relative Volume', weight: w.relativeVolume ?? 15, valueField: 'relativeVolume', scoreField: 'relativeVolumeScore', format: v => formatDecimal(Number(v), { digits: 1 }) + 'x' },
       { key: 'dte', label: 'Days to Expiration', weight: w.dte ?? 25, valueField: 'dte', scoreField: 'dteScore', format: v => `${Number(v)} day${Number(v) === 1 ? '' : 's'}` },
       { key: 'moneyness', label: 'Strike Distance (Moneyness)', weight: w.moneyness ?? 20, valueField: 'moneyness', scoreField: 'moneynessScore', format: v => `${signedPct(v)} ITM` }
     ].map(def => buildQualityRow(m, def))
   }
 
   return [
-    { key: 'newsSentiment', label: 'News Sentiment', weight: w.news ?? 30, valueField: 'newsSentiment', scoreField: 'newsSentimentScore', format: v => Number(v).toFixed(2) },
+    { key: 'newsSentiment', label: 'News Sentiment', weight: w.news ?? 30, valueField: 'newsSentiment', scoreField: 'newsSentimentScore', format: v => formatDecimal(Number(v)) },
     { key: 'gap', label: 'Gap from Previous Close', weight: w.gap ?? 20, valueField: 'gap', scoreField: 'gapScore', format: signedPct },
-    { key: 'relativeVolume', label: 'Relative Volume', weight: w.relativeVolume ?? 20, valueField: 'relativeVolume', scoreField: 'relativeVolumeScore', format: v => Number(v).toFixed(1) + 'x' },
+    { key: 'relativeVolume', label: 'Relative Volume', weight: w.relativeVolume ?? 20, valueField: 'relativeVolume', scoreField: 'relativeVolumeScore', format: v => formatDecimal(Number(v), { digits: 1 }) + 'x' },
     { key: 'float', label: 'Float (Shares Outstanding)', weight: w.float ?? 15, valueField: 'float', scoreField: 'floatScore', format: v => formatFloat(v) },
     { key: 'priceRange', label: 'Price Range', weight: w.priceRange ?? 15, valueField: 'price', scoreField: 'priceScore', format: v => formatCurrency(v) }
   ].map(def => buildQualityRow(m, def))
@@ -2025,6 +1947,20 @@ function toggleAIPanel() {
   showAIPanel.value = !showAIPanel.value
   if (showAIPanel.value) {
     aiStore.reset()
+  }
+}
+
+// Load a stored analysis into the live panel so the user can keep asking
+// questions; the backend reopens expired sessions with fresh market data.
+async function continueStoredAIAnalysis(analysis) {
+  if (!analysis?.id || aiStore.generating) return
+  try {
+    await aiStore.loadSession(analysis.id)
+    showAIPanel.value = true
+    await nextTick()
+    aiPanelRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  } catch (error) {
+    showError('Error', 'Could not load that AI analysis')
   }
 }
 
@@ -2267,6 +2203,8 @@ const processedExecutions = computed(() => {
     }
 
     return [{
+      native_prices: trade.value.native_prices,
+      price_currency: trade.value.price_currency,
       side: tradeSide,
       action: tradeSide,
       quantity,
@@ -2288,11 +2226,13 @@ const processedExecutions = computed(() => {
   )
 
   let runningPosition = 0
-  return executions.map((execution) => {
+  return executions.map((execution, execution_index) => {
     if (!execution) {
       return { action: 'N/A', quantity: 0, price: 0, value: 0, commission: 0, fees: 0, runningPosition: 0, avgCost: null, datetime: null, grossPnl: null, netPnl: null, pnl: null }
     }
 
+    const native_prices = trade.value.native_prices?.executions?.[execution_index]
+    const price_currency = trade.value.price_currency
     const quantity = parseFloat(execution.quantity) || 0
     const commission = parseFloat(execution.commission) || 0
     const fees = parseFloat(execution.fees) || 0
@@ -2305,12 +2245,16 @@ const processedExecutions = computed(() => {
         ?? execution.exit_price
         ?? (executionExitTime && Number(trade.value.exit_price) === 0 ? 0 : null)
       const exitPrice = rawExit != null ? parseFloat(rawExit) : null
-      const grossPnl = (exitPrice != null && quantity > 0)
-        ? (tradeSide === 'short' ? (entryPrice - exitPrice) * quantity * valueMultiplier : (exitPrice - entryPrice) * quantity * valueMultiplier)
-        : null
+      const grossPnl = execution.gross_realized_pnl != null
+        ? parseFloat(execution.gross_realized_pnl)
+        : (exitPrice != null && quantity > 0)
+          ? (tradeSide === 'short' ? (entryPrice - exitPrice) * quantity * valueMultiplier : (exitPrice - entryPrice) * quantity * valueMultiplier)
+          : null
 
       return {
         ...execution,
+        native_prices,
+        price_currency,
         action: execution.side || tradeSide,
         quantity,
         price: entryPrice,
@@ -2342,6 +2286,11 @@ const processedExecutions = computed(() => {
 
     return {
       ...execution,
+      price_currency,
+      native_prices: native_prices ? {
+        entry_price: native_prices.entry_price ?? (isOpening ? native_prices.price : null),
+        exit_price: native_prices.exit_price ?? (isOpening ? null : native_prices.price)
+      } : undefined,
       action,
       quantity,
       price,
@@ -2541,13 +2490,13 @@ function formatDate(date) {
       const { year, month, day } = dateOnlyParts
       // Create date in local timezone (month is 0-indexed)
       const dateObj = new Date(year, month - 1, day)
-      return format(dateObj, 'MMM dd, yyyy')
+      return format(dateObj, 'MMM d, yyyy')
     }
 
     // For datetime strings with non-midnight times, use as-is
     const dateObj = new Date(date)
     if (isNaN(dateObj.getTime())) return 'Invalid Date'
-    return format(dateObj, 'MMM dd, yyyy')
+    return format(dateObj, 'MMM d, yyyy')
   } catch (error) {
     console.error('Date formatting error:', error, 'for date:', date)
     return 'Invalid Date'
@@ -2606,8 +2555,8 @@ function calculateRiskReward() {
     const move = isLongSide
       ? ((current - entry) / entry) * 100
       : ((entry - current) / entry) * 100
-    if (move > 0) return `+${move.toFixed(2)}%`
-    if (move < 0) return `${move.toFixed(2)}%`
+    if (move > 0) return `${formatDecimal(move, { digits: 1, showSign: true })}%`
+    if (move < 0) return `${formatDecimal(move, { digits: 1 })}%`
     return 'Breakeven'
   }
 
@@ -2623,9 +2572,9 @@ function calculateRiskReward() {
     : ((entryPrice - exitPrice) / entryPrice) * 100
 
   if (priceChange > 0) {
-    return `+${priceChange.toFixed(2)}%`
+    return `${formatDecimal(priceChange, { digits: 1, showSign: true })}%`
   } else if (priceChange < 0) {
-    return `${priceChange.toFixed(2)}%`
+    return `${formatDecimal(priceChange, { digits: 1 })}%`
   } else {
     return 'Breakeven'
   }
@@ -2960,6 +2909,7 @@ async function loadTrade() {
     }
   } finally {
     loading.value = false
+    initialLoading.value = false
   }
 }
 

@@ -8,6 +8,7 @@ const multer = require('multer');
 const imageUpload = require('../middleware/upload');
 const { requiresTier } = require('../middleware/tierAuth');
 const { createRateLimiter } = require('../utils/rateLimit');
+const { isSupportedImportFileName, unsupportedFileMessage } = require('../utils/csv/fileNormalizer');
 
 /**
  * @swagger
@@ -28,8 +29,9 @@ const upload = multer({
 
     const name = file.originalname.toLowerCase();
     // Trust supported export extensions — browsers/OSes report delimited and
-    // Sierra Chart files with many different mimetypes.
-    const isTradeExport = /\.(csv|txt|data)$/.test(name);
+    // Sierra Chart files with many different mimetypes. Workbooks, archives and
+    // HTML reports are converted to CSV by the import normalizer.
+    const isTradeExport = isSupportedImportFileName(name);
     const isImage = /\.(jpe?g|png|gif)$/.test(name) && /^image\//.test(file.mimetype);
 
     console.log('File validation:', { isTradeExport, isImage, actualMimetype: file.mimetype });
@@ -38,7 +40,9 @@ const upload = multer({
       return cb(null, true);
     }
     console.log('File rejected - invalid type');
-    cb(new Error('Invalid file type'));
+    const error = new Error(/\.(jpe?g|png|gif)$/.test(name) ? 'Invalid file type' : unsupportedFileMessage(name));
+    error.statusCode = 400;
+    cb(error);
   }
 });
 
@@ -213,7 +217,7 @@ router.post('/', flexibleAuth, requireApiScope('trades:write'), validate(schemas
  *                 enum: [long, short]
  *               instrumentType:
  *                 type: string
- *                 enum: [stock, option, future, crypto, forex]
+ *                 enum: [stock, option, future, crypto, forex, cfd]
  *                 default: stock
  *               broker:
  *                 type: string
@@ -412,6 +416,7 @@ router.get('/analytics', flexibleAuth, requireApiScope('trades:read'), tradeCont
  */
 router.get('/analytics/monthly', flexibleAuth, requireApiScope('trades:read'), tradeController.getMonthlyPerformance);
 router.get('/analytics/partial-exits', flexibleAuth, requireApiScope('trades:read'), requiresTier('pro'), tradeController.getPartialExitAnalytics);
+router.get('/import-insight', authenticate, tradeController.getImportInsight);
 
 /**
  * @swagger
@@ -683,6 +688,7 @@ router.delete('/bulk', authenticate, tradeController.bulkDeleteTrades);
 router.patch('/bulk', authenticate, tradeController.bulkUpdateMetadata);
 router.patch('/bulk/stops', authenticate, tradeController.bulkUpdateStops);
 router.post('/bulk/stops/preview', authenticate, tradeController.previewBulkStops);
+router.post('/bulk/charts', authenticate, tradeController.bulkAddCharts);
 
 /**
  * @swagger
@@ -748,8 +754,8 @@ router.post('/bulk/tags', authenticate, tradeController.bulkAddTags);
  *       200:
  *         description: List of upcoming earnings
  */
-router.get('/earnings', authenticate, tradeController.getUpcomingEarnings);
-router.post('/earnings/refresh', authenticate, tradeController.refreshUpcomingEarnings);
+router.get('/earnings', authenticate, requiresTier('pro'), tradeController.getUpcomingEarnings);
+router.post('/earnings/refresh', authenticate, requiresTier('pro'), tradeController.refreshUpcomingEarnings);
 
 /**
  * @swagger
@@ -763,8 +769,8 @@ router.post('/earnings/refresh', authenticate, tradeController.refreshUpcomingEa
  *       200:
  *         description: List of trade-related news
  */
-router.get('/news', authenticate, tradeController.getTradeNews);
-router.post('/news/refresh', authenticate, tradeController.refreshTradeNews);
+router.get('/news', authenticate, requiresTier('pro'), tradeController.getTradeNews);
+router.post('/news/refresh', authenticate, requiresTier('pro'), tradeController.refreshTradeNews);
 
 // Export trades - MUST be before /:id route to avoid matching "export" as an ID
 router.get('/export', authenticate, tradeController.exportTrades);
@@ -919,11 +925,11 @@ router.post('/:id/split', authenticate, tradeController.splitTrade);
 router.post('/:id/attachments', authenticate, upload.single('file'), tradeController.uploadAttachment);
 router.delete('/:id/attachments/:attachmentId', authenticate, tradeController.deleteAttachment);
 // Image-specific routes
-router.post('/:id/images', authenticate, imageUpload.array('images', 10), tradeController.uploadTradeImages);
-router.get('/:id/images/:filename', optionalAuth, tradeController.getTradeImage);
-router.delete('/:id/images/:attachmentId', authenticate, tradeController.deleteTradeImage);
+router.post('/:id/images', flexibleAuth, requireApiScope('trades:write'), imageUpload.array('images', 10), tradeController.uploadTradeImages);
+router.get('/:id/images/:filename', flexibleOptionalAuth, requireApiScope('trades:read'), tradeController.getTradeImage);
+router.delete('/:id/images/:attachmentId', flexibleAuth, requireApiScope('trades:write'), tradeController.deleteTradeImage);
 // Chart management routes
-router.post('/:id/charts', authenticate, tradeController.addTradeChart);
+router.post('/:id/charts', flexibleAuth, requireApiScope('trades:write'), tradeController.addTradeChart);
 router.delete('/:id/charts/:chartId', authenticate, tradeController.deleteTradeChart);
 router.post('/:id/comments', authenticate, tradeController.addComment);
 router.get('/:id/comments', optionalAuth, tradeController.getComments);
@@ -936,7 +942,7 @@ router.post('/quality/batch', authenticate, tradeController.calculateBatchQualit
 router.post('/quality/all', authenticate, tradeController.calculateAllTradesQuality);
 
 // Health data integration routes
-router.put('/:id/health', authenticate, tradeController.updateTradeHealthData);
-router.put('/health/bulk', authenticate, tradeController.bulkUpdateHealthData);
+router.put('/:id/health', authenticate, requiresTier('pro'), tradeController.updateTradeHealthData);
+router.put('/health/bulk', authenticate, requiresTier('pro'), tradeController.bulkUpdateHealthData);
 
 module.exports = router;

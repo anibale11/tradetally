@@ -3,8 +3,8 @@
     <div class="card-body">
       <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <p class="text-xs font-semibold uppercase tracking-wider text-primary-600 dark:text-primary-400">Trading costs</p>
-          <h3 id="fee-profiles-heading" class="mt-1 text-xl font-semibold text-gray-900 dark:text-white">Named fee profiles</h3>
+          <p class="text-xs font-semibold uppercase tracking-wider text-primary-700 dark:text-primary-400">Trading costs</p>
+          <h3 id="fee-profiles-heading" class="heading-section mt-1">Named fee profiles</h3>
           <p class="mt-2 max-w-3xl text-sm leading-6 text-gray-600 dark:text-gray-400">
             Save each commission schedule once, then assign it to every account that uses it. Imports use the assigned account profile before any legacy broker defaults.
           </p>
@@ -16,15 +16,15 @@
         <article
           v-for="profile in profiles"
           :key="profile.id"
-          class="rounded-xl border border-gray-200 bg-gray-50/70 p-5 dark:border-gray-700 dark:bg-gray-800/60"
+          class="rounded-lg border border-gray-200 bg-gray-50/70 p-5 dark:border-gray-700 dark:bg-gray-800/60"
         >
           <div class="flex items-start justify-between gap-4">
             <div class="min-w-0">
               <div class="flex flex-wrap items-center gap-2">
-                <h4 class="truncate text-base font-semibold text-gray-900 dark:text-white">{{ profile.name }}</h4>
+                <h4 class="heading-card truncate">{{ profile.name }}</h4>
                 <span
                   v-if="profile.isZeroFee"
-                  class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-200"
+                  class="badge bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200"
                 >
                   Zero fee
                 </span>
@@ -35,64 +35,78 @@
               </p>
             </div>
             <div class="flex shrink-0 items-center gap-3">
-              <button type="button" class="text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300" @click="startEdit(profile)">Edit</button>
+              <button type="button" class="btn-link" @click="startEdit(profile)">Edit</button>
               <button type="button" class="text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" @click="$emit('delete', profile)">Delete</button>
             </div>
           </div>
 
           <div v-if="profile.rates.length" class="mt-4 overflow-x-auto rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900/30">
             <table class="min-w-full text-left text-xs">
-              <thead class="border-b border-gray-200 text-gray-500 dark:border-gray-700 dark:text-gray-400">
+              <thead class="table-head border-b border-gray-200 dark:border-gray-700">
                 <tr>
-                  <th class="px-3 py-2 font-medium">Broker</th>
-                  <th class="px-3 py-2 font-medium">Instrument</th>
-                  <th class="px-3 py-2 text-right font-medium">Commission</th>
-                  <th class="px-3 py-2 text-right font-medium">Fees</th>
+                  <th class="px-3 py-2 table-th">Broker</th>
+                  <th class="px-3 py-2 table-th">Instrument</th>
+                  <th class="px-3 py-2 text-right table-th">Commission</th>
+                  <th class="px-3 py-2 text-right table-th">Fees</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
                 <tr v-for="rate in profile.rates" :key="rate.id || `${rate.broker}-${rate.instrument}`">
                   <td class="whitespace-nowrap px-3 py-2 text-gray-800 dark:text-gray-200">{{ brokerLabel(rate.broker) }}</td>
                   <td class="whitespace-nowrap px-3 py-2 text-gray-600 dark:text-gray-400">{{ rate.instrument || 'All instruments' }}</td>
-                  <td class="whitespace-nowrap px-3 py-2 text-right text-gray-600 dark:text-gray-400">${{ money(rate.commissionPerContract + rate.commissionPerSide) }}</td>
-                  <td class="whitespace-nowrap px-3 py-2 text-right text-gray-600 dark:text-gray-400">${{ money(rate.exchangeFeePerContract + rate.nfaFeePerContract + rate.clearingFeePerContract + rate.platformFeePerContract) }}</td>
+                  <td class="whitespace-nowrap px-3 py-2 text-right text-gray-600 dark:text-gray-400">{{ money(rate.commissionPerContract + rate.commissionPerSide) }}</td>
+                  <td class="whitespace-nowrap px-3 py-2 text-right text-gray-600 dark:text-gray-400">{{ money(rate.exchangeFeePerContract + rate.nfaFeePerContract + rate.clearingFeePerContract + rate.platformFeePerContract) }}</td>
                 </tr>
               </tbody>
             </table>
           </div>
 
           <div class="mt-4 border-t border-gray-200 pt-4 dark:border-gray-700">
-            <label :for="`profile-accounts-${profile.id}`" class="block text-sm font-medium text-gray-800 dark:text-gray-200">Assigned accounts</label>
-            <select
-              :id="`profile-accounts-${profile.id}`"
-              v-model="accountSelections[profile.id]"
-              multiple
-              class="input mt-2 min-h-24 w-full"
-              :disabled="assigningId === profile.id"
-              @change="saveAssignments(profile)"
-            >
-              <option v-for="account in availableAccounts" :key="account.id" :value="account.id">
-                {{ account.accountName }}{{ account.accountIdentifier ? ` (${account.accountIdentifier})` : '' }}
-              </option>
-            </select>
-            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Select one or more accounts. Saving here removes this profile from accounts you deselect.</p>
-            <p v-if="assigningId === profile.id" class="mt-1 text-xs text-primary-600 dark:text-primary-400">Saving assignments...</p>
+            <fieldset :disabled="assigningId === profile.id">
+              <div class="flex items-baseline justify-between gap-3">
+                <legend class="text-sm font-medium text-gray-800 dark:text-gray-200">Assigned accounts</legend>
+                <span v-if="assigningId === profile.id" class="text-xs text-primary-700 dark:text-primary-400">Saving...</span>
+              </div>
+              <ul v-if="availableAccounts.length" class="mt-2 divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white dark:divide-gray-700 dark:border-gray-700 dark:bg-gray-900/30">
+                <li v-for="account in availableAccounts" :key="account.id">
+                  <label class="flex cursor-pointer items-center gap-3 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800/60">
+                    <input
+                      type="checkbox"
+                      class="checkbox"
+                      :value="account.id"
+                      v-model="accountSelections[profile.id]"
+                      @change="saveAssignments(profile)"
+                    />
+                    <span class="min-w-0 flex-1">
+                      <span class="block truncate text-sm text-gray-900 dark:text-gray-100">{{ account.accountName || account.accountIdentifier }}</span>
+                      <span v-if="account.accountName" class="block truncate font-mono text-xs text-gray-500 dark:text-gray-400">{{ account.accountIdentifier }}</span>
+                    </span>
+                    <span
+                      v-if="otherProfileName(account, profile)"
+                      class="shrink-0 text-xs text-gray-500 dark:text-gray-400"
+                    >Uses {{ otherProfileName(account, profile) }}</span>
+                  </label>
+                </li>
+              </ul>
+              <p v-else class="mt-2 text-sm text-gray-500 dark:text-gray-400">No accounts yet. Accounts appear here once you add them or import trades with an account number.</p>
+              <p v-if="availableAccounts.length" class="mt-2 text-xs text-gray-500 dark:text-gray-400">Changes save right away. Each account uses one fee profile, so checking an account that uses another profile moves it here.</p>
+            </fieldset>
           </div>
         </article>
       </div>
 
-      <div v-else class="mt-6 rounded-xl border border-dashed border-gray-300 px-5 py-8 text-center dark:border-gray-600">
-        <h4 class="text-base font-medium text-gray-900 dark:text-white">No fee profiles yet</h4>
+      <div v-else class="mt-6 rounded-lg border border-dashed border-gray-300 px-5 py-8 text-center dark:border-gray-600">
+        <h4 class="heading-card">No fee profiles yet</h4>
         <p class="mx-auto mt-1 max-w-xl text-sm text-gray-600 dark:text-gray-400">Create a profile for a broker schedule or a zero-fee simulated account. Accounts without a profile continue using the legacy broker defaults during the transition.</p>
       </div>
 
       <form v-if="formVisible" class="mt-8 border-t border-gray-200 pt-6 dark:border-gray-700" @submit.prevent="submitForm">
         <div class="flex items-start justify-between gap-4">
           <div>
-            <h4 class="text-base font-semibold text-gray-900 dark:text-white">{{ editingId ? 'Edit fee profile' : 'Create fee profile' }}</h4>
+            <h4 class="heading-card">{{ editingId ? 'Edit fee profile' : 'Create fee profile' }}</h4>
             <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Use one row for a broker-wide default, or add instrument-specific rows for exceptions.</p>
           </div>
-          <button type="button" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200" @click="cancelForm">Cancel</button>
+          <button type="button" class="btn-ghost btn-sm" @click="cancelForm">Cancel</button>
         </div>
 
         <div class="mt-5 grid gap-4 md:grid-cols-2">
@@ -106,11 +120,11 @@
           </div>
         </div>
 
-        <label class="mt-5 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900/60 dark:bg-amber-950/20">
-          <input v-model="form.isZeroFee" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+        <label class="mt-5 flex items-start gap-3 rounded-lg border border-yellow-200 bg-yellow-50 p-3 dark:border-yellow-900/60 dark:bg-yellow-950/20">
+          <input v-model="form.isZeroFee" type="checkbox" class="checkbox mt-0.5" />
           <span>
-            <span class="block text-sm font-medium text-amber-900 dark:text-amber-100">Zero-fee profile</span>
-            <span class="mt-0.5 block text-xs text-amber-800 dark:text-amber-200">Use for simulated accounts. This explicitly overrides legacy broker settings.</span>
+            <span class="block text-sm font-medium text-yellow-900 dark:text-yellow-100">Zero-fee profile</span>
+            <span class="mt-0.5 block text-xs text-yellow-800 dark:text-yellow-200">Use for simulated accounts. This explicitly overrides legacy broker settings.</span>
           </span>
         </label>
 
@@ -120,7 +134,7 @@
               <h5 class="text-sm font-semibold text-gray-900 dark:text-white">Rate rows</h5>
               <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">All amounts are per contract or per side, matching the existing fee settings.</p>
             </div>
-            <button type="button" class="text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300" @click="addRate">Add rate row</button>
+            <button type="button" class="btn-link" @click="addRate">Add rate row</button>
           </div>
 
           <div v-for="(rate, index) in form.rates" :key="rate.key" class="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
@@ -179,6 +193,7 @@
 
 <script setup>
 import { computed, reactive, ref, watch } from 'vue'
+import { formatDecimal } from '@/utils/formatters'
 
 const props = defineProps({
   profiles: { type: Array, default: () => [] },
@@ -279,12 +294,20 @@ function saveAssignments(profile) {
   emit('assign', { profileId: profile.id, accountIds: accountSelections[profile.id] || [] })
 }
 
+// Name of the profile an account currently uses, when it is not this one.
+function otherProfileName(account, profile) {
+  if (!account.feeProfileId || account.feeProfileId === profile.id) return ''
+  return props.profiles.find(item => item.id === account.feeProfileId)?.name || 'another profile'
+}
+
 function brokerLabel(value) {
   return brokerOptions.find(option => option.value === value)?.label || value
 }
 
+// Broker fee schedules are USD; sign goes before the symbol (-$0.0100 for rebates).
 function money(value) {
-  return Number(value || 0).toFixed(4)
+  const n = Number(value || 0)
+  return `${n < 0 ? '-' : ''}$${formatDecimal(Math.abs(n), { digits: 4 })}`
 }
 
 watch(() => props.profiles, profiles => {

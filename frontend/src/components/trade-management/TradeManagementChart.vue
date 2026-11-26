@@ -1,7 +1,7 @@
 <template>
-  <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden">
+  <div class="card overflow-hidden">
     <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-      <h3 class="text-lg font-medium text-gray-900 dark:text-white">Trade Visualization</h3>
+      <h3 class="heading-card">Trade Visualization</h3>
       <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
         Price chart with entry, exit, stop loss, and take profit levels
       </p>
@@ -10,7 +10,7 @@
     <div class="p-6">
       <!-- Loading State -->
       <div v-if="loading" class="flex flex-col items-center justify-center py-16">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mb-4"></div>
+        <div class="spinner spinner-lg mb-4"></div>
         <p class="text-sm text-gray-500 dark:text-gray-400">Loading chart data...</p>
       </div>
 
@@ -22,7 +22,7 @@
           </svg>
         </div>
         <p class="text-red-600 dark:text-red-400 mb-4">{{ error }}</p>
-        <button @click="loadChart" class="btn-secondary text-sm">
+        <button @click="loadChart" class="btn-secondary">
           Try Again
         </button>
       </div>
@@ -33,7 +33,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
         </svg>
         <p class="text-gray-500 dark:text-gray-400 mb-4">Chart will load automatically</p>
-        <button @click="loadChart" class="btn-secondary text-sm">
+        <button @click="loadChart" class="btn-secondary">
           Load Chart Manually
         </button>
       </div>
@@ -64,7 +64,7 @@
         <!-- Legend -->
         <div class="mt-4 flex flex-wrap gap-4 text-sm">
           <div class="flex items-center">
-            <svg class="w-4 h-4 mr-1 text-emerald-600 dark:text-emerald-500" fill="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4 mr-1 text-green-700 dark:text-green-500" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 4l-8 8h5v8h6v-8h5z"/>
             </svg>
             <span class="text-gray-600 dark:text-gray-400">Entry: {{ formatCurrency(trade.entry_price) }}</span>
@@ -86,7 +86,7 @@
             <span
               v-if="takeProfitAchievable !== null"
               :class="[
-                'ml-2 px-2 py-0.5 text-xs font-medium rounded-full',
+                'ml-2 badge',
                 takeProfitAchievable
                   ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
                   : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
@@ -342,11 +342,11 @@ function createChart() {
 
   // Create candlestick series - using softer, more muted colors
   candleSeries = chart.addSeries(LightweightCharts.CandlestickSeries, {
-    upColor: '#059669',      // emerald-600
+    upColor: '#15803d',      // emerald-600
     downColor: '#dc2626',    // red-600
-    borderUpColor: '#059669',
+    borderUpColor: '#15803d',
     borderDownColor: '#dc2626',
-    wickUpColor: '#059669',
+    wickUpColor: '#15803d',
     wickDownColor: '#dc2626',
   })
 
@@ -456,7 +456,7 @@ function addTradeMarkers(candles) {
     markers.push({
       time: entryCandle.time,
       position: 'belowBar',
-      color: '#059669',  // emerald-600
+      color: '#15803d',  // emerald-600
       shape: 'arrowUp',
       text: `${isLong ? 'BUY' : 'SELL'} @ ${formatCurrency(entryPrice)}`,
       size: 2
@@ -509,7 +509,7 @@ function addTradeMarkers(candles) {
       markers.push({
         time: entryCandle.time,
         position: isLong ? 'aboveBar' : 'belowBar',
-        color: '#4f46e5',  // indigo-600
+        color: '#4f46e5',  // primary-600
         shape: 'circle',
         text: `TP: ${formatCurrency(takeProfit)}`,
         size: 1
@@ -552,7 +552,7 @@ function addPriceLines() {
   if (takeProfit) {
     candleSeries.createPriceLine({
       price: takeProfit,
-      color: 'rgba(79, 70, 229, 0.35)',  // indigo-600 with opacity
+      color: 'rgba(79, 70, 229, 0.35)',  // primary-600 with opacity
       lineWidth: 1,
       lineStyle: LightweightCharts.LineStyle.Dotted,
       axisLabelVisible: true,

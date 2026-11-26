@@ -6,7 +6,7 @@
       :disabled="disabled"
       @click.stop="toggleOpen"
       class="input w-full text-left flex items-center justify-between"
-      :class="{ 'opacity-60 cursor-not-allowed': disabled }"
+      :class="[ { 'opacity-60 cursor-not-allowed': disabled }, size === 'sm' ? 'input-sm' : '' ]"
     >
       <span class="truncate" :class="(selectedOption || hasValue) ? '' : 'text-gray-400 dark:text-gray-500'">
         {{ displayLabel }}
@@ -28,8 +28,7 @@
         v-if="open"
         :data-base-select-panel="uid"
         :style="panelStyle"
-        class="bg-white dark:bg-gray-800 shadow-lg max-h-72 rounded-md text-base ring-1 ring-black ring-opacity-5 overflow-hidden focus:outline-none flex flex-col"
-        style="z-index: 9999"
+        class="dropdown-menu z-[60] max-h-72 overflow-hidden focus:outline-none flex flex-col focus-visible:ring-2 focus-visible:ring-primary-500"
       >
         <!-- Search (auto-shown for longer lists) -->
         <div v-if="showSearch" class="p-2 border-b border-gray-200 dark:border-gray-600">
@@ -38,7 +37,7 @@
             v-model="search"
             type="text"
             :placeholder="`Search ${noun}...`"
-            class="input text-sm py-1.5"
+            class="input input-sm"
             @click.stop
             @keydown.enter.prevent="selectFirstMatch"
             @keydown.esc.stop="open = false"
@@ -51,14 +50,14 @@
             v-if="placeholder"
             type="button"
             @click="selectClear"
-            class="flex items-center w-full px-3 py-2 text-sm text-left"
+            class="menu-item"
             :class="!selectedOption && !hasValue ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300' : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700'"
           >
             {{ placeholder }}
           </button>
 
           <template v-for="(group, gi) in filteredGroups" :key="`g-${gi}`">
-            <div v-if="group.label" class="px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+            <div v-if="group.label" class="text-label px-3 pt-2 pb-1">
               {{ group.label }}
             </div>
             <button
@@ -67,11 +66,11 @@
               type="button"
               :disabled="opt.disabled"
               @click="select(opt.value)"
-              class="flex items-center justify-between w-full px-3 py-2 text-sm text-left"
+              class="menu-item justify-between"
               :class="rowClass(opt)"
             >
               <span class="truncate">{{ opt.label }}</span>
-              <svg v-if="isSelected(opt.value)" class="h-4 w-4 flex-shrink-0 ml-2 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg v-if="isSelected(opt.value)" class="h-4 w-4 flex-shrink-0 ml-2 text-primary-700 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
               </svg>
             </button>
@@ -88,7 +87,7 @@
             v-if="addLabel"
             type="button"
             @click="onAdd"
-            class="flex items-center w-full px-3 py-2 text-sm text-primary-600 dark:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+            class="flex items-center w-full px-3 py-2 text-sm text-primary-700 dark:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-700"
           >
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -128,6 +127,8 @@ const props = defineProps({
   // When set, renders a leading "empty" row that clears the selection.
   placeholder: { type: String, default: '' },
   disabled: { type: Boolean, default: false },
+  // 'sm' renders a 32px control for dense lists; 'md' keeps the 44px touch target.
+  size: { type: String, default: 'md' },
   searchable: { type: Boolean, default: true },
   emptyText: { type: String, default: 'No matches' },
   noun: { type: String, default: 'options' },

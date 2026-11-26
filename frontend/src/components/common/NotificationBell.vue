@@ -11,7 +11,7 @@
       <!-- Badge for unread count -->
       <span
         v-if="unreadCount > 0"
-        class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium"
+        class="absolute top-0 right-0 bg-primary-700 text-white text-xs leading-none rounded-full h-[18px] min-w-[18px] px-1 flex items-center justify-center font-semibold tabular-nums"
       >
         {{ unreadCount > 99 ? '99+' : unreadCount }}
       </span>
@@ -28,24 +28,24 @@
     >
       <div
         v-if="isOpen"
-        class="absolute w-96 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50"
+        class="absolute w-96 dropdown-menu rounded-lg z-40"
         :class="placementClasses"
         @click.stop
       >
         <!-- Header -->
         <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
           <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+            <h3 class="heading-card">
               Notifications
             </h3>
             <button
               v-if="notifications.length > 0 && notifications.some(n => !n.is_read)"
               @click="markAllAsRead"
               :disabled="markingAsRead"
-              class="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              class="text-sm text-primary-700 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span v-if="markingAsRead" class="flex items-center">
-                <div class="animate-spin rounded-full h-3 w-3 border-b border-current mr-1"></div>
+                <div class="spinner h-3 w-3 spinner-current mr-1"></div>
                 Marking...
               </span>
               <span v-else>Mark all read</span>
@@ -55,8 +55,8 @@
 
         <!-- Notifications List -->
         <div class="max-h-96 overflow-y-auto">
-          <div v-if="loading" class="p-4 text-center">
-            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600 mx-auto"></div>
+          <div v-if="initialLoading" class="p-4 text-center">
+            <div class="spinner spinner-sm mx-auto"></div>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Loading notifications...</p>
           </div>
 
@@ -64,11 +64,15 @@
             <BellSlashIcon class="h-12 w-12 text-gray-400 mx-auto mb-3" />
             <p class="text-gray-500 dark:text-gray-400">No unread notifications</p>
             <router-link
-              to="/notifications"
-              class="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 mt-2 inline-block"
+              :to="allNotificationsLink"
+              class="text-sm text-primary-700 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 mt-2 inline-flex items-center gap-1.5"
               @click="closeDropdown"
             >
               View all notifications
+              <span
+                v-if="showProLock"
+                class="badge-primary"
+              >Pro</span>
             </router-link>
           </div>
 
@@ -88,23 +92,23 @@
                   />
                   <ChatBubbleLeftRightIcon
                     v-else-if="notification.type === 'trade_comment'"
-                    class="h-5 w-5 text-primary-500"
+                    class="h-5 w-5 text-primary-700 dark:text-primary-400"
                   />
                   <TrophyIcon
                     v-else-if="notification.type === 'achievement_earned'"
-                    class="h-5 w-5 text-amber-500"
+                    class="h-5 w-5 text-yellow-500"
                   />
                   <ArrowTrendingUpIcon
                     v-else-if="notification.type === 'level_up' || notification.type === 'portfolio_alert'"
-                    class="h-5 w-5 text-emerald-500"
+                    class="h-5 w-5 text-green-700 dark:text-green-400"
                   />
                   <BellIcon
                     v-else-if="notification.type === 'web_mention_alert'"
-                    class="h-5 w-5 text-primary-500"
+                    class="h-5 w-5 text-primary-700 dark:text-primary-400"
                   />
                   <ArrowPathIcon
                     v-else-if="['broker_reauth_expiring', 'broker_reauth_required'].includes(notification.type)"
-                    class="h-5 w-5 text-amber-500"
+                    class="h-5 w-5 text-yellow-500"
                   />
                   <BellIcon v-else class="h-5 w-5 text-gray-400" />
                 </div>
@@ -124,7 +128,7 @@
                   
                   <!-- Additional info for price alerts -->
                   <div v-if="notification.type === 'price_alert' && notification.trigger_price" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Triggered at ${{ parseFloat(notification.trigger_price).toFixed(2) }}
+                    Triggered at {{ usd(parseFloat(notification.trigger_price)) }}
                   </div>
                   <div v-if="notification.type === 'web_mention_alert' && notification.metadata?.article_count" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     {{ notification.metadata.article_count }} distinct articles
@@ -155,11 +159,15 @@
         <!-- Footer -->
         <div v-if="notifications.length > 0" class="px-4 py-3 border-t border-gray-200 dark:border-gray-700">
           <router-link
-            to="/notifications"
-            class="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+            :to="allNotificationsLink"
+            class="text-sm text-primary-700 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 inline-flex items-center gap-1.5"
             @click="closeDropdown"
           >
             View all notifications
+            <span
+              v-if="showProLock"
+              class="badge-primary"
+            >Pro</span>
           </router-link>
         </div>
       </div>
@@ -200,6 +208,16 @@ import { useUserTimezone } from '@/composables/useUserTimezone'
 import { useNotificationCenter } from '@/composables/useNotificationCenter'
 import { useNotification } from '@/composables/useNotification'
 import { useVisibilityPolling } from '@/composables/useVisibilityPolling'
+import { useProAccess } from '@/composables/useProAccess'
+
+// The full notifications page is Pro-only; send free users to the upgrade
+// page (returning to /notifications after upgrading) instead of a silent bounce.
+const { showProLock } = useProAccess()
+const allNotificationsLink = computed(() =>
+  showProLock.value
+    ? { path: '/pricing', query: { redirect: '/notifications' } }
+    : '/notifications'
+)
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -220,6 +238,7 @@ const rootRef = ref(null)
 const isOpen = ref(false)
 const notifications = ref([])
 const loading = ref(false)
+const initialLoading = ref(true)
 const markingAsRead = ref(false)
 const pollingDisabled = ref(false)
 const dismissingIds = ref(new Set())
@@ -322,6 +341,7 @@ const fetchNotifications = async () => {
     console.error('Error fetching notifications:', error)
   } finally {
     loading.value = false
+    initialLoading.value = false
   }
 }
 
@@ -505,6 +525,12 @@ onUnmounted(() => {
 
 // Watch for auth changes
 import { watch } from 'vue'
+import { useCurrencyFormatter } from '@/composables/useCurrencyFormatter'
+
+const { formatCurrency: _fmtCurrency, formatSignedCurrency: _fmtSigned } = useCurrencyFormatter()
+// Behavioral, alert and market-data values arrive in USD (not converted to the display currency).
+const usd = (v, o = {}) => _fmtCurrency(Number(v) || 0, { currency: 'USD', ...o })
+const usdSigned = (v, o = {}) => _fmtSigned(Number(v) || 0, { currency: 'USD', ...o })
 watch(isAuthenticated, (newValue) => {
   if (newValue) {
     pollingDisabled.value = false

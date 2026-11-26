@@ -44,10 +44,10 @@
                         class="text-center py-12"
                     >
                         <div
-                            class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-purple-100 dark:bg-purple-900/20 mb-4"
+                            class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary-100 dark:bg-primary-900/20 mb-4"
                         >
                             <svg
-                                class="w-8 h-8 text-purple-600 dark:text-purple-400"
+                                class="w-8 h-8 text-primary-700 dark:text-primary-400"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
@@ -61,7 +61,7 @@
                             </svg>
                         </div>
                         <h4
-                            class="text-lg font-medium text-gray-900 dark:text-white mb-2"
+                            class="heading-card mb-2"
                         >
                             No Trading Personality Profile Yet
                         </h4>
@@ -82,12 +82,12 @@
                     <div v-else-if="personalityData && personalityData.profile">
                         <!-- Personality Overview -->
                         <div
-                            class="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-6 mb-6"
+                            class="callout-info mb-6"
                         >
                             <div class="flex items-center justify-between mb-4">
                                 <div>
                                     <h4
-                                        class="text-xl font-bold text-gray-900 dark:text-white capitalize"
+                                        class="heading-section capitalize"
                                     >
                                         {{
                                             formatPersonalityName(
@@ -102,14 +102,14 @@
                                     >
                                         Confidence:
                                         {{
-                                            (
+                                            formatPercent(
                                                 parseFloat(
                                                     personalityData.profile
                                                         .personality_confidence ||
                                                         0,
                                                 ) * 100
-                                            ).toFixed(0)
-                                        }}%
+                                            )
+                                        }}
                                     </p>
                                 </div>
                                 <div class="text-right">
@@ -119,14 +119,14 @@
                                         Performance Score
                                     </p>
                                     <p
-                                        class="text-2xl font-bold text-purple-600 dark:text-purple-400"
+                                        class="text-2xl font-bold text-primary-700 dark:text-primary-400"
                                     >
                                         {{
-                                            parseFloat(
+                                            formatDecimal(parseFloat(
                                                 personalityData.profile
                                                     .personality_performance_score ||
                                                     0,
-                                            ).toFixed(2)
+                                            ))
                                         }}
                                     </p>
                                 </div>
@@ -161,7 +161,7 @@
                                         }}%
                                     </p>
                                     <p
-                                        class="text-xs text-primary-600 dark:text-primary-400 mt-1 flex items-center justify-center"
+                                        class="text-xs text-primary-700 dark:text-primary-400 mt-1 flex items-center justify-center"
                                     >
                                         <MdiIcon
                                             :icon="mdiChartBox"
@@ -198,7 +198,7 @@
                                         }}%
                                     </p>
                                     <p
-                                        class="text-xs text-primary-600 dark:text-primary-400 mt-1 flex items-center justify-center"
+                                        class="text-xs text-primary-700 dark:text-primary-400 mt-1 flex items-center justify-center"
                                     >
                                         <MdiIcon
                                             :icon="mdiChartBox"
@@ -237,7 +237,7 @@
                                         }}%
                                     </p>
                                     <p
-                                        class="text-xs text-primary-600 dark:text-primary-400 mt-1 flex items-center justify-center"
+                                        class="text-xs text-primary-700 dark:text-primary-400 mt-1 flex items-center justify-center"
                                     >
                                         <MdiIcon
                                             :icon="mdiChartBox"
@@ -274,7 +274,7 @@
                                         }}%
                                     </p>
                                     <p
-                                        class="text-xs text-primary-600 dark:text-primary-400 mt-1 flex items-center justify-center"
+                                        class="text-xs text-primary-700 dark:text-primary-400 mt-1 flex items-center justify-center"
                                     >
                                         <MdiIcon
                                             :icon="mdiChartBox"
@@ -311,7 +311,7 @@
                                         }}%
                                     </p>
                                     <p
-                                        class="text-xs text-primary-600 dark:text-primary-400 mt-1 flex items-center justify-center"
+                                        class="text-xs text-primary-700 dark:text-primary-400 mt-1 flex items-center justify-center"
                                     >
                                         <MdiIcon
                                             :icon="mdiChartBox"
@@ -363,11 +363,11 @@
                                     class="text-xl font-bold text-gray-900 dark:text-white"
                                 >
                                     {{
-                                        parseFloat(
+                                        formatDecimal(parseFloat(
                                             personalityData.profile
                                                 .avg_trade_frequency_per_day ||
                                                 0,
-                                        ).toFixed(1)
+                                        ), { digits: 1 })
                                     }}
                                 </p>
                                 <p
@@ -389,14 +389,14 @@
                                     class="text-xl font-bold text-gray-900 dark:text-white"
                                 >
                                     {{
-                                        (
+                                        formatPercent(
                                             parseFloat(
                                                 personalityData.profile
                                                     .position_sizing_consistency ||
                                                     0,
                                             ) * 100
-                                        ).toFixed(0)
-                                    }}%
+                                        )
+                                    }}
                                 </p>
                                 <p
                                     class="text-xs text-gray-500 dark:text-gray-400"
@@ -412,10 +412,10 @@
                                 personalityData.peerComparison &&
                                 !personalityData.peerComparison.insufficientData
                             "
-                            class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-6"
+                            class="callout-info mb-6"
                         >
                             <h5
-                                class="text-lg font-medium text-blue-800 dark:text-blue-300 mb-4"
+                                class="text-lg font-medium text-primary-800 dark:text-primary-300 mb-4"
                             >
                                 Peer Comparison ({{
                                     personalityData.peerComparison.peerGroupSize
@@ -434,12 +434,12 @@
                             >
                                 <div class="text-center">
                                     <p
-                                        class="text-sm text-blue-700 dark:text-blue-300"
+                                        class="text-sm text-primary-700 dark:text-primary-300"
                                     >
                                         Your Percentile
                                     </p>
                                     <p
-                                        class="text-2xl font-bold text-blue-900 dark:text-blue-100"
+                                        class="text-2xl font-bold text-primary-900 dark:text-primary-100"
                                     >
                                         {{
                                             personalityData.peerComparison
@@ -447,7 +447,7 @@
                                         }}th
                                     </p>
                                     <p
-                                        class="text-xs text-blue-600 dark:text-blue-400"
+                                        class="text-xs text-primary-700 dark:text-primary-400"
                                     >
                                         {{
                                             personalityData.peerComparison
@@ -459,12 +459,12 @@
                                 </div>
                                 <div class="text-center">
                                     <p
-                                        class="text-sm text-blue-700 dark:text-blue-300"
+                                        class="text-sm text-primary-700 dark:text-primary-300"
                                     >
                                         Your Performance
                                     </p>
                                     <p
-                                        class="text-2xl font-bold text-blue-900 dark:text-blue-100"
+                                        class="text-2xl font-bold text-primary-900 dark:text-primary-100"
                                     >
                                         {{
                                             personalityData.peerComparison
@@ -473,7 +473,7 @@
                                         }}
                                     </p>
                                     <p
-                                        class="text-xs text-blue-600 dark:text-blue-400"
+                                        class="text-xs text-primary-700 dark:text-primary-400"
                                     >
                                         vs
                                         {{
@@ -486,12 +486,12 @@
                                 </div>
                                 <div class="text-center">
                                     <p
-                                        class="text-sm text-blue-700 dark:text-blue-300"
+                                        class="text-sm text-primary-700 dark:text-primary-300"
                                     >
                                         Top 10% Benchmark
                                     </p>
                                     <p
-                                        class="text-2xl font-bold text-blue-900 dark:text-blue-100"
+                                        class="text-2xl font-bold text-primary-900 dark:text-primary-100"
                                     >
                                         {{
                                             personalityData.peerComparison
@@ -500,7 +500,7 @@
                                         }}
                                     </p>
                                     <p
-                                        class="text-xs text-blue-600 dark:text-blue-400"
+                                        class="text-xs text-primary-700 dark:text-primary-400"
                                     >
                                         Elite performers
                                     </p>
@@ -511,7 +511,7 @@
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div>
                                     <p
-                                        class="text-sm text-blue-700 dark:text-blue-300 mb-1"
+                                        class="text-sm text-primary-700 dark:text-primary-300 mb-1"
                                     >
                                         Median Hold Time (You vs Peers vs
                                         Optimal)
@@ -535,7 +535,7 @@
                                             }}m</span
                                         >
                                         <span class="text-gray-500">vs</span>
-                                        <span class="text-green-600 font-medium"
+                                        <span class="text-green-700 dark:text-green-400 font-medium"
                                             >{{
                                                 personalityData.peerComparison
                                                     .behaviorComparison
@@ -546,7 +546,7 @@
                                 </div>
                                 <div>
                                     <p
-                                        class="text-sm text-blue-700 dark:text-blue-300 mb-1"
+                                        class="text-sm text-primary-700 dark:text-primary-300 mb-1"
                                     >
                                         Frequency (You vs Peers vs Optimal)
                                     </p>
@@ -569,7 +569,7 @@
                                             }}/d</span
                                         >
                                         <span class="text-gray-500">vs</span>
-                                        <span class="text-green-600 font-medium"
+                                        <span class="text-green-700 dark:text-green-400 font-medium"
                                             >{{
                                                 personalityData.peerComparison
                                                     .behaviorComparison
@@ -580,7 +580,7 @@
                                 </div>
                                 <div>
                                     <p
-                                        class="text-sm text-blue-700 dark:text-blue-300 mb-1"
+                                        class="text-sm text-primary-700 dark:text-primary-300 mb-1"
                                     >
                                         Consistency (You vs Peers vs Optimal)
                                     </p>
@@ -600,7 +600,7 @@
                                         }}</span>
                                         <span class="text-gray-500">vs</span>
                                         <span
-                                            class="text-green-600 font-medium"
+                                            class="text-green-700 dark:text-green-400 font-medium"
                                             >{{
                                                 personalityData.peerComparison
                                                     .behaviorComparison
@@ -618,7 +618,7 @@
                                 personalityData.driftAnalysis &&
                                 personalityData.driftAnalysis.hasDrift
                             "
-                            class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4 mb-6"
+                            class="callout-warning mb-6"
                         >
                             <h5
                                 class="text-lg font-medium text-yellow-800 dark:text-yellow-300 mb-3"
@@ -626,7 +626,7 @@
                                 Behavioral Drift Detection
                                 <div class="relative group inline-block">
                                     <span
-                                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium cursor-help"
+                                        class="badge cursor-help"
                                         :class="{
                                             'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300':
                                                 personalityData.driftAnalysis
@@ -753,7 +753,7 @@
                                         <p
                                             class="font-medium"
                                             :class="{
-                                                'text-green-600 dark:text-green-400':
+                                                'text-green-700 dark:text-green-400':
                                                     personalityData
                                                         .driftAnalysis
                                                         .performanceImpact < 0,
@@ -763,15 +763,7 @@
                                                         .performanceImpact > 0,
                                             }"
                                         >
-                                            {{
-                                                personalityData.driftAnalysis
-                                                    .performanceImpact >= 0
-                                                    ? "+"
-                                                    : ""
-                                            }}${{
-                                                personalityData.driftAnalysis
-                                                    .performanceImpact
-                                            }}
+                                            {{ moneySigned(personalityData.driftAnalysis.performanceImpact) }}
                                         </p>
                                     </div>
                                     <div
@@ -935,12 +927,12 @@
                             <div
                                 v-for="rec in personalityData.recommendations"
                                 :key="rec.type"
-                                class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+                                class="card p-4"
                             >
                                 <div class="flex items-start">
                                     <div class="flex-shrink-0">
                                         <span
-                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                                            class="badge"
                                             :class="{
                                                 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300':
                                                     rec.priority === 'high',
@@ -986,6 +978,12 @@ import {
     formatMinutes,
 } from "@/utils/behavioralFormatters";
 import { mdiChartBox } from "@mdi/js";
+import { useCurrencyFormatter } from '@/composables/useCurrencyFormatter'
+import { formatDecimal, formatPercent } from '@/utils/formatters'
+
+const { formatCurrency: _fmtCurrency, formatSignedCurrency: _fmtSigned } = useCurrencyFormatter()
+// Money follows the user's display currency (the API converts it).
+const moneySigned = (v, o = {}) => _fmtSigned(Number(v) || 0, o)
 
 defineProps({
     personalityData: { type: Object, default: null },

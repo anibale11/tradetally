@@ -2,14 +2,14 @@
   <div>
     <div class="flex flex-wrap items-baseline justify-between gap-2 mb-4">
       <div>
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white">What-If Analysis</h3>
+        <h3 class="heading-card">What-If Analysis</h3>
         <p class="text-sm text-gray-500 dark:text-gray-400">
           How this trade would have ended under different exits. Estimates use the chart's
           market data and exclude commissions.
         </p>
       </div>
       <div v-if="result.left_on_table !== null && result.left_on_table > 0.005" class="text-right">
-        <div class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">Left on the table</div>
+        <div class="text-label">Left on the table</div>
         <div class="text-xl font-semibold text-yellow-600 dark:text-yellow-400">
           {{ formatCurrency(result.left_on_table) }}
         </div>
@@ -63,7 +63,7 @@
           <div
             v-if="scenario.delta !== null && Math.abs(scenario.delta) > 0.005"
             class="text-xs tabular-nums"
-            :class="scenario.delta > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'"
+            :class="scenario.delta > 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'"
           >
             {{ formatCurrency(Math.abs(scenario.delta)) }} {{ scenario.delta > 0 ? 'better' : 'worse' }} than your exit
           </div>
@@ -85,7 +85,7 @@ const props = defineProps({
 const { formatCurrency } = useCurrencyFormatter()
 
 function pnlClass(value) {
-  if (value > 0) return 'text-green-600 dark:text-green-400'
+  if (value > 0) return 'text-green-700 dark:text-green-400'
   if (value < 0) return 'text-red-600 dark:text-red-400'
   return 'text-gray-900 dark:text-white'
 }

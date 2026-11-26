@@ -14,7 +14,7 @@
           <input
             type="checkbox"
             v-model="filters.symbolExact"
-            class="h-3.5 w-3.5 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+            class="checkbox"
           />
           <span class="ml-1.5 text-xs text-gray-500 dark:text-gray-400">Exact match</span>
         </label>
@@ -33,7 +33,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
             </svg>
           </button>
-          <div v-if="showTimePeriodDropdown" class="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
+          <div v-if="showTimePeriodDropdown" class="dropdown-menu absolute z-10 mt-1 w-full max-h-60 overflow-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
             <div
               v-for="option in timePeriodOptions"
               :key="option.value"
@@ -85,14 +85,14 @@
             </svg>
           </button>
 
-          <div v-if="showStrategyDropdown" class="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
+          <div v-if="showStrategyDropdown" class="dropdown-menu absolute z-10 mt-1 w-full max-h-60 overflow-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
             <div class="p-1">
               <label class="flex items-center w-full px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer">
                 <input
                   type="checkbox"
                   :checked="!filters.strategies || filters.strategies.length === 0"
                   @change="toggleAllStrategies"
-                  class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded flex-shrink-0"
+                  class="checkbox"
                 />
                 <span class="ml-3 text-sm text-gray-900 dark:text-white">All Strategies</span>
               </label>
@@ -104,7 +104,7 @@
                     type="checkbox"
                     :value="strategy.value"
                     v-model="filters.strategies"
-                    class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded flex-shrink-0"
+                    class="checkbox"
                   />
                   <span class="ml-3 text-sm text-gray-900 dark:text-white">{{ strategy.label }}</span>
                 </label>
@@ -114,7 +114,7 @@
               <button
                 @click.stop="openStrategyManager"
                 type="button"
-                class="flex items-center w-full px-3 py-2 text-sm text-primary-600 dark:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                class="btn-ghost btn-sm w-full"
               >
                 Manage strategies
               </button>
@@ -137,14 +137,14 @@
             </svg>
           </button>
 
-          <div v-if="showSetupDropdown" class="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
+          <div v-if="showSetupDropdown" class="dropdown-menu absolute z-10 mt-1 w-full max-h-60 overflow-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
             <div class="p-1">
               <label class="flex items-center w-full px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer">
                 <input
                   type="checkbox"
                   :checked="!filters.setups || filters.setups.length === 0"
                   @change="toggleAllSetups"
-                  class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded flex-shrink-0"
+                  class="checkbox"
                 />
                 <span class="ml-3 text-sm text-gray-900 dark:text-white">All Setups</span>
               </label>
@@ -156,7 +156,7 @@
                     type="checkbox"
                     :value="setup"
                     v-model="filters.setups"
-                    class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded flex-shrink-0"
+                    class="checkbox"
                   />
                   <span class="ml-3 text-sm text-gray-900 dark:text-white">{{ setup }}</span>
                 </label>
@@ -166,7 +166,7 @@
               <button
                 @click.stop="openSetupManager"
                 type="button"
-                class="flex items-center w-full px-3 py-2 text-sm text-primary-600 dark:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                class="btn-ghost btn-sm w-full"
               >
                 Manage setups
               </button>
@@ -210,7 +210,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
             </svg>
           </button>
-          <div v-if="showStatusDropdown" class="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
+          <div v-if="showStatusDropdown" class="dropdown-menu absolute z-10 mt-1 w-full max-h-60 overflow-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
             <div
               v-for="option in statusOptions"
               :key="option.value"
@@ -237,7 +237,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
             </svg>
           </button>
-          <div v-if="showSideDropdown" class="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
+          <div v-if="showSideDropdown" class="dropdown-menu absolute z-10 mt-1 w-full max-h-60 overflow-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
             <div
               v-for="option in sideOptions"
               :key="option.value"
@@ -267,14 +267,14 @@
             </svg>
           </button>
 
-          <div v-if="showInstrumentTypeDropdown" class="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
+          <div v-if="showInstrumentTypeDropdown" class="dropdown-menu absolute z-10 mt-1 w-full max-h-60 overflow-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
             <div class="p-1">
               <label class="flex items-center w-full px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer">
                 <input
                   type="checkbox"
                   :checked="!filters.instrumentTypes || filters.instrumentTypes.length === 0"
                   @change="toggleAllInstrumentTypes"
-                  class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded flex-shrink-0"
+                  class="checkbox"
                 />
                 <span class="ml-3 text-sm text-gray-900 dark:text-white">All Types</span>
               </label>
@@ -286,7 +286,7 @@
                     type="checkbox"
                     :value="type.value"
                     v-model="filters.instrumentTypes"
-                    class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded flex-shrink-0"
+                    class="checkbox"
                   />
                   <span class="ml-3 text-sm text-gray-900 dark:text-white">{{ type.label }}</span>
                 </label>
@@ -313,19 +313,29 @@
           :class="[showAdvanced ? 'rotate-90' : '', 'h-4 w-4 mr-1 transition-transform']"
         />
         Advanced Filters
-        <span v-if="activeAdvancedCount > 0" class="ml-2 bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-400 text-xs px-2 py-0.5 rounded-full">
+        <span
+          v-if="showProLock"
+          class="badge-primary ml-2"
+        >Pro</span>
+        <span v-else-if="activeAdvancedCount > 0" class="ml-2 bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-400 text-xs px-2 py-0.5 rounded-full">
           {{ activeAdvancedCount }}
         </span>
       </button>
     </div>
 
-    <!-- Advanced filters (collapsible) -->
-    <div v-if="showAdvanced" class="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-6">
+    <!-- Advanced filters (collapsible, Pro only) -->
+    <div v-if="showAdvanced && showProLock" class="border-t border-gray-200 dark:border-gray-700 pt-4">
+      <ProUpgradePrompt
+        variant="compact"
+        description="Filter by sector, price, quantity, P&L, hold time, broker, day of week, market session, and quality grade with Pro."
+      />
+    </div>
+    <div v-else-if="showAdvanced && isProUser" class="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-6">
       <!-- Range Filters and Timing & Options - Side by Side -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Range Filters Group -->
         <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
-          <h4 class="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-3">Range Filters</h4>
+          <h4 class="text-label mb-3">Range Filters</h4>
           <div class="space-y-4">
             <!-- Price Range -->
             <div>
@@ -336,7 +346,7 @@
                   type="number"
                   step="0.01"
                   min="0"
-                  class="input text-sm flex-1"
+                  class="input input-sm flex-1"
                   placeholder="Min"
                   @keydown.enter="applyFilters"
                 />
@@ -346,7 +356,7 @@
                   type="number"
                   step="0.01"
                   min="0"
-                  class="input text-sm flex-1"
+                  class="input input-sm flex-1"
                   placeholder="Max"
                   @keydown.enter="applyFilters"
                 />
@@ -361,7 +371,7 @@
                   v-model.number="filters.minQuantity"
                   type="number"
                   min="0"
-                  class="input text-sm flex-1"
+                  class="input input-sm flex-1"
                   placeholder="Min"
                   @keydown.enter="applyFilters"
                 />
@@ -370,7 +380,7 @@
                   v-model.number="filters.maxQuantity"
                   type="number"
                   min="0"
-                  class="input text-sm flex-1"
+                  class="input input-sm flex-1"
                   placeholder="Max"
                   @keydown.enter="applyFilters"
                 />
@@ -385,7 +395,7 @@
                   v-model.number="filters.minPnl"
                   type="number"
                   step="0.01"
-                  class="input text-sm flex-1"
+                  class="input input-sm flex-1"
                   placeholder="Min"
                   @keydown.enter="applyFilters"
                 />
@@ -394,7 +404,7 @@
                   v-model.number="filters.maxPnl"
                   type="number"
                   step="0.01"
-                  class="input text-sm flex-1"
+                  class="input input-sm flex-1"
                   placeholder="Max"
                   @keydown.enter="applyFilters"
                 />
@@ -405,7 +415,7 @@
 
         <!-- Timing & Options Group -->
         <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
-          <h4 class="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-3">Timing & Options</h4>
+          <h4 class="text-label mb-3">Timing & Options</h4>
           <div class="space-y-4">
             <!-- Hold Time -->
             <div>
@@ -421,7 +431,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                   </svg>
                 </button>
-                <div v-if="showHoldTimeDropdown" class="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
+                <div v-if="showHoldTimeDropdown" class="dropdown-menu absolute z-10 mt-1 w-full max-h-60 overflow-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
                   <div
                     v-for="option in holdTimeOptions"
                     :key="option.value"
@@ -438,14 +448,12 @@
             <!-- Market Session -->
             <div>
               <label class="label">Market Session</label>
-              <div class="grid grid-cols-3 gap-1 rounded-lg border border-gray-200 bg-white p-1 dark:border-gray-600 dark:bg-gray-800">
+              <div class="card grid grid-cols-3 gap-1 p-1 dark:border-gray-600">
                 <label
                   v-for="session in marketSessionOptions"
                   :key="session.value"
                   class="cursor-pointer rounded-md px-2 py-2 text-center text-xs font-medium transition-colors"
-                  :class="filters.market_sessions.includes(session.value)
-                    ? 'bg-primary-600 text-white shadow-sm'
-                    : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'"
+                  :class="filters.market_sessions.includes(session.value) ? 'segment-active' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'"
                 >
                   <input
                     v-model="filters.market_sessions"
@@ -476,14 +484,14 @@
                   </svg>
                 </button>
 
-                <div v-if="showDayOfWeekDropdown" class="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
+                <div v-if="showDayOfWeekDropdown" class="dropdown-menu absolute z-10 mt-1 w-full max-h-60 overflow-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
                   <div class="p-1">
                     <label class="flex items-center w-full px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer">
                       <input
                         type="checkbox"
                         :checked="!filters.daysOfWeek || filters.daysOfWeek.length === 0"
                         @change="toggleAllDaysOfWeek"
-                        class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded flex-shrink-0"
+                        class="checkbox"
                       />
                       <span class="ml-3 text-sm text-gray-900 dark:text-white">All Days</span>
                     </label>
@@ -495,7 +503,7 @@
                           type="checkbox"
                           :value="day.value"
                           v-model="filters.daysOfWeek"
-                          class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded flex-shrink-0"
+                          class="checkbox"
                         />
                         <span class="ml-3 text-sm text-gray-900 dark:text-white">{{ day.label }}</span>
                       </label>
@@ -522,14 +530,14 @@
                   </svg>
                 </button>
 
-                <div v-if="showOptionTypeDropdown" class="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
+                <div v-if="showOptionTypeDropdown" class="dropdown-menu absolute z-10 mt-1 w-full max-h-60 overflow-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
                   <div class="p-1">
                     <label class="flex items-center w-full px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer">
                       <input
                         type="checkbox"
                         :checked="!filters.optionTypes || filters.optionTypes.length === 0"
                         @change="toggleAllOptionTypes"
-                        class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded flex-shrink-0"
+                        class="checkbox"
                       />
                       <span class="ml-3 text-sm text-gray-900 dark:text-white">All Option Types</span>
                     </label>
@@ -541,7 +549,7 @@
                           type="checkbox"
                           :value="type.value"
                           v-model="filters.optionTypes"
-                          class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded flex-shrink-0"
+                          class="checkbox"
                         />
                         <span class="ml-3 text-sm text-gray-900 dark:text-white">{{ type.label }}</span>
                       </label>
@@ -556,7 +564,7 @@
 
       <!-- Trade Characteristics Group -->
       <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
-        <h4 class="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-3">Trade Characteristics</h4>
+        <h4 class="text-label mb-3">Trade Characteristics</h4>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <!-- Sector -->
           <div>
@@ -576,14 +584,14 @@
                 </svg>
               </button>
 
-              <div v-if="showSectorDropdown && !loadingSectors" class="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
+              <div v-if="showSectorDropdown && !loadingSectors" class="dropdown-menu absolute z-10 mt-1 w-full max-h-60 overflow-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
                 <div class="p-1">
                   <label class="flex items-center w-full px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer">
                     <input
                       type="checkbox"
                       :checked="!filters.sectors || filters.sectors.length === 0"
                       @change="toggleAllSectors"
-                      class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded flex-shrink-0"
+                      class="checkbox"
                     />
                     <span class="ml-3 text-sm text-gray-900 dark:text-white">All Sectors</span>
                   </label>
@@ -595,7 +603,7 @@
                         type="checkbox"
                         :value="sector"
                         v-model="filters.sectors"
-                        class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded flex-shrink-0"
+                        class="checkbox"
                       />
                       <span class="ml-3 text-sm text-gray-900 dark:text-white">{{ sector }}</span>
                     </label>
@@ -619,7 +627,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                 </svg>
               </button>
-              <div v-if="showNewsDropdown" class="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
+              <div v-if="showNewsDropdown" class="dropdown-menu absolute z-10 mt-1 w-full max-h-60 overflow-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
                 <div
                   v-for="option in newsOptions"
                   :key="option.value"
@@ -651,14 +659,14 @@
                 </svg>
               </button>
 
-              <div v-if="showBrokerDropdown && !loadingBrokers" class="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
+              <div v-if="showBrokerDropdown && !loadingBrokers" class="dropdown-menu absolute z-10 mt-1 w-full max-h-60 overflow-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
                 <div class="p-1">
                   <label class="flex items-center w-full px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer">
                     <input
                       type="checkbox"
                       :checked="!filters.brokers || filters.brokers.length === 0"
                       @change="toggleAllBrokers"
-                      class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded flex-shrink-0"
+                      class="checkbox"
                     />
                     <span class="ml-3 text-sm text-gray-900 dark:text-white">All Brokers</span>
                   </label>
@@ -670,7 +678,7 @@
                         type="checkbox"
                         :value="broker"
                         v-model="filters.brokers"
-                        class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded flex-shrink-0"
+                        class="checkbox"
                       />
                       <span class="ml-3 text-sm text-gray-900 dark:text-white">{{ broker }}</span>
                     </label>
@@ -694,7 +702,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                 </svg>
               </button>
-              <div v-if="showPnlTypeDropdown" class="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
+              <div v-if="showPnlTypeDropdown" class="dropdown-menu absolute z-10 mt-1 w-full max-h-60 overflow-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
                 <div
                   v-for="option in pnlTypeOptions"
                   :key="option.value"
@@ -725,14 +733,14 @@
                 </svg>
               </button>
 
-              <div v-if="showQualityGradeDropdown" class="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
+              <div v-if="showQualityGradeDropdown" class="dropdown-menu absolute z-10 mt-1 w-full max-h-60 overflow-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
                 <div class="p-1">
                   <label class="flex items-center w-full px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer">
                     <input
                       type="checkbox"
                       :checked="!filters.qualityGrades || filters.qualityGrades.length === 0"
                       @change="toggleAllQualityGrades"
-                      class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded flex-shrink-0"
+                      class="checkbox"
                     />
                     <span class="ml-3 text-sm text-gray-900 dark:text-white">All Grades</span>
                   </label>
@@ -744,7 +752,7 @@
                         type="checkbox"
                         :value="grade.value"
                         v-model="filters.qualityGrades"
-                        class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded flex-shrink-0"
+                        class="checkbox"
                       />
                       <span class="ml-3 text-sm text-gray-900 dark:text-white">{{ grade.label }}</span>
                     </label>
@@ -761,7 +769,7 @@
       <div class="min-h-[1.25rem]">
         <div
           v-if="filters.importId"
-          class="inline-flex items-center gap-2 rounded-full bg-primary-50 px-3 py-1 text-sm text-primary-800 dark:bg-primary-900/20 dark:text-primary-300"
+          class="callout-info inline-flex items-center gap-2"
         >
           <span>Showing trades from this import only</span>
           <button
@@ -804,6 +812,9 @@ import { useUiPreferencesStore } from '@/stores/uiPreferences'
 import { formatLocalDate } from '@/utils/date'
 import { useGlobalAccountFilter } from '@/composables/useGlobalAccountFilter'
 import SymbolAutocomplete from '@/components/common/SymbolAutocomplete.vue'
+import ProUpgradePrompt from '@/components/ProUpgradePrompt.vue'
+import { useProAccess } from '@/composables/useProAccess'
+import { isProTradeFilterKey } from '@/utils/proTradeFilters'
 
 const props = defineProps({
   // When true (default), TradeFilters auto-emits a `filter` event on mount
@@ -827,6 +838,7 @@ const uiPreferencesStore = useUiPreferencesStore()
 const { selectedAccount, isFiltered: globalAccountFilterActive } = useGlobalAccountFilter()
 
 const showAdvanced = ref(false)
+const { isProUser, showProLock } = useProAccess()
 
 // Load saved period from localStorage on initialization
 const savedPeriodInit = localStorage.getItem('tradeFiltersPeriod')
@@ -892,7 +904,9 @@ const instrumentTypeOptions = [
   { value: 'stock', label: 'Stocks' },
   { value: 'option', label: 'Options' },
   { value: 'future', label: 'Futures' },
-  { value: 'crypto', label: 'Crypto' }
+  { value: 'crypto', label: 'Crypto' },
+  { value: 'forex', label: 'Forex' },
+  { value: 'cfd', label: 'CFD / Metal' }
 ]
 
 // Option type options
@@ -1519,6 +1533,14 @@ function applyFilters() {
     console.error('[TradeFilters] localStorage save failed:', e)
   }
 
+  // Advanced-panel filters are Pro-only (ignored server-side for free users);
+  // don't send them once we know the user is on the free tier.
+  if (showProLock.value) {
+    for (const key of Object.keys(cleanFilters)) {
+      if (isProTradeFilterKey(key)) delete cleanFilters[key]
+    }
+  }
+
   console.log('[TradeFilters] Emitting cleanFilters:', cleanFilters)
   emit('filter', cleanFilters)
 }
@@ -1558,6 +1580,8 @@ async function clearImportFilter() {
 }
 
 async function fetchAvailableSectors() {
+  // /analytics/sectors/available is Pro-only and only feeds the advanced panel
+  if (!isProUser.value) return
   try {
     loadingSectors.value = true
     const response = await api.get('/analytics/sectors/available')
@@ -1762,6 +1786,11 @@ function handleClickOutside(event) {
 }
 
 // Watch for global account filter changes and re-apply filters
+// Tier can resolve after mount; load the Pro-only sector list once it does.
+watch(isProUser, (is_pro) => {
+  if (is_pro && availableSectors.value.length === 0) fetchAvailableSectors()
+})
+
 watch(selectedAccount, () => {
   console.log('[TradeFilters] Global account filter changed to:', selectedAccount.value || 'All Accounts')
   filters.value.accounts = selectedAccount.value || ''

@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden">
+  <div class="card overflow-hidden">
     <!-- Header with collapse toggle -->
     <div
       class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 cursor-pointer"
@@ -7,10 +7,10 @@
     >
       <div class="flex items-center justify-between">
         <div>
-          <h2 class="text-lg font-medium text-gray-900 dark:text-white">DCF Valuation Calculator</h2>
+          <h2 class="heading-card">DCF Valuation Calculator</h2>
           <p class="text-sm text-gray-500 dark:text-gray-400">Calculate intrinsic value using Discounted Cash Flow</p>
         </div>
-        <button class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+        <button class="btn-icon">
           <svg
             class="w-5 h-5 transition-transform"
             :class="{ 'rotate-180': expanded }"
@@ -27,7 +27,7 @@
     <!-- Content -->
     <div v-if="expanded" class="p-6">
       <!-- Error State -->
-      <div v-if="error" class="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+      <div v-if="error" class="callout-danger mb-4">
         <p class="text-red-700 dark:text-red-400">{{ error }}</p>
       </div>
 

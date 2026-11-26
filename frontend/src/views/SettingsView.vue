@@ -14,12 +14,7 @@
                     v-for="tab in tabs"
                     :key="tab.id"
                     @click="activeTab = tab.id"
-                    :class="[
-                        activeTab === tab.id
-                            ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300',
-                        'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors',
-                    ]"
+                    :class="[ activeTab === tab.id ? 'tab-active' : 'tab-inactive', 'tab', ]"
                 >
                     {{ tab.label }}
                 </button>
@@ -34,7 +29,7 @@
                 <div class="card">
                     <div class="card-body">
                         <h3
-                            class="text-lg font-medium text-gray-900 dark:text-white mb-6"
+                            class="heading-card mb-6"
                         >
                             Analytics Preferences
                         </h3>
@@ -69,7 +64,7 @@
                                     affected by outliers and may provide a more
                                     representative view of typical performance.
                                 </p>
-                                <p class="mt-1 text-sm text-primary-600 dark:text-primary-400 font-medium">
+                                <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
                                     Note: Changes take effect immediately
                                     and will update labels throughout the
                                     application.
@@ -103,30 +98,19 @@
                                         </p>
                                     </div>
                                     <div class="flex-shrink-0 pt-0.5">
-                                        <button
-                                            type="button"
+                                        <button                                             type="button"
                                             @click="
                                                 analyticsForm.analyticsPositionGrouping =
                                                     !analyticsForm.analyticsPositionGrouping
                                             "
-                                            :class="[
-                                                analyticsForm.analyticsPositionGrouping
-                                                    ? 'bg-primary-600'
-                                                    : 'bg-gray-200 dark:bg-gray-700',
-                                                'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2',
-                                            ]"
+                                            :class="[ analyticsForm.analyticsPositionGrouping ? 'switch-on' : '', 'switch', ]"
                                             role="switch"
                                             :aria-checked="
                                                 analyticsForm.analyticsPositionGrouping
                                             "
                                         >
                                             <span
-                                                :class="[
-                                                    analyticsForm.analyticsPositionGrouping
-                                                        ? 'translate-x-5'
-                                                        : 'translate-x-0',
-                                                    'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
-                                                ]"
+                                                :class="[ analyticsForm.analyticsPositionGrouping ? 'translate-x-5' : 'translate-x-0', 'switch-knob', ]"
                                             />
                                         </button>
                                     </div>
@@ -156,30 +140,19 @@
                                         </p>
                                     </div>
                                     <div class="flex-shrink-0 pt-0.5">
-                                        <button
-                                            type="button"
+                                        <button                                             type="button"
                                             @click="
                                                 analyticsForm.edgeReportEnabled =
                                                     !analyticsForm.edgeReportEnabled
                                             "
-                                            :class="[
-                                                analyticsForm.edgeReportEnabled
-                                                    ? 'bg-primary-600'
-                                                    : 'bg-gray-200 dark:bg-gray-700',
-                                                'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2',
-                                            ]"
+                                            :class="[ analyticsForm.edgeReportEnabled ? 'switch-on' : '', 'switch', ]"
                                             role="switch"
                                             :aria-checked="
                                                 analyticsForm.edgeReportEnabled
                                             "
                                         >
                                             <span
-                                                :class="[
-                                                    analyticsForm.edgeReportEnabled
-                                                        ? 'translate-x-5'
-                                                        : 'translate-x-0',
-                                                    'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
-                                                ]"
+                                                :class="[ analyticsForm.edgeReportEnabled ? 'translate-x-5' : 'translate-x-0', 'switch-knob', ]"
                                             />
                                         </button>
                                     </div>
@@ -189,7 +162,7 @@
                             <div class="py-6">
                                 <label class="label">Breakeven Tolerance</label>
                                 <div
-                                    class="mt-2 inline-flex rounded-lg border border-gray-300 bg-gray-100 p-1 dark:border-gray-600 dark:bg-gray-800"
+                                    class="segmented mt-2"
                                     role="group"
                                     aria-label="Breakeven tolerance unit"
                                 >
@@ -197,13 +170,8 @@
                                         v-for="option in breakevenToleranceModeOptions"
                                         :key="option.value"
                                         type="button"
-                                        class="rounded-md px-4 py-2 text-sm font-medium transition-colors"
-                                        :class="
-                                            analyticsForm.breakeven_tolerance_mode ===
-                                            option.value
-                                                ? 'bg-white text-primary-700 shadow-sm dark:bg-gray-700 dark:text-primary-300'
-                                                : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
-                                        "
+                                        class="segment"
+                                        :class="analyticsForm.breakeven_tolerance_mode === option.value ? 'segment-active' : ''"
                                         :aria-pressed="
                                             analyticsForm.breakeven_tolerance_mode ===
                                             option.value
@@ -308,7 +276,7 @@
                                             />
                                             <button
                                                 type="button"
-                                                class="btn-secondary px-3"
+                                                class="btn-secondary"
                                                 @click="removeBreakevenToleranceRow(idx)"
                                             >
                                                 Remove
@@ -342,7 +310,7 @@
                             </div>
 
                             <div v-if="['admin', 'owner'].includes(authStore.user?.role)" class="py-6">
-                                <h4 class="font-medium text-gray-900 dark:text-white">Manual exchange rates</h4>
+                                <h4 class="heading-card">Manual exchange rates</h4>
                                 <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
                                     Set how much one USD buys. These server-wide rates override provider rates for trade calculations, imports, charts, and analytics. Remove a rate to use the provider again.
                                 </p>
@@ -362,7 +330,7 @@
                                 <ul v-else class="mt-4 divide-y divide-gray-200 dark:divide-gray-700">
                                     <li v-for="rate in manualFxRates" :key="rate.quote_code" class="flex items-center justify-between gap-4 py-2 text-sm">
                                         <span>1 USD = {{ Number(rate.per_usd) }} {{ rate.quote_code }}</span>
-                                        <button type="button" class="text-primary-600 hover:text-primary-700 dark:text-primary-400" :disabled="manualFxSaving" @click="removeManualFxRate(rate.quote_code)">Remove</button>
+                                        <button type="button" class="btn-link" :disabled="manualFxSaving" @click="removeManualFxRate(rate.quote_code)">Remove</button>
                                     </li>
                                 </ul>
                             </div>
@@ -405,30 +373,19 @@
                                         </p>
                                     </div>
                                     <div class="flex-shrink-0 pt-0.5">
-                                        <button
-                                            type="button"
+                                        <button                                             type="button"
                                             @click="
                                                 analyticsForm.autoCloseExpiredOptions =
                                                     !analyticsForm.autoCloseExpiredOptions
                                             "
-                                            :class="[
-                                                analyticsForm.autoCloseExpiredOptions
-                                                    ? 'bg-primary-600'
-                                                    : 'bg-gray-200 dark:bg-gray-700',
-                                                'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2',
-                                            ]"
+                                            :class="[ analyticsForm.autoCloseExpiredOptions ? 'switch-on' : '', 'switch', ]"
                                             role="switch"
                                             :aria-checked="
                                                 analyticsForm.autoCloseExpiredOptions
                                             "
                                         >
                                             <span
-                                                :class="[
-                                                    analyticsForm.autoCloseExpiredOptions
-                                                        ? 'translate-x-5'
-                                                        : 'translate-x-0',
-                                                    'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
-                                                ]"
+                                                :class="[ analyticsForm.autoCloseExpiredOptions ? 'translate-x-5' : 'translate-x-0', 'switch-knob', ]"
                                             />
                                         </button>
                                     </div>
@@ -444,12 +401,14 @@
                                     :options="[
                                         { value: 'percent', label: 'Percentage' },
                                         { value: 'dollar', label: 'Dollar amount' },
+                                        { value: 'points', label: 'Points' },
                                         { value: 'lod', label: 'Low of Day (LoD)' }
                                     ]"
                                 />
                                 <div class="mt-2 text-sm text-gray-500 dark:text-gray-400 space-y-1">
                                     <p><strong class="text-gray-700 dark:text-gray-300">Percentage:</strong> Use a fixed percentage below/above entry price.</p>
                                     <p><strong class="text-gray-700 dark:text-gray-300">Dollar amount:</strong> Use a fixed risk per trade in dollars (e.g., $100 or $150 per trade).</p>
+                                    <p><strong class="text-gray-700 dark:text-gray-300">Points:</strong> Use a fixed price distance from entry, with optional defaults for each instrument.</p>
                                     <p><strong class="text-gray-700 dark:text-gray-300">Low of Day (LoD):</strong> Use the low price of the entry day (Qullamaggie-style swing trades). Uses Low of Day for long positions and High of Day for short positions.</p>
                                 </div>
                             </div>
@@ -496,7 +455,7 @@
                                     price. For short positions, it will be above
                                     entry price.
                                 </p>
-                                <p class="mt-1 text-sm text-primary-600 dark:text-primary-400 font-medium">
+                                <p class="mt-1 text-sm text-primary-700 dark:text-primary-400 font-medium">
                                     Example: 2% stop loss on a $100 long
                                     entry = $98 stop loss price
                                 </p>
@@ -547,11 +506,38 @@
                                     quantity); for a short, stop = entry +
                                     (dollars / quantity).
                                 </p>
-                                <p class="mt-1 text-sm text-primary-600 dark:text-primary-400 font-medium">
+                                <p class="mt-1 text-sm text-primary-700 dark:text-primary-400 font-medium">
                                     Example: $100 stop loss on 50 shares =
                                     $2 per share risk, so a $100 long entry
                                     becomes $98 stop loss
                                 </p>
+                            </div>
+
+                            <div v-if="analyticsForm.defaultStopLossType === 'points'" class="space-y-4 py-6">
+                                <div>
+                                    <label for="default_stop_loss_points" class="label">Default Stop Loss (Points)</label>
+                                    <input id="default_stop_loss_points" v-model.number="analyticsForm.default_stop_loss_points"
+                                        type="number" min="0.00000001" max="1000000" step="any" class="input" placeholder="No default" />
+                                    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                        Applies to new and imported trades without a stop. A 1.5-point stop on a long entry at 6000 is 5998.5, regardless of quantity.
+                                    </p>
+                                </div>
+                                <fieldset class="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+                                    <legend class="px-1 text-sm font-semibold text-gray-900 dark:text-white">Per-instrument defaults</legend>
+                                    <p class="mb-3 text-sm text-gray-500 dark:text-gray-400">Use futures roots such as ES, MES, NQ, or MNQ. These override the default above; contracts such as ESZ6 use ES.</p>
+                                    <div v-for="(row, index) in stop_points_rows" :key="index" class="mb-3 flex items-end gap-3">
+                                        <div class="flex-1">
+                                            <label :for="`stop-points-symbol-${index}`" class="label">Instrument</label>
+                                            <input :id="`stop-points-symbol-${index}`" v-model="row.underlying" class="input" placeholder="ES" maxlength="20" />
+                                        </div>
+                                        <div class="flex-1">
+                                            <label :for="`stop-points-value-${index}`" class="label">Points</label>
+                                            <input :id="`stop-points-value-${index}`" v-model.number="row.points" type="number" min="0.00000001" max="1000000" step="any" class="input" />
+                                        </div>
+                                        <button type="button" class="btn-secondary" :aria-label="`Remove instrument default ${index + 1}`" @click="stop_points_rows.splice(index, 1)">Remove</button>
+                                    </div>
+                                    <button type="button" class="btn-secondary" @click="stop_points_rows.push({ underlying: '', points: null })">Add instrument</button>
+                                </fieldset>
                             </div>
 
                             <div class="py-6">
@@ -612,7 +598,7 @@
                                     entry price. For short positions, it will be
                                     below entry price.
                                 </p>
-                                <p class="mt-1 text-sm text-primary-600 dark:text-primary-400 font-medium">
+                                <p class="mt-1 text-sm text-primary-700 dark:text-primary-400 font-medium">
                                     Example: 6% take profit on a $100 long
                                     entry = $106 take profit price
                                 </p>
@@ -643,7 +629,7 @@
                                 <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
                                     Calculates the target from the trade's stop loss. A valid stop loss is required; manually selected stops take precedence over the default stop.
                                 </p>
-                                <p class="mt-1 text-sm text-primary-600 dark:text-primary-400 font-medium">
+                                <p class="mt-1 text-sm text-primary-700 dark:text-primary-400 font-medium">
                                     Example: $250 risk at 2R = a $500 gross profit target
                                 </p>
                             </div>
@@ -672,7 +658,7 @@
                                 <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
                                     Sets a fixed gross profit target for the entire position. Quantity and stock, option, or futures multipliers are used to calculate the target price.
                                 </p>
-                                <p class="mt-1 text-sm text-primary-600 dark:text-primary-400 font-medium">
+                                <p class="mt-1 text-sm text-primary-700 dark:text-primary-400 font-medium">
                                     Example: $500 on 50 shares = a $10 move from entry
                                 </p>
                             </div>
@@ -688,7 +674,7 @@
                                         class="flex items-center"
                                     >
                                         <div
-                                            class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"
+                                            class="spinner spinner-xs spinner-light mr-2"
                                         ></div>
                                         Saving...
                                     </span>
@@ -703,7 +689,7 @@
                 <div class="card">
                     <div class="card-body">
                         <h3
-                            class="text-lg font-medium text-gray-900 dark:text-white mb-6"
+                            class="heading-card mb-6"
                         >
                             Privacy Settings
                         </h3>
@@ -739,30 +725,19 @@
                                     </p>
                                 </div>
                                 <div class="ml-4 flex-shrink-0">
-                                    <button
-                                        type="button"
+                                    <button                                         type="button"
                                         @click="
                                             privacyForm.publicProfile =
                                                 !privacyForm.publicProfile
                                         "
-                                        :class="[
-                                            privacyForm.publicProfile
-                                                ? 'bg-primary-600'
-                                                : 'bg-gray-200 dark:bg-gray-700',
-                                            'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2',
-                                        ]"
+                                        :class="[ privacyForm.publicProfile ? 'switch-on' : '', 'switch', ]"
                                         role="switch"
                                         :aria-checked="
                                             privacyForm.publicProfile
                                         "
                                     >
                                         <span
-                                            :class="[
-                                                privacyForm.publicProfile
-                                                    ? 'translate-x-5'
-                                                    : 'translate-x-0',
-                                                'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
-                                            ]"
+                                            :class="[ privacyForm.publicProfile ? 'translate-x-5' : 'translate-x-0', 'switch-knob', ]"
                                         />
                                     </button>
                                 </div>
@@ -779,7 +754,7 @@
                                         class="flex items-center"
                                     >
                                         <div
-                                            class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"
+                                            class="spinner spinner-xs spinner-light mr-2"
                                         ></div>
                                         Saving...
                                     </span>
@@ -794,7 +769,7 @@
                 <div class="card">
                     <div class="card-body">
                         <h3
-                            class="text-lg font-medium text-gray-900 dark:text-white mb-6"
+                            class="heading-card mb-6"
                         >
                             Broker Sync
                         </h3>
@@ -809,7 +784,7 @@
 
                         <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                             <h4
-                                class="text-sm font-medium text-gray-900 dark:text-white mb-2"
+                                class="heading-sub mb-2"
                             >
                                 Automated Trade Syncing
                             </h4>
@@ -849,7 +824,7 @@
                 <div class="card">
                     <div class="card-body">
                         <h3
-                            class="text-lg font-medium text-gray-900 dark:text-white mb-6"
+                            class="heading-card mb-6"
                         >
                             API Documentation
                         </h3>
@@ -862,7 +837,7 @@
 
                         <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                             <h4
-                                class="text-sm font-medium text-gray-900 dark:text-white mb-2"
+                                class="heading-sub mb-2"
                             >
                                 Interactive API Explorer
                             </h4>
@@ -896,7 +871,7 @@
                 <div class="card">
                     <div class="card-body">
                         <h3
-                            class="text-lg font-medium text-gray-900 dark:text-white mb-6"
+                            class="heading-card mb-6"
                         >
                             About TradeTally
                         </h3>
@@ -947,11 +922,7 @@
                                 <div class="flex items-center space-x-2">
                                     <span
                                         class="text-sm font-mono"
-                                        :class="
-                                            versionStore.updateAvailable
-                                                ? 'text-primary-600 dark:text-primary-400'
-                                                : 'text-gray-900 dark:text-white'
-                                        "
+                                        :class="versionStore.updateAvailable ? 'text-primary-700 dark:text-primary-400' : 'text-gray-900 dark:text-white'"
                                     >
                                         v{{
                                             versionStore.latestVersion ||
@@ -960,7 +931,7 @@
                                     </span>
                                     <span
                                         v-if="versionStore.updateAvailable"
-                                        class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-400"
+                                        class="badge-primary"
                                     >
                                         New
                                     </span>
@@ -973,11 +944,11 @@
                                 class="pt-4"
                             >
                                 <div
-                                    class="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-4"
+                                    class="callout-info"
                                 >
                                     <div class="flex items-start">
                                         <ArrowPathIcon
-                                            class="h-5 w-5 text-primary-600 dark:text-primary-400 mt-0.5"
+                                            class="h-5 w-5 text-primary-700 dark:text-primary-400 mt-0.5"
                                         />
                                         <div class="ml-3 flex-1">
                                             <p
@@ -1002,7 +973,7 @@
                                                     "
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                                                    class="btn-primary leading-4"
                                                 >
                                                     View Release Notes
                                                     <ArrowTopRightOnSquareIcon
@@ -1027,7 +998,7 @@
                                         class="flex items-center"
                                     >
                                         <div
-                                            class="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"
+                                            class="spinner spinner-xs spinner-current mr-2"
                                         ></div>
                                         Checking...
                                     </span>
@@ -1082,7 +1053,7 @@
                 <div class="card mb-8">
                     <div class="card-body">
                         <h3
-                            class="text-lg font-medium text-gray-900 dark:text-white mb-4"
+                            class="heading-card mb-4"
                         >
                             Trading Accounts
                         </h3>
@@ -1122,7 +1093,7 @@
                 <div class="card">
                     <div class="card-body">
                         <h3
-                            class="text-lg font-medium text-gray-900 dark:text-white mb-4"
+                            class="heading-card mb-4"
                         >
                             Quality Grading Weights
                         </h3>
@@ -1151,11 +1122,7 @@
                                 type="button"
                                 @click="qualityProfile = p.key"
                                 class="px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors"
-                                :class="
-                                    qualityProfile === p.key
-                                        ? 'border-primary-600 text-primary-600 dark:text-primary-400'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-                                "
+                                :class="qualityProfile === p.key ? 'border-primary-600 text-primary-700 dark:text-primary-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
                             >
                                 {{ p.label }}
                             </button>
@@ -1252,19 +1219,15 @@
                             <!-- Total Display -->
                             <div
                                 class="p-4 rounded-md"
-                                :class="
-                                    weightsTotal === 100
-                                        ? 'bg-green-50 dark:bg-green-900/20'
-                                        : 'bg-red-50 dark:bg-red-900/20'
-                                "
+                                :class="weightsTotal === 100 ? 'bg-green-50 dark:bg-green-900/20' : 'bg-red-50 dark:bg-red-900/20'"
                             >
                                 <div class="flex justify-between items-center">
                                     <span
                                         class="text-sm font-medium"
                                         :class="
                                             weightsTotal === 100
-                                                ? 'text-green-800 dark:text-green-200'
-                                                : 'text-red-800 dark:text-red-200'
+                                                ? 'text-green-700 dark:text-green-400'
+                                                : 'text-red-600 dark:text-red-400'
                                         "
                                     >
                                         Total Weight:
@@ -1309,7 +1272,7 @@
                                         class="flex items-center"
                                     >
                                         <div
-                                            class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"
+                                            class="spinner spinner-xs spinner-light mr-2"
                                         ></div>
                                         Saving...
                                     </span>
@@ -1324,7 +1287,7 @@
                 <div class="card">
                     <div class="card-body">
                         <h3
-                            class="text-lg font-medium text-gray-900 dark:text-white mb-6"
+                            class="heading-card mb-6"
                         >
                             Trade Import Settings
                         </h3>
@@ -1348,7 +1311,7 @@
                                             tradeImportForm.enableTradeGrouping
                                         "
                                         type="checkbox"
-                                        class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                                        class="checkbox"
                                     />
                                 </div>
                                 <div class="ml-3">
@@ -1406,7 +1369,7 @@
                                         class="flex items-center"
                                     >
                                         <div
-                                            class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"
+                                            class="spinner spinner-xs spinner-light mr-2"
                                         ></div>
                                         Saving...
                                     </span>
@@ -1430,7 +1393,7 @@
                 <div class="card">
                     <div class="card-body">
                         <h3
-                            class="text-lg font-medium text-gray-900 dark:text-white mb-4"
+                            class="heading-card mb-4"
                         >
                             Trade Enrichment
                         </h3>
@@ -1476,7 +1439,7 @@
                                     class="flex items-center"
                                 >
                                     <div
-                                        class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"
+                                        class="spinner spinner-xs spinner-light mr-2"
                                     ></div>
                                     Processing...
                                 </span>
@@ -1490,7 +1453,7 @@
                             :class="
                                 enrichmentSuccess
                                     ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200'
-                                    : 'bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200'
+                                    : 'bg-primary-50 dark:bg-primary-900/20 text-primary-800 dark:text-primary-200'
                             "
                         >
                             <p class="text-sm">{{ enrichmentMessage }}</p>
@@ -1523,7 +1486,7 @@
                                     class="flex items-center"
                                 >
                                     <div
-                                        class="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600 mr-2"
+                                        class="spinner spinner-xs mr-2"
                                     ></div>
                                     Recalculating...
                                 </span>
@@ -1537,7 +1500,7 @@
                             :class="
                                 qualityRecalculationSuccess
                                     ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200'
-                                    : 'bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200'
+                                    : 'bg-primary-50 dark:bg-primary-900/20 text-primary-800 dark:text-primary-200'
                             "
                         >
                             <p class="text-sm">
@@ -1746,6 +1709,7 @@ const analyticsForm = ref({
     defaultStopLossType: "percent",
     defaultStopLossPercent: null,
     defaultStopLossDollars: null,
+    default_stop_loss_points: null,
     defaultTakeProfitType: "percent",
     defaultTakeProfitPercent: null,
     defaultTakeProfitRMultiple: null,
@@ -1784,6 +1748,24 @@ const breakevenToleranceDescription = computed(() => {
 // Per-instrument breakeven tolerance overrides, edited as rows then serialized
 // to a { UNDERLYING: ticks } map on save.
 const breakevenToleranceRows = ref([]);
+const stop_points_rows = ref([]);
+
+function stopPointsMapFromRows() {
+    const overrides = {};
+    for (const row of stop_points_rows.value) {
+        const underlying = String(row.underlying || '').trim().toUpperCase();
+        if (!underlying && (row.points == null || row.points === '')) continue;
+        const points = Number(row.points);
+        if (!/^[A-Z0-9]{1,20}$/.test(underlying) || !Number.isFinite(points) || points <= 0 || points > 1000000) {
+            throw new Error('Each instrument default needs a symbol and a positive point distance of at most 1,000,000.');
+        }
+        if (Object.prototype.hasOwnProperty.call(overrides, underlying)) {
+            throw new Error(`Remove the duplicate default for ${underlying}.`);
+        }
+        overrides[underlying] = points;
+    }
+    return overrides;
+}
 
 function addBreakevenToleranceRow() {
     breakevenToleranceRows.value.push({ underlying: "", ticks: 0 });
@@ -2104,6 +2086,8 @@ async function loadAnalyticsSettings(settingsData = null) {
                 settings.defaultStopLossPercent || null,
             defaultStopLossDollars:
                 settings.defaultStopLossDollars ?? null,
+            default_stop_loss_points:
+                settings.default_stop_loss_points ?? settings.defaultStopLossPoints ?? null,
             defaultTakeProfitType:
                 settings.defaultTakeProfitType || "percent",
             defaultTakeProfitPercent:
@@ -2120,6 +2104,8 @@ async function loadAnalyticsSettings(settingsData = null) {
         breakevenToleranceRows.value = breakevenRowsFromMap(
             settings.breakevenToleranceTicksByUnderlying,
         );
+        stop_points_rows.value = Object.entries(settings.default_stop_loss_points_by_underlying ?? settings.defaultStopLossPointsByUnderlying ?? {})
+            .map(([underlying, points]) => ({ underlying, points: Number(points) }));
     } catch (error) {
         console.error("Failed to load analytics settings:", error);
         // Default values if loading fails
@@ -2132,6 +2118,8 @@ async function loadAnalyticsSettings(settingsData = null) {
         analyticsForm.value.defaultStopLossType = "percent";
         analyticsForm.value.defaultStopLossPercent = null;
         analyticsForm.value.defaultStopLossDollars = null;
+        analyticsForm.value.default_stop_loss_points = null;
+        stop_points_rows.value = [];
         analyticsForm.value.defaultTakeProfitType = "percent";
         analyticsForm.value.defaultTakeProfitPercent = null;
         analyticsForm.value.defaultTakeProfitRMultiple = null;
@@ -2167,6 +2155,9 @@ async function updateAnalyticsSettings() {
                 analyticsForm.value.defaultStopLossPercent || null,
             defaultStopLossDollars:
                 analyticsForm.value.defaultStopLossDollars ?? null,
+            default_stop_loss_points:
+                analyticsForm.value.default_stop_loss_points || null,
+            default_stop_loss_points_by_underlying: stopPointsMapFromRows(),
             defaultTakeProfitType:
                 analyticsForm.value.defaultTakeProfitType || "percent",
             defaultTakeProfitPercent:
@@ -2205,6 +2196,7 @@ async function updateAnalyticsSettings() {
         showError(
             "Error",
             error.response?.data?.error ||
+                error.message ||
                 "Failed to update analytics settings",
         );
     } finally {

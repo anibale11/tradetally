@@ -15,13 +15,13 @@
 
     <!-- Loading (initial only) -->
     <div v-if="initialLoading" class="flex justify-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div class="spinner spinner-lg"></div>
     </div>
 
     <!-- Empty state -->
     <div v-else-if="profiles.length === 0" class="text-center py-16">
       <ShieldCheckIcon class="mx-auto h-12 w-12 text-gray-400" />
-      <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No rule profiles yet</h3>
+      <h3 class="heading-sub mt-2">No rule profiles yet</h3>
       <p class="mt-1 mx-auto max-w-md text-sm text-gray-500 dark:text-gray-400">
         Attach your prop firm's rules to a trading account and TradeTally will track
         your headroom against daily loss limits, drawdown, and profit targets.
@@ -39,11 +39,11 @@
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
               <div class="flex items-center gap-2">
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                <h2 class="heading-card">
                   {{ profile.label || profile.account_identifier }}
                 </h2>
                 <span
-                  class="rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase"
+                  class="badge"
                   :class="stateBadgeClass(profile.status?.state)"
                 >{{ stateLabel(profile.status?.state) }}</span>
               </div>
@@ -52,9 +52,9 @@
               </p>
             </div>
             <div class="flex items-center gap-2">
-              <button class="btn-secondary text-sm" @click="openEdit(profile)">Edit</button>
+              <button class="btn-secondary" @click="openEdit(profile)">Edit</button>
               <button
-                class="btn-secondary text-sm text-danger"
+                class="btn-secondary text-danger"
                 aria-label="Delete rule profile"
                 @click="confirmDelete(profile)"
               >Delete</button>
@@ -84,7 +84,7 @@
           <!-- Equity headline -->
           <div class="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
             <div>
-              <div class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">Equity</div>
+              <div class="text-label">Equity</div>
               <div class="mt-1 text-xl font-semibold text-gray-900 dark:text-white">
                 {{ formatMoney(profile.status?.current_equity) }}
               </div>
@@ -93,19 +93,19 @@
               </div>
             </div>
             <div>
-              <div class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">Today</div>
+              <div class="text-label">Today</div>
               <div class="mt-1 text-xl font-semibold" :class="pnlClass(profile.status?.today_pnl)">
                 {{ formatSignedMoney(profile.status?.today_pnl) }}
               </div>
             </div>
             <div>
-              <div class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">High Water</div>
+              <div class="text-label">High Water</div>
               <div class="mt-1 text-xl font-semibold text-gray-900 dark:text-white">
                 {{ formatMoney(profile.status?.high_water_equity) }}
               </div>
             </div>
             <div>
-              <div class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">Trading Days</div>
+              <div class="text-label">Trading Days</div>
               <div class="mt-1 text-xl font-semibold text-gray-900 dark:text-white">
                 {{ profile.status?.trading_days ?? 0 }}<span v-if="profile.min_trading_days" class="text-sm text-gray-500 dark:text-gray-400"> / {{ profile.min_trading_days }}</span>
               </div>
@@ -170,7 +170,7 @@
             </div>
           </div>
 
-          <p class="mt-4 text-xs text-gray-400 dark:text-gray-500">
+          <p class="mt-4 text-xs text-gray-500 dark:text-gray-400">
             Computed from journaled daily closes. Intraday excursions between fills are not visible to the journal,
             so treat the meters as end-of-day accounting, not a live risk engine.
           </p>
@@ -318,7 +318,7 @@ function stateBadgeClass(state) {
     on_track: 'bg-success/15 text-success',
     warning: 'bg-warning/15 text-warning',
     breached: 'bg-danger/15 text-danger',
-    passed: 'bg-primary-500/15 text-primary-600 dark:text-primary-400'
+    passed: 'bg-primary-500/15 text-primary-700 dark:text-primary-400'
   }[state] || 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
 }
 
@@ -331,7 +331,7 @@ function pnlClass(value) {
 function formatMoney(value) {
   const parsed = parseFloat(value)
   if (!Number.isFinite(parsed)) return '-'
-  return `$${parsed.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(parsed)
 }
 
 function formatSignedMoney(value) {

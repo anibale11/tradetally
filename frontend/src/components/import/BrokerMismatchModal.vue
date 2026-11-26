@@ -1,11 +1,11 @@
 <template>
   <div v-if="isOpen" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
     <!-- Background overlay -->
-    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-      <div class="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-75 transition-opacity" aria-hidden="true" @click="$emit('close')"></div>
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center ">
+      <div class="modal-backdrop" aria-hidden="true" @click="$emit('close')"></div>
 
       <!-- Modal panel -->
-      <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+      <div class="modal-panel w-full p-6 max-w-lg">
         <div>
           <!-- Warning Icon -->
           <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 dark:bg-yellow-900">
@@ -13,7 +13,7 @@
           </div>
 
           <div class="mt-3 text-center sm:mt-5">
-            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title">
+            <h3 class="modal-title" id="modal-title">
               Broker Format Mismatch
             </h3>
             <div class="mt-2">
@@ -27,19 +27,19 @@
           <div class="mt-4 bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">You Selected</p>
+                <p class="text-label">You Selected</p>
                 <p class="mt-1 text-sm font-medium text-gray-900 dark:text-white">{{ formatBrokerName(selectedBroker) }}</p>
               </div>
               <div>
-                <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Detected Format</p>
-                <p class="mt-1 text-sm font-medium text-primary-600 dark:text-primary-400">{{ formatBrokerName(detectedBroker) }}</p>
+                <p class="text-label">Detected Format</p>
+                <p class="mt-1 text-sm font-medium text-primary-700 dark:text-primary-400">{{ formatBrokerName(detectedBroker) }}</p>
               </div>
             </div>
           </div>
 
           <!-- File Info -->
           <div class="mt-4">
-            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">File Details</p>
+            <p class="text-label mb-2">File Details</p>
             <div class="text-sm text-gray-700 dark:text-gray-300">
               <p><span class="font-medium">Name:</span> {{ fileName }}</p>
               <p><span class="font-medium">Rows:</span> {{ rowCount.toLocaleString() }}</p>
@@ -75,21 +75,21 @@
         <div class="mt-5 sm:mt-6 space-y-3">
           <button
             type="button"
-            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:text-sm"
+            class="btn-primary w-full"
             @click="handleUseDetected"
           >
             Use {{ formatBrokerName(detectedBroker) }} format (Recommended)
           </button>
           <button
             type="button"
-            class="w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-700 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:text-sm"
+            class="btn-secondary w-full"
             @click="handleKeepSelected"
           >
             Keep {{ formatBrokerName(selectedBroker) }} anyway
           </button>
           <button
             type="button"
-            class="w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-700 text-base font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 sm:text-sm"
+            class="btn-secondary w-full"
             @click="$emit('close')"
           >
             Cancel

@@ -28,7 +28,7 @@
         <div class="card">
           <div class="card-body">
             <div class="flex items-center justify-between mb-4">
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Saved Profiles</h2>
+              <h2 class="heading-card">Saved Profiles</h2>
               <span class="text-sm text-gray-500 dark:text-gray-400">{{ playbooks.length }} total</span>
             </div>
 
@@ -41,17 +41,15 @@
                 v-for="playbook in playbooks"
                 :key="playbook.id"
                 @click="selectPlaybook(playbook)"
-                class="w-full text-left rounded-xl border px-4 py-4 transition"
-                :class="selectedPlaybookId === playbook.id
-                  ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 dark:border-primary-400'
-                  : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'"
+                class="w-full text-left rounded-lg border px-4 py-4 transition"
+                :class="selectedPlaybookId === playbook.id ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 dark:border-primary-400' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'"
               >
                 <div class="flex items-start justify-between gap-4">
                   <div>
                     <div class="flex items-center gap-2">
-                      <h3 class="font-semibold text-gray-900 dark:text-white">{{ playbook.name }}</h3>
+                      <h3 class="heading-card">{{ playbook.name }}</h3>
                       <span
-                        class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
+                        class="badge"
                         :class="playbook.isActive
                           ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
                           : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'"
@@ -63,26 +61,26 @@
                       {{ playbook.description }}
                     </p>
                     <div class="mt-3 flex flex-wrap gap-2 text-xs">
-                      <span v-if="playbook.side && playbook.side !== 'both'" class="rounded-full bg-gray-100 px-2 py-1 text-gray-700 dark:bg-gray-700 dark:text-gray-200">
+                      <span v-if="playbook.side && playbook.side !== 'both'" class="badge bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200">
                         {{ formatEnum(playbook.side) }}
                       </span>
-                      <span v-if="playbook.timeframe" class="rounded-full bg-gray-100 px-2 py-1 text-gray-700 dark:bg-gray-700 dark:text-gray-200">
+                      <span v-if="playbook.timeframe" class="badge bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200">
                         {{ formatEnum(playbook.timeframe) }}
                       </span>
-                      <span class="rounded-full bg-gray-100 px-2 py-1 text-gray-700 dark:bg-gray-700 dark:text-gray-200">
+                      <span class="badge bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200">
                         {{ playbook.checklistItems.length }} {{ playbook.reviewMode === 'score' ? 'criterion' : 'checklist item' }}{{ playbook.checklistItems.length === 1 ? '' : 's' }}
                       </span>
-                      <span class="rounded-full bg-primary-100 px-2 py-1 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
+                      <span class="badge bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
                         {{ playbook.reviewMode === 'score' ? '0-5 grading' : 'Checklist' }}
                       </span>
-                      <span v-if="playbook.autoAssignEnabled" class="rounded-full bg-primary-100 px-2 py-1 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
+                      <span v-if="playbook.autoAssignEnabled" class="badge bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
                         Auto-suggest
                       </span>
-                      <span v-if="playbook.requireStopLoss" class="rounded-full bg-orange-100 px-2 py-1 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">
+                      <span v-if="playbook.requireStopLoss" class="badge bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300">
                         Stop required
                       </span>
-                      <span v-if="playbook.minimumTargetR !== null" class="rounded-full bg-primary-100 px-2 py-1 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
-                        Min {{ Number(playbook.minimumTargetR).toFixed(1) }}R
+                      <span v-if="playbook.minimumTargetR !== null" class="badge bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
+                        Min {{ formatDecimal(playbook.minimumTargetR, { digits: 1 }) }}R
                       </span>
                     </div>
                   </div>
@@ -100,27 +98,27 @@
         <div class="card">
           <div class="card-body">
             <div class="flex items-center justify-between mb-4">
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Adherence Analytics</h2>
-              <router-link to="/trades" class="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400">
+              <h2 class="heading-card">Adherence Analytics</h2>
+              <router-link to="/trades" class="text-sm text-primary-700 hover:text-primary-800 dark:text-primary-400">
                 Review trades
               </router-link>
             </div>
 
             <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <div class="rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                <div class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Active profiles</div>
-                <div class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">{{ analytics.overview.active_playbook_count || 0 }}</div>
+              <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                <div class="text-label">Active profiles</div>
+                <div class="stat-value mt-2 text-gray-900 dark:text-white">{{ analytics.overview.active_playbook_count || 0 }}</div>
               </div>
-              <div class="rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                <div class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Reviewed trades</div>
-                <div class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">{{ analytics.overview.reviewed_trade_count || 0 }}</div>
+              <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                <div class="text-label">Reviewed trades</div>
+                <div class="stat-value mt-2 text-gray-900 dark:text-white">{{ analytics.overview.reviewed_trade_count || 0 }}</div>
               </div>
-              <div class="rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                <div class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Avg adherence</div>
-                <div class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">{{ analytics.overview.adherence_average || '0.00' }}</div>
+              <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                <div class="text-label">Avg adherence</div>
+                <div class="stat-value mt-2 text-gray-900 dark:text-white">{{ analytics.overview.adherence_average || '0.00' }}</div>
               </div>
-              <div class="rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                <div class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Followed vs broken</div>
+              <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                <div class="text-label">Followed vs broken</div>
                 <div class="mt-2 text-sm font-semibold text-gray-900 dark:text-white">
                   {{ analytics.overview.followed_trade_count || 0 }} / {{ analytics.overview.broken_trade_count || 0 }}
                 </div>
@@ -129,46 +127,46 @@
 
             <div v-if="analytics.playbooks.length > 0" class="mt-6 overflow-x-auto">
               <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead>
+                <thead class="table-head">
                   <tr class="text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                    <th class="py-3 pr-4">Profile</th>
-                    <th class="py-3 pr-4">Reviewed</th>
-                    <th class="py-3 pr-4">Win Rate</th>
-                    <th class="py-3 pr-4">Profit Factor</th>
-                    <th class="py-3 pr-4">Avg R</th>
-                    <th class="py-3">Adherence</th>
+                    <th class="pr-4 table-th py-2">Profile</th>
+                    <th class="pr-4 table-th py-2">Reviewed</th>
+                    <th class="pr-4 table-th py-2">Win Rate</th>
+                    <th class="pr-4 table-th py-2">Profit Factor</th>
+                    <th class="pr-4 table-th py-2">Avg R</th>
+                    <th class="table-th py-2">Adherence</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-800 text-sm text-gray-700 dark:text-gray-300">
                   <tr v-for="row in analytics.playbooks" :key="row.id">
-                    <td class="py-3 pr-4 font-medium text-gray-900 dark:text-white">{{ row.name }}</td>
-                    <td class="py-3 pr-4">{{ row.reviewed_trade_count }}</td>
-                    <td class="py-3 pr-4">{{ Number(row.win_rate || 0).toFixed(1) }}%</td>
-                    <td class="py-3 pr-4">{{ Number(row.profit_factor || 0).toFixed(2) }}</td>
-                    <td class="py-3 pr-4">{{ Number(row.avg_r || 0).toFixed(2) }}R</td>
-                    <td class="py-3">{{ Number(row.adherence_average || 0).toFixed(2) }}</td>
+                    <td class="pr-4 font-medium text-gray-900 dark:text-white px-4 py-3">{{ row.name }}</td>
+                    <td class="pr-4 px-4 py-3">{{ row.reviewed_trade_count }}</td>
+                    <td class="pr-4 px-4 py-3">{{ formatPercent(row.win_rate || 0) }}</td>
+                    <td class="pr-4 px-4 py-3">{{ formatDecimal(row.profit_factor || 0) }}</td>
+                    <td class="pr-4 px-4 py-3">{{ formatR(Number(row.avg_r || 0)) }}</td>
+                    <td class="px-4 py-3">{{ formatDecimal(row.adherence_average || 0) }}</td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
             <div v-if="analytics.recentTrades.length > 0" class="mt-6">
-              <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Recent Reviews</h3>
+              <h3 class="heading-sub mb-3">Recent Reviews</h3>
               <div class="space-y-3">
                 <div
                   v-for="review in analytics.recentTrades"
                   :key="review.trade_id"
-                  class="flex items-center justify-between rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-3 text-sm"
+                  class="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-3 text-sm"
                 >
                   <div>
-                    <router-link :to="`/trades/${review.trade_id}`" class="font-medium text-gray-900 dark:text-white hover:text-primary-600 dark:hover:text-primary-400">
+                    <router-link :to="`/trades/${review.trade_id}`" class="font-medium text-gray-900 dark:text-white hover:text-primary-800 dark:hover:text-primary-400">
                       {{ review.symbol }}
                     </router-link>
                     <div class="text-gray-500 dark:text-gray-400">{{ formatDate(review.trade_date) }}</div>
                   </div>
                   <div class="text-right">
-                    <div class="font-semibold text-gray-900 dark:text-white">{{ Number(review.adherence_score || 0).toFixed(2) }}</div>
-                    <div :class="review.followed_plan ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                    <div class="font-semibold text-gray-900 dark:text-white">{{ formatDecimal(review.adherence_score || 0) }}</div>
+                    <div :class="review.followed_plan ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
                       {{ review.followed_plan ? 'Followed plan' : 'Broke plan' }}
                     </div>
                   </div>
@@ -183,7 +181,7 @@
         <div class="card-body space-y-6">
           <div class="flex items-center justify-between">
             <div>
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 class="heading-card">
                 {{ form.id ? 'Edit Profile' : 'Create Profile' }}
               </h2>
               <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -199,7 +197,7 @@
               >
                 Archive
               </button>
-              <button v-if="form.id" @click="resetForm" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+              <button v-if="form.id" @click="resetForm" class="btn-ghost btn-sm">
                 Clear
               </button>
             </div>
@@ -219,24 +217,20 @@
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Review Type</label>
                 <div class="grid gap-3 sm:grid-cols-2">
                   <label
-                    class="flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3"
-                    :class="form.reviewMode === 'checklist'
-                      ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-900/20'
-                      : 'border-gray-200 dark:border-gray-700'"
+                    class="flex cursor-pointer items-start gap-3 rounded-lg border px-4 py-3"
+                    :class="form.reviewMode === 'checklist' ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-900/20' : 'border-gray-200 dark:border-gray-700'"
                   >
-                    <input v-model="form.reviewMode" value="checklist" type="radio" class="mt-1 h-4 w-4 border-gray-300 text-primary-600 focus:ring-primary-500" />
+                    <input v-model="form.reviewMode" value="checklist" type="radio" class="radio mt-1" />
                     <span>
                       <span class="block text-sm font-medium text-gray-900 dark:text-white">Checklist</span>
                       <span class="block text-xs text-gray-500 dark:text-gray-400">Pass/fail items weighted into adherence.</span>
                     </span>
                   </label>
                   <label
-                    class="flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3"
-                    :class="form.reviewMode === 'score'
-                      ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-900/20'
-                      : 'border-gray-200 dark:border-gray-700'"
+                    class="flex cursor-pointer items-start gap-3 rounded-lg border px-4 py-3"
+                    :class="form.reviewMode === 'score' ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-900/20' : 'border-gray-200 dark:border-gray-700'"
                   >
-                    <input v-model="form.reviewMode" value="score" type="radio" class="mt-1 h-4 w-4 border-gray-300 text-primary-600 focus:ring-primary-500" />
+                    <input v-model="form.reviewMode" value="score" type="radio" class="radio mt-1" />
                     <span>
                       <span class="block text-sm font-medium text-gray-900 dark:text-white">0-5 Grading</span>
                       <span class="block text-xs text-gray-500 dark:text-gray-400">Self-score each criterion, then apply hard-rule penalties.</span>
@@ -322,7 +316,7 @@
                   <span
                     v-for="tag in selectedTags"
                     :key="tag"
-                    class="inline-flex items-center gap-1 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 px-2.5 py-1 text-xs font-medium"
+                    class="badge-primary"
                   >
                     {{ tag }}
                     <button
@@ -354,12 +348,12 @@
                   />
                 </div>
               </div>
-              <label class="inline-flex items-center gap-3 rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-3 md:col-span-2">
-                <input v-model="form.requireStopLoss" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+              <label class="inline-flex items-center gap-3 rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-3 md:col-span-2">
+                <input v-model="form.requireStopLoss" type="checkbox" class="checkbox" />
                 <span class="text-sm text-gray-700 dark:text-gray-300">Require stop loss for a passing review</span>
               </label>
-              <label class="inline-flex items-center gap-3 rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-3 md:col-span-2">
-                <input v-model="form.autoAssignEnabled" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+              <label class="inline-flex items-center gap-3 rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-3 md:col-span-2">
+                <input v-model="form.autoAssignEnabled" type="checkbox" class="checkbox" />
                 <span>
                   <span class="block text-sm text-gray-700 dark:text-gray-300">Auto-suggest for matching trades</span>
                   <span class="block text-xs text-gray-500 dark:text-gray-400">Uses configured strategy, setup, side, timeframe, or tag rules on unreviewed trades.</span>
@@ -370,14 +364,14 @@
             <div>
               <div class="flex items-center justify-between mb-3">
                 <div>
-                  <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ form.reviewMode === 'score' ? 'Grading Criteria' : 'Checklist' }}</h3>
+                  <h3 class="heading-sub">{{ form.reviewMode === 'score' ? 'Grading Criteria' : 'Checklist' }}</h3>
                   <p class="text-xs text-gray-500 dark:text-gray-400">
                     {{ form.reviewMode === 'score'
                       ? 'Each criterion is graded from 0 to 5 before hard-rule penalties are applied.'
                       : 'These items are scored directly before hard-rule penalties are applied.' }}
                   </p>
                 </div>
-                <button type="button" @click="addChecklistItem" class="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400">
+                <button type="button" @click="addChecklistItem" class="btn-link">
                   Add {{ form.reviewMode === 'score' ? 'criterion' : 'item' }}
                 </button>
               </div>
@@ -386,7 +380,7 @@
                 <div
                   v-for="(item, index) in form.checklistItems"
                   :key="`${item.localId}-${index}`"
-                  class="rounded-xl border border-gray-200 dark:border-gray-700 p-4"
+                  class="rounded-lg border border-gray-200 dark:border-gray-700 p-4"
                 >
                   <div class="grid gap-3 md:grid-cols-[1fr_120px_120px_auto]">
                     <div>
@@ -398,7 +392,7 @@
                       <input v-model.number="item.weight" type="number" min="0.25" step="0.25" class="input" required />
                     </div>
                     <label class="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 mt-6">
-                      <input v-model="item.isRequired" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+                      <input v-model="item.isRequired" type="checkbox" class="checkbox" />
                       Required
                     </label>
                     <div class="flex items-end justify-end">
@@ -432,6 +426,8 @@ import api from '@/services/api'
 import { useGlobalAccountFilter } from '@/composables/useGlobalAccountFilter'
 import { useNotification } from '@/composables/useNotification'
 import BaseSelect from '@/components/common/BaseSelect.vue'
+import { formatDecimal, formatPercent } from '@/utils/formatters'
+import { formatR } from '@/utils/rFormat'
 
 const { showSuccess, showError, showConfirmation } = useNotification()
 
@@ -626,6 +622,7 @@ function selectPlaybook(playbook) {
   form.reviewMode = playbook.reviewMode === 'score' ? 'score' : 'checklist'
   form.autoAssignEnabled = playbook.autoAssignEnabled === true
   form.checklistItems = (playbook.checklistItems || []).map((item, index) => ({
+    id: item.id,
     localId: item.id || `${playbook.id}-${index}`,
     label: item.label,
     itemOrder: item.itemOrder ?? index,
@@ -702,6 +699,7 @@ async function savePlaybook() {
 
   const checklistItems = form.checklistItems
     .map((item, index) => ({
+      ...(item.id ? { id: item.id } : {}),
       label: item.label.trim(),
       itemOrder: index,
       weight: Number(item.weight) || 1,

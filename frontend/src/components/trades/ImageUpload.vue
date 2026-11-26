@@ -31,7 +31,7 @@
             <button
               type="button"
               @click="$refs.fileInput.click()"
-              class="text-primary-600 hover:text-primary-500 font-medium"
+              class="btn-link"
             >
               Choose files
             </button>
@@ -46,7 +46,7 @@
 
     <!-- Selected files preview -->
     <div v-if="selectedFiles.length > 0" class="space-y-2">
-      <h4 class="text-sm font-medium text-gray-900 dark:text-white">Selected Files</h4>
+      <h4 class="heading-sub">Selected Files</h4>
       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
         <div
           v-for="(file, index) in selectedFiles"
@@ -107,7 +107,7 @@
 
     <!-- Upload progress -->
     <div v-if="uploadResults.length > 0" class="space-y-2">
-      <h4 class="text-sm font-medium text-gray-900 dark:text-white">Upload Results</h4>
+      <h4 class="heading-sub">Upload Results</h4>
       <div class="space-y-1">
         <div
           v-for="result in uploadResults"
@@ -118,7 +118,7 @@
           <span class="truncate">{{ result.file_name || result.filename }}</span>
           <div class="flex items-center space-x-2 ml-2">
             <span v-if="!result.error && result.compressionRatio" class="text-xs">
-              {{ result.compressionRatio.toFixed(1) }}% compressed
+              {{ formatPercent(result.compressionRatio) }} compressed
             </span>
             <span v-if="result.error" class="text-xs">{{ result.error }}</span>
             <svg v-if="!result.error" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -137,6 +137,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useNotification } from '@/composables/useNotification'
+import { formatPercent } from '@/utils/formatters'
 import api from '@/services/api'
 
 const props = defineProps({

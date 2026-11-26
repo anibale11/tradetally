@@ -4,7 +4,7 @@
     <button
       ref="buttonRef"
       @click="toggleMenu"
-      class="inline-flex items-center justify-center p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+      class="btn-icon"
       title="Customize columns"
     >
       <AdjustmentsHorizontalIcon class="h-4 w-4" />
@@ -20,19 +20,19 @@
         leave-from-class="transform opacity-100 scale-100"
         leave-to-class="transform opacity-0 scale-95"
       >
-        <div
+        <div role="dialog" aria-modal="true"
           v-if="showMenu"
           ref="menuRef"
           :style="dropdownStyle"
-          class="fixed w-full max-w-sm sm:w-96 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-[9999] flex flex-col overflow-hidden"
+          class="modal-panel fixed sm:w-96 z-[60] flex flex-col w-full p-6 max-w-sm"
         >
           <!-- Header (Fixed) -->
           <div class="p-4 flex-shrink-0 border-b border-gray-200 dark:border-gray-700">
             <div class="flex items-center justify-between">
-              <h3 class="text-sm font-medium text-gray-900 dark:text-white">Customize Columns</h3>
+              <h3 class="heading-sub">Customize Columns</h3>
               <button
                 @click="resetToDefault"
-                class="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+                class="btn-link"
               >
                 Reset to default
               </button>
@@ -50,11 +50,7 @@
               @dragover.prevent
               @drop="handleDrop(index)"
               @dragend="handleDragEnd"
-              :class="[
-                'flex items-center justify-between p-2 rounded cursor-move transition-colors',
-                draggedIndex === index ? 'opacity-50' : '',
-                'hover:bg-gray-50 dark:hover:bg-gray-700'
-              ]"
+              :class="[ 'flex items-center justify-between p-2 rounded cursor-move transition-colors', draggedIndex === index ? 'opacity-50' : '', 'hover:bg-gray-50 dark:hover:bg-gray-700' ]"
             >
               <div class="flex items-center space-x-3">
                 <!-- Drag Handle -->
@@ -66,7 +62,7 @@
                   v-model="column.visible"
                   @change="updateColumns"
                   :disabled="isRequiredColumn(column.key)"
-                  class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded disabled:opacity-50"
+                  class="checkbox"
                 />
                 
                 <!-- Column Name -->
@@ -84,36 +80,36 @@
             <div class="flex items-center justify-between text-xs mb-4">
               <button
                 @click="selectAll"
-                class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+                class="btn-link"
               >
                 Select all
               </button>
               <button
                 @click="deselectAll"
-                class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+                class="btn-link"
               >
                 Deselect all
               </button>
               <button
                 @click="resetWidths"
                 title="Clear the widths you dragged on the column edges"
-                class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+                class="btn-link"
               >
                 Reset widths
               </button>
             </div>
 
             <!-- Apply/Cancel Buttons -->
-            <div class="flex justify-end space-x-2">
+            <div class="modal-footer">
               <button
                 @click="cancel"
-                class="px-3 py-2 text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
+                class="btn-secondary"
               >
                 Cancel
               </button>
               <button
                 @click="apply"
-                class="px-3 py-2 text-sm text-white bg-primary-600 border border-transparent rounded-md hover:bg-primary-700"
+                class="btn-primary"
               >
                 Apply
               </button>
@@ -158,13 +154,13 @@ const defaultColumns = [
   { key: 'entry', label: 'Entry', visible: true },
   { key: 'exit', label: 'Exit', visible: true },
   { key: 'pnl', label: 'Net P&L', visible: true },
-  { key: 'grossPnl', label: 'Gross P&L', visible: true },
-  { key: 'unrealizedPnl', label: 'Unrealized', visible: true },
+  { key: 'grossPnl', label: 'Gross P&L', visible: false },
+  { key: 'unrealizedPnl', label: 'Unrealized', visible: false },
   { key: 'confidence', label: 'Confidence', visible: true },
   { key: 'quality', label: 'Quality', visible: true },
-  { key: 'sector', label: 'Sector', visible: true },
+  { key: 'sector', label: 'Sector', visible: false },
   { key: 'status', label: 'Status', visible: true },
-  { key: 'comments', label: 'Comments', visible: true },
+  { key: 'comments', label: 'Comments', visible: false },
   { key: 'quantity', label: 'Quantity', visible: false },
   { key: 'commission', label: 'Commission', visible: false },
   { key: 'fees', label: 'Fees', visible: false },
@@ -190,7 +186,8 @@ const defaultColumns = [
   { key: 'heartRate', label: 'Heart Rate', visible: false },
   { key: 'sleepHours', label: 'Sleep Hours', visible: false },
   { key: 'sleepScore', label: 'Sleep Score', visible: false },
-  { key: 'tradingviewLink', label: 'TradingView', visible: false }
+  { key: 'tradingviewLink', label: 'Chart Links', visible: false },
+  { key: 'images', label: 'Images', visible: false }
 ]
 
 const showMenu = ref(false)

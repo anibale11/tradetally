@@ -1,10 +1,10 @@
 <template>
   <div class="template-manager">
     <div class="flex items-center justify-between mb-4">
-      <h3 class="text-lg font-medium text-gray-900 dark:text-white">Journal Templates</h3>
+      <h3 class="heading-card">Journal Templates</h3>
       <button
         @click="showCreateModal = true"
-        class="btn-primary text-sm"
+        class="btn-primary"
       >
         <PlusIcon class="w-4 h-4 mr-1" />
         New Template
@@ -13,7 +13,7 @@
 
     <!-- Templates List -->
     <div v-if="loading && !hasTemplates" class="text-center py-8">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+      <div class="spinner spinner-md mx-auto"></div>
       <p class="text-gray-500 dark:text-gray-400 mt-2">Loading templates...</p>
     </div>
 
@@ -28,24 +28,24 @@
       <div
         v-for="template in templates"
         :key="template.id"
-        class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow duration-200"
+        class="card card-body transition-shadow duration-200"
       >
         <div class="flex flex-col space-y-4">
           <!-- Header -->
           <div class="flex items-start justify-between">
             <div class="flex-1 min-w-0">
               <div class="flex items-center flex-wrap gap-2">
-                <h4 class="text-lg font-semibold text-gray-900 dark:text-white">
+                <h4 class="heading-card">
                   {{ template.name }}
                 </h4>
                 <span
                   v-if="template.is_default"
-                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+                  class="badge-success"
                 >
                   Default
                 </span>
                 <span
-                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
+                  class="badge-primary"
                 >
                   {{ template.entry_type === 'diary' ? 'Diary' : 'Playbook' }}
                 </span>
@@ -72,7 +72,19 @@
             </p>
             <div v-if="template.content" class="text-sm text-gray-600 dark:text-gray-400">
               <span class="font-medium text-gray-700 dark:text-gray-300">Content Preview:</span>
-              <p class="mt-1 line-clamp-2">{{ template.content }}</p>
+              <p
+                class="mt-1 whitespace-pre-line"
+                :class="{ 'line-clamp-4': !expandedTemplateIds[template.id] }"
+              >{{ template.content }}</p>
+              <button
+                v-if="isTemplatePreviewLong(template)"
+                type="button"
+                class="mt-1 text-sm text-primary-700 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300"
+                :aria-expanded="!!expandedTemplateIds[template.id]"
+                @click="toggleTemplatePreview(template)"
+              >
+                {{ expandedTemplateIds[template.id] ? 'Show less' : 'Show more' }}
+              </button>
             </div>
           </div>
 
@@ -122,15 +134,15 @@
     <!-- Create/Edit Template Modal -->
     <div
       v-if="showCreateModal || showEditModal"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      class="modal-overlay flex items-center justify-center p-4"
       @click="closeModal"
     >
-      <div
-        class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+      <div role="dialog" aria-modal="true"
+        class="modal-panel max-w-2xl w-full max-h-[90vh] overflow-y-auto"
         @click.stop
       >
         <div class="p-6">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
+          <h3 class="modal-title mb-4">
             {{ editingTemplate ? 'Edit Template' : 'Create New Template' }}
           </h3>
 
@@ -182,7 +194,7 @@
                       v-model="templateForm.isDefault"
                       type="checkbox"
                       id="isDefault"
-                      class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                      class="checkbox"
                     />
                     <label for="isDefault" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
                       Set as default template for new entries
@@ -190,7 +202,7 @@
                   </div>
 
                   <div class="border-t pt-4 mt-4">
-                    <h4 class="text-sm font-medium text-gray-900 dark:text-white mb-3">Template Content</h4>
+                    <h4 class="heading-sub mb-3">Template Content</h4>
 
                     <!-- Title -->
                     <div class="mb-3">
@@ -294,7 +306,7 @@
                     </div>
                   </div>
 
-                  <div class="flex justify-end space-x-3 mt-6">
+                  <div class="modal-footer">
                     <button
                       type="button"
                       @click="closeModal"
@@ -318,15 +330,15 @@
     <!-- Delete Confirmation Modal -->
     <div
       v-if="showDeleteModal"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      class="modal-overlay flex items-center justify-center p-4"
       @click="showDeleteModal = false"
     >
-      <div
-        class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full"
+      <div role="dialog" aria-modal="true"
+        class="modal-panel max-w-md w-full"
         @click.stop
       >
         <div class="p-6">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
+          <h3 class="modal-title mb-4">
             Delete Template
           </h3>
                 <div class="mt-2">
@@ -335,7 +347,7 @@
                   </p>
                 </div>
 
-          <div class="mt-4 flex justify-end space-x-3">
+          <div class="modal-footer">
             <button
               type="button"
               @click="showDeleteModal = false"
@@ -381,6 +393,19 @@ const showDeleteModal = ref(false)
 const editingTemplate = ref(null)
 const templateToDelete = ref(null)
 const tagsInput = ref('')
+
+// Template previews are clamped to 4 lines; "Show more" reveals the full text.
+const expandedTemplateIds = ref({})
+const isTemplatePreviewLong = (template) => {
+  const content = template?.content || ''
+  return content.split('\n').length > 4 || content.length > 320
+}
+const toggleTemplatePreview = (template) => {
+  expandedTemplateIds.value = {
+    ...expandedTemplateIds.value,
+    [template.id]: !expandedTemplateIds.value[template.id]
+  }
+}
 
 const templateForm = ref({
   name: '',
@@ -515,7 +540,4 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.btn-danger {
-  @apply px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200;
-}
 </style>

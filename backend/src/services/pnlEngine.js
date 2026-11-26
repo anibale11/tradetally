@@ -31,7 +31,10 @@ function isSellAction(action) {
 function multiplierFor(instrumentType, contractSize, pointValue) {
   if (instrumentType === 'future') {
     const pv = parseNumeric(pointValue);
-    return pv != null && pv > 0 ? pv : 1;
+    if (pv == null || !Number.isFinite(pv) || pv <= 0) {
+      throw new Error('Futures point value is unknown or invalid. Supply the contract multiplier before calculating P&L.');
+    }
+    return pv;
   }
   if (instrumentType === 'option') {
     const cs = parseNumeric(contractSize);
@@ -112,15 +115,30 @@ function hasGroupedShape(executions) {
   ));
 }
 
+function actionFromLegType(type, tradeSide) {
+  const t = String(type || '').toLowerCase();
+  if (t === 'entry') return tradeSide === 'short' ? 'sell' : 'buy';
+  if (t === 'exit') return tradeSide === 'short' ? 'buy' : 'sell';
+  return '';
+}
+
 function deriveAction(execution, tradeSide) {
   const explicit = execution.action || execution.side;
-  if (explicit) return normalizeAction(explicit);
-  if (execution.type) {
-    const t = String(execution.type).toLowerCase();
-    if (t === 'entry') return tradeSide === 'short' ? 'sell' : 'buy';
-    if (t === 'exit') return tradeSide === 'short' ? 'buy' : 'sell';
+  const typeAction = actionFromLegType(execution.type, tradeSide);
+  if (explicit) {
+    const normalized = normalizeAction(explicit);
+    // A `side` of long/short is ambiguous: broker importers have written both
+    // the fill direction (short = sold) and the position side (short trade)
+    // into it. Schwab sync wrote the position side on closing legs, so every
+    // exit looked like another opening fill and the trade never closed. An
+    // explicit entry/exit leg type is unambiguous, so it wins over long/short;
+    // a real buy/sell action still wins over everything.
+    const positionWordOnly = /\b(long|short)\b/.test(normalized)
+      && !/\b(buy|bot|sell|sold|sld)\b/.test(normalized);
+    if (typeAction && positionWordOnly) return typeAction;
+    return normalized;
   }
-  return '';
+  return typeAction;
 }
 
 function isOpeningFill(action, tradeSide) {
@@ -228,9 +246,22 @@ function processGrouped(input, executions, timezone) {
     let exitDate = null;
 
     if (exitPrice != null && qty > 0 && entryPrice != null) {
-      const gross = legSide === 'short'
+      const calculated_gross = legSide === 'short'
         ? (entryPrice - exitPrice) * qty * multiplier
         : (exitPrice - entryPrice) * qty * multiplier;
+      // OANDA realizes P&L in the account's home currency, independently of
+      // the instrument quote currency. Retain its converted USD amount only
+      // while the leg still has the exact economics it was imported with.
+      // Editing a price, side or quantity returns to the normal calculation.
+      const reported = execution.broker_pnl;
+      const matches_report = reported?.source === 'oanda'
+        && reported.side === legSide
+        && ['entry_price', 'exit_price', 'quantity'].every(field => {
+          const value = { entry_price: entryPrice, exit_price: exitPrice, quantity: qty }[field];
+          return parseNumeric(reported[field]) === value;
+        });
+      const reported_gross = matches_report ? parseNumeric(reported.gross_pnl) : null;
+      const gross = reported_gross ?? calculated_gross;
       grossRealizedPnl = gross;
       realizedPnl = gross - totalCost;
       totalRealizedPnl += realizedPnl;

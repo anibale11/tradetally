@@ -3,7 +3,7 @@
     <div class="card">
         <div class="card-body">
             <h3
-                class="text-lg font-medium text-gray-900 dark:text-white mb-6"
+                class="heading-card mb-6"
             >
                 AI Provider Settings
             </h3>
@@ -14,14 +14,14 @@
                 recommendations and CUSIP lookups.
                 <span
                     v-if="canConfigureHostCli"
-                    class="block mt-2 text-primary-600 dark:text-primary-400 font-medium"
+                    class="block mt-2 text-primary-700 dark:text-primary-400 font-medium"
                 >
                     Note: As an admin or owner, you can also configure
                     default settings for all users below.
                 </span>
                 <span
                     v-else
-                    class="block mt-2 text-primary-600 dark:text-primary-400 font-medium"
+                    class="block mt-2 text-primary-700 dark:text-primary-400 font-medium"
                 >
                     Note: If you leave these settings empty,
                     admin-configured defaults will be used.
@@ -80,7 +80,7 @@
 
                 <div
                     v-if="HOST_CLI_AI_PROVIDERS.includes(form.provider)"
-                    class="rounded-lg border border-primary-200 bg-primary-50 px-4 py-3 text-sm text-primary-800 dark:border-primary-800 dark:bg-primary-900/20 dark:text-primary-200"
+                    class="callout-info"
                 >
                     Runs <code>{{ form.provider === "codex_cli" ? "codex exec" : "claude -p" }}</code>
                     on the TradeTally backend host using its saved CLI authentication.
@@ -170,7 +170,7 @@
                             class="flex items-center"
                         >
                             <div
-                                class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"
+                                class="spinner spinner-xs spinner-light mr-2"
                             ></div>
                             Saving...
                         </span>

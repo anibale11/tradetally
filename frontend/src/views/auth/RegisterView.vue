@@ -18,21 +18,21 @@
       <div>
         <div class="flex items-center justify-center mb-6 gap-2 sm:gap-3">
           <img src="/favicon.svg?v=2" alt="TradeTally Logo" class="h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0" />
-          <span class="text-xl sm:text-2xl md:text-3xl font-bold text-primary-600 dark:text-primary-400 whitespace-nowrap" style="font-family: 'Bebas Neue', Arial, sans-serif; letter-spacing: 0.05em;">DOMINATE WITH DATA</span>
+          <span class="brand-tagline">DOMINATE WITH DATA</span>
         </div>
         <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
           Create your account
         </h2>
         <p class="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
           Or
-          <router-link to="/login" class="font-medium text-primary-600 hover:text-primary-500">
+          <router-link to="/login" class="font-medium text-primary-700 hover:text-primary-500">
             sign in to existing account
           </router-link>
         </p>
       </div>
 
       <!-- Registration disabled message -->
-      <div v-if="registrationDisabled" class="rounded-md bg-yellow-50 dark:bg-yellow-900/20 p-4">
+      <div v-if="registrationDisabled" class="callout-warning">
         <div class="text-center">
           <h3 class="text-lg font-medium text-yellow-800 dark:text-yellow-400 mb-2">
             Registration Currently Disabled
@@ -87,7 +87,7 @@
               v-model="form.marketing_consent"
               name="marketing_consent"
               type="checkbox"
-              class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
+              class="checkbox"
             />
           </div>
           <div class="ml-3 text-sm">
@@ -100,7 +100,7 @@
           </div>
         </div>
 
-        <div v-if="authStore.error" class="rounded-md bg-red-50 dark:bg-red-900/20 p-4">
+        <div v-if="authStore.error" class="callout-danger">
           <p class="text-sm text-red-800 dark:text-red-400">{{ authStore.error }}</p>
         </div>
 
@@ -108,7 +108,7 @@
           <button
             type="submit"
             :disabled="authStore.loading"
-            class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+            class="btn-primary group relative w-full flex"
           >
             <span v-if="authStore.loading">Creating account...</span>
             <span v-else>Create account</span>

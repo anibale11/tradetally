@@ -4,7 +4,7 @@
       <h3 class="heading-card">Recent Trades</h3>
       <router-link
         to="/trades"
-        class="text-xs font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700"
+        class="text-xs font-medium text-primary-700 dark:text-primary-400 hover:text-primary-800"
       >
         View all
       </router-link>
@@ -27,7 +27,7 @@
         <p class="text-sm text-gray-600 dark:text-gray-400">No closed trades yet.</p>
         <router-link
           to="/import"
-          class="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700"
+          class="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary-700 dark:text-primary-400 hover:text-primary-800"
         >
           Import trades
           <MdiIcon :icon="mdiArrowRight" :size="12" />
@@ -50,7 +50,7 @@
               <div class="flex items-center gap-1.5">
                 <span class="font-medium text-sm text-gray-900 dark:text-white truncate">{{ trade.symbol }}</span>
                 <span
-                  class="text-[10px] uppercase tracking-wide px-1 py-px rounded font-medium"
+                  class="badge"
                   :class="sideClass(trade.side)"
                 >
                   {{ trade.side }}
@@ -58,7 +58,7 @@
               </div>
               <div class="text-xs text-gray-500 dark:text-gray-400 text-mono-num flex items-center gap-1">
                 <span>{{ formatDate(trade.trade_date || trade.tradeDate) }}</span>
-                <span v-if="trade.quantity">· {{ trade.quantity }} sh</span>
+                <span v-if="trade.quantity">· {{ formatQuantity(trade.quantity) }} sh</span>
                 <span v-if="trade.r_value || trade.rValue" class="text-gray-700 dark:text-gray-300">
                   · {{ formatR(trade.r_value ?? trade.rValue) }}R
                 </span>
@@ -68,14 +68,14 @@
               <div
                 class="text-sm font-semibold"
                 :class="trade.pnl > 0
-                  ? 'text-green-600 dark:text-green-400'
+                  ? 'text-green-700 dark:text-green-400'
                   : trade.pnl < 0
                     ? 'text-red-600 dark:text-red-400'
                     : 'text-gray-500 dark:text-gray-400'"
               >
                 {{ formatSignedCurrency(trade.pnl) }}
               </div>
-              <div v-if="trade.pnl_percent || trade.pnlPercent" class="text-[10px] text-gray-500 dark:text-gray-400">
+              <div v-if="trade.pnl_percent || trade.pnlPercent" class="text-xs text-gray-500 dark:text-gray-400">
                 {{ formatPct(trade.pnl_percent ?? trade.pnlPercent) }}
               </div>
             </div>
@@ -92,6 +92,7 @@ import MdiIcon from '@/components/MdiIcon.vue'
 import { mdiArrowRight } from '@mdi/js'
 import { useCurrencyFormatter } from '@/composables/useCurrencyFormatter'
 import { formatTradeDate } from '@/utils/date'
+import { formatDecimal, formatQuantity } from '@/utils/formatters'
 
 const props = defineProps({
   trades: { type: Array, default: () => [] },
@@ -119,12 +120,12 @@ function formatDate(d) {
 function formatR(r) {
   const n = parseFloat(r)
   if (!Number.isFinite(n)) return '—'
-  return (n > 0 ? '+' : '') + n.toFixed(1)
+  return formatDecimal(n, { digits: 1, showSign: true })
 }
 
 function formatPct(p) {
   const n = parseFloat(p)
   if (!Number.isFinite(n)) return ''
-  return (n > 0 ? '+' : '') + n.toFixed(2) + '%'
+  return formatDecimal(n, { digits: 1, showSign: true }) + '%'
 }
 </script>

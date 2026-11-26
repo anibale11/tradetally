@@ -11,19 +11,37 @@
     --color-primary-500: theme('colors.primary.500');
   }
 
+  :root {
+    color-scheme: light;
+  }
+  .dark {
+    color-scheme: dark;
+  }
+
   body {
     @apply bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100;
   }
+
+  /* Every table in the app is numeric-heavy (prices, P&L, counts). Tabular
+     figures keep digits a fixed width so columns line up the way they do on
+     a broker blotter, without switching to a monospace face. */
+  table {
+    font-variant-numeric: tabular-nums;
+  }
 }
+
+@keyframes tt-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes tt-modal-in { from { opacity: 0; transform: translateY(6px) scale(0.985); } to { opacity: 1; transform: none; } }
 
 @layer components {
   .btn {
-    @apply inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-200;
+    @apply inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
     min-height: 44px; /* Ensures proper touch target size on mobile */
   }
   
+  /* primary-700 keeps white label text above 4.5:1 (primary-600 is 3.3:1). */
   .btn-primary {
-    @apply btn text-white bg-primary-600 hover:bg-primary-700 focus:ring-primary-500;
+    @apply btn text-white bg-primary-700 hover:bg-primary-800 focus:ring-primary-500;
   }
   
   .btn-secondary {
@@ -31,19 +49,109 @@
   }
   
   .btn-danger {
-    @apply btn text-white bg-danger hover:bg-red-700 focus:ring-red-500;
+    @apply btn text-white bg-red-600 hover:bg-red-700 focus:ring-red-500;
   }
   
   .btn-yellow {
     @apply btn text-yellow-800 bg-yellow-100 hover:bg-yellow-200 border-yellow-300 focus:ring-yellow-500 dark:bg-yellow-900 dark:text-yellow-200 dark:border-yellow-700 dark:hover:bg-yellow-800;
   }
-  
+
+  /* Compact button modifier for toolbars, table rows and inline actions.
+     Pair with a variant: `btn-primary btn-sm`. */
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
+    min-height: 32px;
+  }
+
+  /* Icon-only button: square hit area, no min-height, neutral hover tint. */
+  .btn-icon {
+    @apply inline-flex items-center justify-center rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200;
+  }
+
+  /* Soft accent button: tinted fill, accent text. For secondary actions that
+     should read as "ours" without the weight of btn-primary. */
+  .btn-tint {
+    @apply btn text-primary-700 bg-primary-50 hover:bg-primary-100 focus:ring-primary-500 dark:bg-primary-900/30 dark:text-primary-300 dark:hover:bg-primary-900/50;
+  }
+
+  /* Segmented control: a bordered group of equal segments, one active. */
+  .segmented {
+    @apply inline-flex max-w-full flex-nowrap overflow-x-auto rounded-md border border-gray-200 bg-white p-0.5 text-xs dark:border-gray-700 dark:bg-gray-900;
+  }
+  .segment {
+    @apply inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded px-2.5 py-1 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white;
+  }
+  .segment-active {
+    @apply bg-primary-700 text-white shadow-sm hover:bg-primary-700 hover:text-white dark:hover:bg-primary-700 dark:hover:text-white;
+  }
+
+  /* Text link styled as a button: inline "View all", "Show more", row actions.
+     Phones get the 44px touch target; desktop stays inline. */
+  .btn-link {
+    @apply inline-flex items-center gap-1 rounded text-sm font-medium text-primary-700 hover:text-primary-900 hover:underline focus:outline-none focus:ring-2 focus:ring-primary-500 dark:text-primary-400 dark:hover:text-primary-300;
+    @apply min-h-[44px] sm:min-h-0;
+  }
+
+  /* Destructive secondary action: outline danger. */
+  .btn-danger-outline {
+    @apply btn text-red-600 bg-white border-red-300 hover:bg-red-50 focus:ring-red-500 dark:bg-gray-800 dark:text-red-400 dark:border-red-700 dark:hover:bg-red-900/20;
+  }
+
+  /* Loading placeholder block; size it with width/height utilities at the call site. */
+  .skeleton {
+    @apply animate-pulse rounded bg-gray-200 dark:bg-gray-700;
+  }
+
+  /* Confidence / rating dot meter: `dot` + `dot-on`. */
+  .dot {
+    @apply h-2 w-2 rounded-full bg-gray-300 dark:bg-gray-600;
+  }
+  .dot-on {
+    @apply bg-primary-600 dark:bg-primary-500;
+  }
+
+  /* Row inside a menu / listbox / popover. */
+  .menu-item {
+    @apply flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:text-gray-300 dark:hover:bg-gray-700 dark:focus:bg-gray-700;
+  }
+  .menu-item-active {
+    @apply bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300;
+  }
+
+  /* Bordered square icon button for toolbars (filters, settings, view toggles). */
+  .btn-icon-outline {
+    @apply btn-icon h-11 w-11 border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700;
+  }
+
+  /* Borderless, low-emphasis button (toolbar icons, tertiary actions). */
+  .btn-ghost {
+    @apply btn text-gray-600 bg-transparent hover:bg-gray-100 focus:ring-primary-500 dark:text-gray-300 dark:hover:bg-gray-700;
+  }
   .input {
-    @apply block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:border-gray-600;
+    @apply block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-900 dark:border-gray-500 dark:placeholder-gray-500;
     min-height: 44px; /* Ensures proper touch target size on mobile */
     font-size: 16px; /* Prevents iOS zoom on input focus */
   }
+  /* Desktop fields sit on the 14px UI scale; phones keep 16px for iOS. */
+  @media (min-width: 640px) {
+    .input {
+      font-size: 0.875rem;
+    }
+  }
   
+  /* Compact field for inline editors, table cells and dense calculators.
+     Pair with `.input`: `input input-sm`. Phones keep 16px to avoid iOS
+     focus zoom. */
+  .input-sm {
+    @apply px-2 py-1 rounded;
+    min-height: 32px;
+  }
+  @media (min-width: 640px) {
+    .input-sm {
+      font-size: 0.875rem;
+    }
+  }
+
   select.input {
     @apply pr-10 bg-no-repeat bg-right;
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
@@ -55,7 +163,7 @@
   }
   
   select.input:focus {
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%233b82f6' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23e46a16' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
   }
   
   .dark select.input {
@@ -63,7 +171,7 @@
   }
   
   .dark select.input:focus {
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2360a5fa' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23fab05b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
   }
   
   input[type="date"].input,
@@ -116,14 +224,174 @@
     @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1;
   }
   
+  /* Standard surface. Edges are defined by a hairline border with a light
+     shadow so cards read the same in light and dark mode; do not re-add
+     heavier shadows or alternate radii inline. */
   .card {
-    @apply bg-white dark:bg-gray-800 shadow rounded-lg;
+    @apply bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm;
   }
   
   .card-body {
     @apply p-3;
     @apply sm:p-4;
     @apply lg:p-6;
+  }
+
+  /* ---- Modals -------------------------------------------------------
+     Every dialog uses the same overlay tint, panel surface, radius and
+     elevation. BaseModal (components/common) is the preferred wrapper;
+     hand-rolled dialogs must at least use these classes. */
+  .modal-overlay {
+    @apply fixed inset-0 z-50 bg-gray-900/50 dark:bg-gray-950/60;
+  }
+  /* Backdrop variant for the "wrapper + separate backdrop div" pattern. */
+  .modal-backdrop {
+    @apply fixed inset-0 bg-gray-900/50 dark:bg-gray-950/60 transition-opacity;
+  }
+  .modal-panel {
+    @apply relative bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-600 dark:shadow-2xl;
+    animation: tt-modal-in 180ms ease-out;
+  }
+  /* One entrance for every dialog, hand-rolled or BaseModal. */
+  .modal-overlay,
+  .modal-backdrop {
+    animation: tt-fade-in 150ms ease-out;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .modal-overlay, .modal-backdrop, .modal-panel { animation: none; }
+  }
+  .modal-title {
+    @apply text-lg font-semibold text-gray-900 dark:text-white;
+  }
+  /* Dialog action row: stacks on phones, right-aligned row from sm up. */
+  .modal-footer {
+    @apply mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3;
+  }
+
+  /* ---- Spinners -----------------------------------------------------
+     One ring style, four sizes. Default color is the theme primary;
+     `spinner-light` for use on primary buttons, `spinner-current` to
+     inherit, `spinner-muted` for secondary surfaces. */
+  .spinner {
+    @apply animate-spin rounded-full border-2 border-primary-600 border-t-transparent h-8 w-8;
+  }
+  span.spinner {
+    @apply inline-block;
+  }
+  .spinner-xs { @apply h-4 w-4; }
+  .spinner-sm { @apply h-6 w-6; }
+  .spinner-md { @apply h-8 w-8; }
+  .spinner-lg { @apply h-12 w-12; }
+  .spinner-light { @apply border-white border-t-transparent; }
+  .spinner-current { @apply border-current border-t-transparent; }
+  .spinner-muted { @apply border-gray-400 border-t-transparent dark:border-gray-500 dark:border-t-transparent; }
+
+  /* ---- Floating menus / listboxes ---------------------------------- */
+  /* All floating surfaces (menus, listboxes, date pickers, popovers)
+     share one radius, one elevation and the hairline border. */
+  .popover {
+    @apply bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700;
+  }
+  .dropdown-menu {
+    @apply popover py-1 text-base;
+  }
+
+  /* ---- Callouts -----------------------------------------------------
+     Tinted inline notices. `callout-info` is the theme tint; the others
+     carry semantic meaning (success / warning / danger). */
+  .callout {
+    @apply rounded-lg border p-4 text-sm;
+  }
+  .callout-info {
+    @apply callout bg-primary-50 border-primary-200 text-primary-800 dark:bg-primary-900/20 dark:border-primary-800 dark:text-primary-200;
+  }
+  .callout-success {
+    @apply callout bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-200;
+  }
+  .callout-warning {
+    @apply callout bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-200;
+  }
+  .callout-danger {
+    @apply callout bg-red-50 border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-200;
+  }
+
+  /* ---- Badges -------------------------------------------------------
+     One chip shape for statuses, sides, tags and counts. Pick a tone;
+     green/red are reserved for direction (long/short, win/loss). */
+  .badge {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap;
+  }
+  .badge-neutral {
+    @apply badge bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300;
+  }
+  .badge-primary {
+    @apply badge bg-primary-100 text-primary-800 dark:bg-primary-900/40 dark:text-primary-300;
+  }
+  .badge-success {
+    @apply badge bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300;
+  }
+  .badge-danger {
+    @apply badge bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300;
+  }
+  .badge-warning {
+    @apply badge bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300;
+  }
+
+  /* ---- Checkbox / radio ---------------------------------------------
+     Native controls tinted with the accent and sized to the 16px grid;
+     wrap in a label so the hit area reaches 44px. */
+  .checkbox {
+    @apply h-4 w-4 shrink-0 rounded border-gray-300 text-primary-700 focus:ring-primary-500 focus:ring-offset-0 dark:border-gray-500 dark:bg-gray-900 dark:checked:bg-primary-600;
+  }
+  .radio {
+    @apply h-4 w-4 shrink-0 border-gray-300 text-primary-700 focus:ring-primary-500 focus:ring-offset-0 dark:border-gray-500 dark:bg-gray-900;
+  }
+
+  /* ---- Toggle switch ------------------------------------------------
+     `switch` is the track; add `switch-on` when checked. The knob is a
+     child span with `switch-knob` (translate-x-5 when on). */
+  .switch {
+    @apply relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:bg-gray-600 dark:focus:ring-offset-gray-900;
+  }
+  .switch-on {
+    @apply bg-primary-700 dark:bg-primary-500;
+  }
+  /* Track driven by a preceding sr-only checkbox (`peer`), for label-wrapped switches. */
+  .switch-track {
+    @apply switch after:absolute after:left-0 after:top-0 after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow after:transition after:content-[''] peer-checked:bg-primary-700 peer-checked:after:translate-x-5 peer-focus:ring-2 peer-focus:ring-primary-500 peer-focus:ring-offset-2 dark:peer-checked:bg-primary-500;
+  }
+  .switch-knob {
+    @apply pointer-events-none inline-block h-5 w-5 translate-x-0 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out;
+  }
+
+  /* ---- Stacking scale -----------------------------------------------
+     popovers z-40, dialogs z-50, menus inside dialogs z-[60], toasts
+     z-[70], full-screen viewers z-[100]. Nothing else sets a z-index. */
+
+  /* ---- Tables -------------------------------------------------------
+     Header row: a faint tint in light mode, and in dark mode a recessed
+     band instead of a lighter gray-700 stripe across the card. */
+  .table-head {
+    @apply bg-gray-50 dark:bg-gray-900/40;
+  }
+  .table-th {
+    @apply text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider;
+  }
+
+  /* ---- Underline tabs ----------------------------------------------- */
+  .tab {
+    @apply whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors;
+  }
+  .tab-active {
+    @apply border-primary-500 text-primary-700 dark:text-primary-300;
+  }
+  .tab-inactive {
+    @apply border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300;
+  }
+
+  /* Brand tagline on auth pages. */
+  .brand-tagline {
+    @apply text-xl sm:text-2xl md:text-3xl font-bold uppercase tracking-wide text-primary-700 dark:text-primary-400 whitespace-nowrap;
   }
 
   /* Horizontal scroll fade affordance. Soft edge shadows appear ONLY when the
@@ -134,7 +402,7 @@
   .h-scroll-fade {
     overflow-x: auto;
     background:
-      linear-gradient(to right, #ffffff 30%, rgba(255, 255, 255, 0)) left center,
+      linear-gradient(to right, theme('colors.white') 30%, rgba(255, 255, 255, 0)) left center,
       linear-gradient(to left, #ffffff 30%, rgba(255, 255, 255, 0)) right center,
       radial-gradient(farthest-side at 0 50%, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0)) left center,
       radial-gradient(farthest-side at 100% 50%, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0)) right center;
@@ -144,8 +412,8 @@
   }
   .dark .h-scroll-fade {
     background:
-      linear-gradient(to right, #1f2937 30%, rgba(31, 41, 55, 0)) left center,
-      linear-gradient(to left, #1f2937 30%, rgba(31, 41, 55, 0)) right center,
+      linear-gradient(to right, theme('colors.gray.800') 30%, rgba(31, 41, 55, 0)) left center,
+      linear-gradient(to left, theme('colors.gray.800') 30%, rgba(31, 41, 55, 0)) right center,
       radial-gradient(farthest-side at 0 50%, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0)) left center,
       radial-gradient(farthest-side at 100% 50%, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0)) right center;
     background-repeat: no-repeat;
@@ -209,10 +477,23 @@
     @apply sm:text-lg;
   }
 
-  .text-data-primary {
-    @apply text-sm font-medium text-gray-900 dark:text-white;
-    @apply sm:text-base;
+  /* Hero / stat tile value: one size for every big number in the app. */
+  .stat-value {
+    @apply text-xl font-semibold text-mono-num tracking-tight;
+    @apply sm:text-2xl;
   }
+  /* Compact tile value for dense stat rows (six-up summaries, split tiles).
+     Metric roles are `stat-value` (standard) and `stat-value-sm`; do not add
+     text-size utilities next to either. */
+  .stat-value-sm {
+    @apply text-lg sm:text-xl;
+  }
+
+  /* Sub-heading inside a card or dialog (group labels, list section titles). */
+  .heading-sub {
+    @apply text-sm font-semibold text-gray-900 dark:text-white;
+  }
+
 
   .text-data-secondary {
     @apply text-xs text-gray-600 dark:text-gray-400;
@@ -220,8 +501,7 @@
   }
 
   .text-label {
-    @apply text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide;
-    @apply sm:text-sm sm:tracking-wider;
+    @apply text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider;
   }
 
   /* Text Truncation Utilities */
@@ -240,23 +520,27 @@
   }
 
   .table-card-item {
-    @apply bg-white dark:bg-gray-800 shadow rounded-lg p-4 mb-3;
+    @apply card p-4 mb-3;
     @apply hover:shadow-md transition-shadow cursor-pointer;
   }
 
+  /* Phones stack label over value so neither truncates; from sm up they
+     sit on one line with the figure right-aligned. */
   .table-card-row {
-    @apply flex justify-between items-start;
-    @apply text-sm;
+    @apply flex flex-col gap-0.5 text-sm;
+    @apply sm:flex-row sm:items-start sm:justify-between;
   }
 
+  /* The label yields (truncates) before the figure ever wraps. */
   .table-card-label {
     @apply text-xs font-medium text-gray-500 dark:text-gray-400 uppercase;
-    @apply min-w-[100px];
+    @apply sm:min-w-[100px] sm:shrink-0 sm:truncate;
   }
 
+  /* Never clip a figure: the value gets the remaining width and wraps. */
   .table-card-value {
-    @apply text-sm font-medium text-gray-900 dark:text-white text-right;
-    @apply flex-1 truncate;
+    @apply text-sm font-medium text-gray-900 dark:text-white text-mono-num whitespace-nowrap;
+    @apply sm:text-right sm:shrink-0;
   }
 
   /* Responsive table with horizontal scroll fallback */
@@ -272,9 +556,8 @@
 
   .table-responsive th,
   .table-responsive td {
-    @apply px-2 py-2;
+    @apply px-3 py-2;
     @apply sm:px-4 sm:py-3;
-    @apply lg:px-6 lg:py-4;
   }
 
   /* Hide columns progressively on smaller screens */
@@ -308,13 +591,13 @@
 
   /* Orange glow on hero P&L number in dark mode (and subtle in light). */
   .hero-glow-positive {
-    text-shadow: 0 0 24px rgba(22, 163, 74, 0.25);
+    text-shadow: 0 0 24px rgba(21, 128, 61, 0.25); /* success */
   }
   .dark .hero-glow-positive {
-    text-shadow: 0 0 32px rgba(34, 197, 94, 0.45);
+    text-shadow: 0 0 32px rgba(74, 222, 128, 0.4); /* green-400, the dark-mode gain text */
   }
   .hero-glow-negative {
-    text-shadow: 0 0 24px rgba(220, 38, 38, 0.2);
+    text-shadow: 0 0 24px rgba(220, 38, 38, 0.2); /* danger */
   }
   .dark .hero-glow-negative {
     text-shadow: 0 0 32px rgba(248, 113, 113, 0.4);
@@ -327,14 +610,14 @@
     width: 6px;
     height: 6px;
     border-radius: 9999px;
-    background-color: #10b981;
+    background-color: #15803d;
   }
   .pulse-dot::after {
     content: '';
     position: absolute;
     inset: -3px;
     border-radius: 9999px;
-    background-color: rgba(16, 185, 129, 0.5);
+    background-color: rgba(21, 128, 61, 0.5);
     animation: pulse-ring 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 

@@ -3,22 +3,22 @@
     <div class="sm:mx-auto sm:w-full sm:max-w-md">
       <!-- TradeTally Logo -->
       <div class="flex justify-center">
-        <div class="text-4xl font-bold text-primary-600">TradeTally</div>
+        <div class="stat-value text-primary-700">TradeTally</div>
       </div>
     </div>
 
     <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-      <div class="bg-white dark:bg-gray-800 py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-gray-200 dark:border-gray-700">
+      <div class="card py-8 px-4 sm:px-10">
         <!-- Loading State -->
-        <div v-if="loading" class="text-center py-8">
-          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+        <div v-if="initialLoading" class="text-center py-8">
+          <div class="spinner spinner-lg mx-auto"></div>
           <p class="mt-4 text-gray-600 dark:text-gray-400">Loading authorization request...</p>
         </div>
 
         <!-- Error State -->
         <div v-else-if="error" class="text-center py-8">
-          <ExclamationTriangleIcon class="w-16 h-16 text-red-400 mx-auto mb-4" />
-          <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Authorization Error</h2>
+          <ExclamationTriangleIcon class="w-16 h-16 text-red-600 dark:text-red-400 mx-auto mb-4" />
+          <h2 class="heading-section mb-2">Authorization Error</h2>
           <p class="text-red-600 dark:text-red-400 mb-4">{{ error }}</p>
           <button @click="$router.push('/')" class="btn-secondary">
             Return to Dashboard
@@ -36,10 +36,10 @@
               class="w-16 h-16 mx-auto mb-4 rounded-lg"
             />
             <div v-else class="w-16 h-16 mx-auto mb-4 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center">
-              <span class="text-2xl font-bold text-primary-600">{{ consentData.client.name[0] }}</span>
+              <span class="stat-value text-primary-700">{{ consentData.client.name[0] }}</span>
             </div>
 
-            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            <h2 class="heading-section mb-2">
               {{ consentData.client.name }}
             </h2>
             <p class="text-sm text-gray-600 dark:text-gray-400">
@@ -51,7 +51,7 @@
               :href="consentData.client.website_url"
               target="_blank"
               rel="noopener noreferrer"
-              class="text-sm text-primary-600 hover:text-primary-700 mt-2 inline-block"
+              class="text-sm text-primary-700 hover:text-primary-800 mt-2 inline-block"
             >
               Visit {{ consentData.client.name }} website
             </a>
@@ -66,7 +66,7 @@
 
           <!-- Permissions -->
           <div class="mb-6">
-            <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-3">
+            <h3 class="heading-sub mb-3">
               This application will be able to:
             </h3>
             <ul class="space-y-2">
@@ -75,7 +75,7 @@
                 :key="scope.name"
                 class="flex items-start"
               >
-                <CheckCircleIcon class="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                <CheckCircleIcon class="w-5 h-5 text-green-700 dark:text-green-400 mr-2 flex-shrink-0 mt-0.5" />
                 <div>
                   <p class="text-sm font-medium text-gray-900 dark:text-white">{{ scope.title }}</p>
                   <p class="text-xs text-gray-600 dark:text-gray-400">{{ scope.description }}</p>
@@ -85,8 +85,8 @@
           </div>
 
           <!-- User Info -->
-          <div class="mb-6 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-            <p class="text-sm text-blue-800 dark:text-blue-300">
+          <div class="callout-info mb-6">
+            <p class="text-sm text-primary-800 dark:text-primary-300">
               Signing in as <strong>{{ user?.email }}</strong>
             </p>
           </div>
@@ -117,7 +117,7 @@
 
         <!-- Auto-redirect State -->
         <div v-else class="text-center py-8">
-          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+          <div class="spinner spinner-lg mx-auto"></div>
           <p class="mt-4 text-gray-600 dark:text-gray-400">Redirecting...</p>
         </div>
       </div>
@@ -140,6 +140,7 @@ const route = useRoute()
 const authStore = useAuthStore()
 
 const loading = ref(true)
+const initialLoading = ref(true)
 const submitting = ref(false)
 const error = ref(null)
 const consentData = ref(null)
@@ -200,6 +201,7 @@ const loadAuthorizationRequest = async () => {
     error.value = err.response?.data?.error_description || 'Failed to load authorization request'
   } finally {
     loading.value = false
+    initialLoading.value = false
   }
 }
 

@@ -4,7 +4,7 @@
     <div class="flex items-center justify-between mb-4">
       <div class="flex items-center gap-3">
         <div class="p-2 rounded-lg bg-primary-100 dark:bg-primary-900/30">
-          <SparklesIcon class="h-5 w-5 text-primary-600 dark:text-primary-400" />
+          <SparklesIcon class="h-5 w-5 text-primary-700 dark:text-primary-400" />
         </div>
         <div>
           <h3 class="heading-card">{{ title }}</h3>
@@ -15,7 +15,7 @@
             Model: {{ currentModelLabel }}
           </p>
           <p v-if="aiStore.hasActiveSession && groupContextLabel" class="text-xs mt-0.5">
-            <span class="px-1.5 py-0.5 font-semibold rounded-full bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-400 whitespace-nowrap">
+            <span class="badge bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-400">
               {{ groupContextLabel }}
             </span>
           </p>
@@ -28,7 +28,7 @@
         <button
           v-if="aiStore.hasActiveSession"
           @click="handleNewSession"
-          class="btn-secondary text-sm"
+          class="btn-secondary"
           :disabled="aiStore.generating"
         >
           New Analysis
@@ -50,18 +50,22 @@
     <div v-if="!aiStore.hasActiveSession && !aiStore.loading" class="text-center py-8">
       <div class="max-w-md mx-auto">
         <SparklesIcon class="h-12 w-12 mx-auto text-gray-400 dark:text-gray-500 mb-4" />
-        <h4 class="text-lg font-medium text-gray-900 dark:text-white mb-2">{{ emptyTitle }}</h4>
+        <h4 class="heading-card mb-2">{{ emptyTitle }}</h4>
         <p class="text-gray-600 dark:text-gray-400 mb-4 text-sm">
           {{ emptyDescription }}
         </p>
 
-        <div v-if="!aiStore.canStartSession" class="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-          <p class="text-amber-800 dark:text-amber-200 text-sm">
+        <div v-if="!aiStore.canStartSession" class="callout-warning mb-4">
+          <p class="text-yellow-800 dark:text-yellow-200 text-sm">
             <template v-if="aiStore.credits.unlimited === false && aiStore.credits.remaining <= 0">
               You've used all your AI credits for this month. Credits reset at the start of each month.
             </template>
             <template v-else>
               AI conversations require a Pro subscription.
+              <router-link
+                :to="`/pricing?redirect=${encodeURIComponent($route?.fullPath || '/')}`"
+                class="font-medium underline text-primary-700 dark:text-primary-300"
+              >Upgrade to Pro</router-link>
             </template>
           </p>
         </div>
@@ -83,19 +87,22 @@
 
     <!-- Loading State -->
     <div v-else-if="aiStore.loading && !aiStore.hasActiveSession" class="text-center py-12">
-      <div class="animate-spin h-8 w-8 mx-auto mb-4 border-4 border-primary-600 border-t-transparent rounded-full"></div>
+      <div class="spinner spinner-md mx-auto mb-4"></div>
       <p class="text-gray-600 dark:text-gray-400">{{ loadingText }}</p>
       <p class="text-gray-500 dark:text-gray-500 text-xs mt-2">This may take a moment</p>
     </div>
 
     <!-- Conversation View -->
     <div v-else-if="aiStore.hasActiveSession" class="flex flex-col h-full">
+      <p v-if="isResumedSession" class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+        Continuing an analysis from {{ resumedFromLabel }}. Your next question includes the trade's current status and fresh market data.
+      </p>
       <!-- Messages Container -->
       <div ref="messagesContainer" class="flex-1 overflow-y-auto space-y-4 mb-4 max-h-[60vh] pr-2">
         <template v-for="(message, index) in aiStore.messages" :key="index">
           <!-- User Message -->
           <div v-if="message.role === 'user'" class="flex justify-end">
-            <div class="max-w-[85%] bg-primary-600 text-white rounded-lg px-4 py-2">
+            <div class="max-w-[85%] bg-primary-700 text-white rounded-lg px-4 py-2">
               <p class="text-sm whitespace-pre-wrap">{{ message.content }}</p>
             </div>
           </div>
@@ -148,12 +155,12 @@
             <PaperAirplaneIcon class="h-4 w-4" />
             <span class="hidden sm:inline">Send</span>
             <span v-if="!aiStore.credits.unlimited" class="text-xs opacity-75 hidden sm:inline">
-              ({{ aiStore.creditCosts.followup }})
+              ({{ aiStore.followupCost }})
             </span>
           </button>
         </form>
 
-        <p v-if="!aiStore.canSendFollowup && !aiStore.credits.unlimited" class="text-xs text-amber-600 dark:text-amber-400 mt-2">
+        <p v-if="!aiStore.canSendFollowup && !aiStore.credits.unlimited" class="text-xs text-yellow-600 dark:text-yellow-400 mt-2">
           Not enough credits for a follow-up question
         </p>
       </div>
@@ -162,34 +169,7 @@
       <div v-else-if="aiStore.currentSession && aiStore.currentSession.followup_count >= aiStore.currentSession.max_followups"
            class="border-t border-gray-200 dark:border-gray-700 pt-4 text-center">
         <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
-          You've used all follow-up questions for this session.
-        </p>
-        <button
-          @click="handleNewSession"
-          :disabled="!aiStore.canStartSession"
-          class="btn-primary text-sm inline-flex items-center gap-2"
-        >
-          <SparklesIcon class="h-4 w-4" />
-          Start New Analysis
-          <span v-if="!aiStore.credits.unlimited" class="text-xs opacity-75">
-            ({{ aiStore.creditCosts.new_session }} credits)
-          </span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Error Display -->
-    <div v-if="aiStore.error" class="mt-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
-      <p class="text-red-800 dark:text-red-200 text-sm">{{ aiStore.error }}</p>
-      <button @click="aiStore.clearError" class="text-red-600 dark:text-red-400 text-xs underline mt-1">
-        Dismiss
-      </button>
-    </div>
-  </div>
-</template>
-
-<script setup>
-import { computed, ref, onMounted, watch, nextTick } from 'vue'
+          You've used all follow-up questions for this session. </p> <button @click="handleNewSession" :disabled="!aiStore.canStartSession" class="btn-primary inline-flex items-center gap-2" > <SparklesIcon class="h-4 w-4" /> Start New Analysis <span v-if="!aiStore.credits.unlimited" class="text-xs opacity-75"> ({{ aiStore.creditCosts.new_session }} credits) </span> </button> </div> </div> <!-- Error Display --> <div v-if="aiStore.error" class="callout-danger mt-4"> <p class="text-red-800 dark:text-red-400 text-sm">{{ aiStore.error }}</p> <button @click="aiStore.clearError" class="text-red-600 dark:text-red-400 text-xs underline mt-1"> Dismiss </button> </div> </div> </template> <script setup> import { computed, ref, onMounted, watch, nextTick } from'vue'
 import { useAIStore } from '@/stores/ai'
 import { useTradesStore } from '@/stores/trades'
 import { SparklesIcon, PaperAirplaneIcon } from '@heroicons/vue/24/outline'
@@ -198,7 +178,7 @@ import CreditBadge from './CreditBadge.vue'
 
 const aiStore = useAIStore()
 const tradesStore = useTradesStore()
-const emit = defineEmits(['session-created'])
+const emit = defineEmits(['session-created', 'followup-sent'])
 
 const props = defineProps({
   tradeId: {
@@ -255,6 +235,17 @@ const groupContextLabel = computed(() => {
   const legs = group.leg_count ? ` (${group.leg_count} legs)` : ''
   const underlying = group.underlying_symbol ? ` on ${group.underlying_symbol}` : ''
   return `Analyzing: ${label}${legs}${underlying}`
+})
+
+const isResumedSession = computed(() => {
+  const session = aiStore.currentSession
+  if (!session?.created_at) return false
+  return session.status !== 'active' || Date.now() - new Date(session.created_at).getTime() > 24 * 60 * 60 * 1000
+})
+
+const resumedFromLabel = computed(() => {
+  const createdAt = aiStore.currentSession?.created_at
+  return createdAt ? new Date(createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : ''
 })
 
 function formatModelLabel(metadata) {
@@ -323,6 +314,7 @@ async function sendFollowup() {
 
   try {
     await aiStore.sendFollowup(message)
+    emit('followup-sent', aiStore.currentSession)
   } catch (error) {
     console.error('[AI_PANEL] Error sending follow-up:', error)
     // Restore the message so user can try again

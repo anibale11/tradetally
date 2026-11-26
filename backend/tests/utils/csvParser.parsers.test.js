@@ -394,6 +394,108 @@ describe('ThinkorSwim parser', () => {
     ]));
   });
 
+  test('treats negative Misc Fees / Commissions & Fees as costs, not gains', async () => {
+    // Real thinkorswim Account Statement exports write fee columns as negative
+    // numbers (-0.01, -0.65). They must reduce P/L, never inflate it.
+    const negativeFeeCsv = [
+      'Account (Main),,,,,,,,,,,,',
+      'DATE,TIME,TYPE,REF #,DESCRIPTION,Misc Fees,Commissions & Fees,,,,,,',
+      '10/30/26,06:51:11,TRD,1008495138036,BOT +1 NDX 100 (Weeklys) 30 OCT 26 28870 CALL @32.80 CBOE,-0.01,-0.65,,,,,,',
+      '10/30/26,06:53:57,TRD,1008495138349,SOLD -1 NDX 100 (Weeklys) 30 OCT 26 28870 CALL @34.30 CBOE,-0.01,-0.65,,,,,,'
+    ].join('\n');
+
+    const result = await parseCSV(buf(negativeFeeCsv), 'thinkorswim', {});
+
+    expectValidResult(result);
+    expect(result.trades).toHaveLength(1);
+    expect(result.trades[0].commission).toBeCloseTo(1.32, 2);
+    // (34.30 - 32.80) * 100 - 1.32
+    expect(result.trades[0].pnl).toBeCloseTo(148.68, 2);
+  });
+
+  test('keeps separate round trips separate when trade grouping is disabled', async () => {
+    const twoRoundTripsCsv = [
+      'DATE,TIME,TYPE,REF #,DESCRIPTION,Misc Fees,Commissions & Fees',
+      '10/30/26,07:16:25,TRD,1008496288612,BOT +1 NDX 100 (Weeklys) 30 OCT 26 28670 CALL @53.80 PHLX,-0.01,-0.65',
+      '10/30/26,07:22:21,TRD,1008496289105,SOLD -1 NDX 100 (Weeklys) 30 OCT 26 28670 CALL @45.80 CBOE,-0.01,-0.65',
+      '10/30/26,07:26:41,TRD,1008496289489,BOT +1 NDX 100 (Weeklys) 30 OCT 26 28670 CALL @41.10 CBOE,-0.01,-0.65',
+      '10/30/26,07:29:49,TRD,1008496289729,SOLD -1 NDX 100 (Weeklys) 30 OCT 26 28670 CALL @47.60 PHLX,-0.01,-0.65'
+    ].join('\n');
+
+    const result = await parseCSV(buf(twoRoundTripsCsv), 'thinkorswim', {
+      tradeGroupingSettings: { enabled: false }
+    });
+
+    expect(result.trades).toHaveLength(2);
+    expect(result.trades[0].pnl).toBeCloseTo(-801.32, 2);
+    expect(result.trades[1].pnl).toBeCloseTo(648.68, 2);
+  });
+
+  test('uses the thinkorswim export timezone independently from the user display timezone', async () => {
+    const csv = [
+      'DATE,TIME,TYPE,REF #,DESCRIPTION,Misc Fees,Commissions & Fees',
+      '10/30/26,07:16:25,TRD,1008496288612,BOT +1 NDX 100 (Weeklys) 30 OCT 26 28670 CALL @53.80 PHLX,-0.01,-0.65',
+      '10/30/26,07:22:21,TRD,1008496289105,SOLD -1 NDX 100 (Weeklys) 30 OCT 26 28670 CALL @45.80 CBOE,-0.01,-0.65'
+    ].join('\n');
+
+    const result = await parseCSV(buf(csv), 'thinkorswim', {
+      userTimezone: 'America/New_York',
+      sourceTimezone: 'America/Los_Angeles'
+    });
+
+    expect(result.trades).toHaveLength(1);
+    // 07:16 Pacific is 10:16 Eastern / 14:16 UTC, inside regular hours.
+    expect(result.trades[0].entryTime).toBe('2026-10-30T14:16:25Z');
+    expect(result.trades[0].exitTime).toBe('2026-10-30T14:22:21Z');
+  });
+
+  test('splits a fill that crosses through flat into separate round trips without repair warnings', async () => {
+    // Short 5, then buy 50 (closes 5, opens long 45), then sell 45.
+    const reversalCsv = [
+      'DATE,TIME,TYPE,REF #,DESCRIPTION,Misc Fees,Commissions & Fees',
+      '10/30/26,08:11:40,TRD,1008498863413,SOLD -5 MRVL @200.44,-0.02,',
+      '10/30/26,08:12:05,TRD,1008498863466,BOT +50 MRVL @200.29,,',
+      '10/30/26,08:12:17,TRD,1008498863493,SOLD -45 MRVL @200.29,-0.19,'
+    ].join('\n');
+
+    const result = await parseCSV(buf(reversalCsv), 'thinkorswim', {
+      tradeGroupingSettings: { enabled: false }
+    });
+
+    expectValidResult(result);
+    expect(result.diagnostics.warnings).toEqual([]);
+    expect(result.trades).toHaveLength(2);
+    expect(result.trades[0]).toEqual(expect.objectContaining({ symbol: 'MRVL', side: 'short', quantity: 5 }));
+    expect(result.trades[0].pnl).toBeCloseTo((200.44 - 200.29) * 5 - 0.02, 2);
+    expect(result.trades[1]).toEqual(expect.objectContaining({ symbol: 'MRVL', side: 'long', quantity: 45 }));
+    expect(result.trades[1].pnl).toBeCloseTo(0 - 0.19, 2);
+    expect(result.trades[1].executions.map(e => e.quantity)).toEqual([45, 45]);
+  });
+
+  test('re-importing a statement with a reversal does not open a phantom position', async () => {
+    // Same statement as above, but every fill is already on file: the closing
+    // short was stored as-is and the buy 50 was stored as its split legs.
+    const reversalCsv = [
+      'DATE,TIME,TYPE,REF #,DESCRIPTION,Misc Fees,Commissions & Fees',
+      '10/30/26,08:11:40,TRD,1008498863413,SOLD -5 MRVL @200.44,-0.02,',
+      '10/30/26,08:12:05,TRD,1008498863466,BOT +50 MRVL @200.29,,',
+      '10/30/26,08:12:17,TRD,1008498863493,SOLD -45 MRVL @200.29,-0.19,'
+    ].join('\n');
+    const first = await parseCSV(buf(reversalCsv), 'thinkorswim', {
+      tradeGroupingSettings: { enabled: false }
+    });
+    const stored = first.trades.flatMap(trade => trade.executions.map(exec => ({ ...exec })));
+    expect(stored.map(e => e.quantity)).toEqual([5, 5, 45, 45]);
+
+    const again = await parseCSV(buf(reversalCsv), 'thinkorswim', {
+      tradeGroupingSettings: { enabled: false },
+      existingExecutions: { MRVL: stored }
+    });
+
+    expectValidResult(again);
+    expect(again.trades).toEqual([]);
+  });
+
   test('matches a later option closing import to an existing open option contract', async () => {
     const closingCsv = [
       'DATE,TIME,TYPE,REF #,DESCRIPTION,Misc Fees,Commissions & Fees,Amount,Balance',
@@ -1147,8 +1249,22 @@ describe('Questrade parser', () => {
 
   test('parses trades (position tracking creates round-trips)', async () => {
     const result = await parseCSV(buf(questradeCSV), 'questrade', {});
-    // Questrade uses position tracking; trades are created when positions close
-    expect(result.trades.length).toBeGreaterThanOrEqual(0);
+    expect(result.trades).toHaveLength(1);
+    expect(result.trades[0]).toMatchObject({ side: 'long', quantity: 100, entryPrice: 150, exitPrice: 155 });
+    expect(result.trades[0].pnl).toBeCloseTo(490.1, 2);
+  });
+
+  test('splits a reversal into a closed long and an open short', async () => {
+    const reversalCSV = [
+      'Symbol,Action,Fill Qty,Fill Price,Exec Time,Commission',
+      'AAPL,Buy,100,150.00,01/01/2025 09:30:00,0',
+      'AAPL,Sell,200,155.00,01/02/2025 10:00:00,0'
+    ].join('\n');
+    const { trades } = await parseCSV(buf(reversalCSV), 'questrade', {});
+    expect(trades).toHaveLength(2);
+    expect(trades[0]).toMatchObject({ side: 'long', quantity: 100, entryPrice: 150, exitPrice: 155 });
+    expect(trades[1]).toMatchObject({ side: 'short', quantity: 100, entryPrice: 155 });
+    expect(trades[1].exitPrice).toBeFalsy();
   });
 
   test('handles options symbols in Symbol column', async () => {
@@ -1193,6 +1309,24 @@ describe('Tastytrade parser', () => {
   test('parses basic equity trades', async () => {
     const result = await parseCSV(buf(tastytradeCSV), 'tastytrade', {});
     expect(result.trades.length).toBeGreaterThanOrEqual(1);
+  });
+
+  test('keeps a closed round trip long with its entry price', async () => {
+    const [trade] = (await parseCSV(buf(tastytradeCSV), 'tastytrade', {})).trades;
+    expect(trade).toMatchObject({ side: 'long', entryPrice: 150, exitPrice: 155 });
+  });
+
+  test('splits a reversal into a closed long and an open short', async () => {
+    const reversalCSV = [
+      'Date,Type,Action,Symbol,Instrument Type,Description,Value,Quantity,Average Price,Commissions,Fees,Root Symbol,Underlying Symbol,Expiration Date,Strike Price,Call or Put',
+      '01/01/2025,Trade,Buy to Open,AAPL,Equity,AAPL Apple Inc,15000.00,100,150.00,0.00,0.00,AAPL,AAPL,,,',
+      '01/02/2025,Trade,Sell to Open,AAPL,Equity,AAPL Apple Inc,-31000.00,200,155.00,0.00,0.00,AAPL,AAPL,,,'
+    ].join('\n');
+    const { trades } = await parseCSV(buf(reversalCSV), 'tastytrade', {});
+    expect(trades).toHaveLength(2);
+    expect(trades[0]).toMatchObject({ side: 'long', quantity: 100, entryPrice: 150, exitPrice: 155 });
+    expect(trades[1]).toMatchObject({ side: 'short', quantity: 100, entryPrice: 155 });
+    expect(trades[1].exitPrice).toBeFalsy();
   });
 
   test('handles OCC symbol format for options', async () => {

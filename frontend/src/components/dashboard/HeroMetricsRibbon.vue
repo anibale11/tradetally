@@ -28,15 +28,15 @@
               <div class="inline-flex shrink-0 rounded-md border border-gray-200 dark:border-gray-700 overflow-hidden text-xs font-medium" role="group" aria-label="Display values in dollars or R-multiples">
                 <button
                   type="button"
-                  class="px-2 py-0.5 transition-colors"
-                  :class="!rMode ? 'bg-primary-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'"
+                  class="segment"
+                  :class="!rMode ? 'segment-active' : ''"
                   :aria-pressed="!rMode"
                   @click="emit('update:rMode', false)"
                 >$</button>
                 <button
                   type="button"
-                  class="px-2 py-0.5 transition-colors"
-                  :class="rMode ? 'bg-primary-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'"
+                  class="segment"
+                  :class="rMode ? 'segment-active' : ''"
                   :aria-pressed="rMode"
                   @click="emit('update:rMode', true)"
                 >R</button>
@@ -85,20 +85,22 @@
           </div>
         </div>
 
-        <!-- Sub-stats: 3-col grid, takes ~60% on desktop. Each cell is
+        <!-- Sub-stats: four cells (2x2 on a phone-width ribbon, one row from
+             @md, where Win Rate gets the extra width its W/L line needs),
+             taking ~2/3 on desktop. Each cell is
              flex-col with the number pinned to the bottom via mt-auto so
              stat values line up even when a label wraps to two lines at
              narrow widths. Labels are allowed to wrap (no whitespace-nowrap)
              to keep them from overflowing into adjacent cells. -->
-        <div class="grid grid-cols-3 gap-3 @sm:gap-4 @3xl:flex-[3] @3xl:gap-6 @3xl:border-l @3xl:border-gray-200 @3xl:dark:border-gray-700 @3xl:pl-4 @4xl:pl-6">
+        <div class="grid grid-cols-2 gap-3 @md:grid-cols-[1.5fr_1fr_1fr_1fr] @sm:gap-4 @3xl:flex-[4] @3xl:gap-6 @3xl:border-l @3xl:border-gray-200 @3xl:dark:border-gray-700 @3xl:pl-4 @4xl:pl-6">
           <div class="flex flex-col min-w-0">
             <div class="text-label mb-1">Win Rate</div>
             <div class="mt-auto pt-1">
               <div class="text-mono-num text-lg @sm:text-xl @3xl:text-2xl @4xl:text-3xl font-semibold tracking-tight" :class="winRateClass">
-                {{ totalTrades > 0 ? winRate + '%' : '—' }}<span v-if="totalTrades > 0" class="text-xs font-normal text-gray-500 dark:text-gray-400"> incl. BE</span>
+                {{ totalTrades > 0 ? formatPercent(winRate) : '—' }}<span v-if="totalTrades > 0" class="text-xs font-normal text-gray-500 dark:text-gray-400"> incl. BE</span>
               </div>
               <div class="text-xs text-gray-500 dark:text-gray-400 text-mono-num mt-0.5 truncate">
-                <span v-if="totalTrades > 0">{{ winningTrades }}W · {{ losingTrades }}L<span v-if="breakevenTrades > 0"> · {{ winRateExcludingBe }}% excl. BE</span></span>
+                <span v-if="totalTrades > 0">{{ winningTrades }}W · {{ losingTrades }}L<span v-if="breakevenTrades > 0"> · {{ formatPercent(winRateExcludingBe) }} excl. BE</span></span>
                 <span v-else>—</span>
               </div>
             </div>
@@ -142,7 +144,46 @@
               <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5" v-else>—</div>
             </div>
           </div>
+
+          <!-- Performance score: one number here; its six factors open below. -->
+          <button
+            type="button"
+            class="group flex flex-col min-w-0 rounded text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 @3xl:border-l @3xl:border-gray-200 @3xl:dark:border-gray-700 @3xl:pl-4 @4xl:pl-6"
+            :class="scoreReady ? 'cursor-pointer' : 'cursor-default'"
+            :disabled="!scoreReady"
+            :aria-expanded="scoreReady ? scoreOpen : undefined"
+            aria-controls="performance-score-details"
+            :title="scoreReady ? 'Show what makes up your performance score' : scorePendingTitle"
+            data-testid="performance-score"
+            data-tour="performance-score"
+            @click="toggleScore"
+          >
+            <div class="text-label mb-1">Score</div>
+            <div class="mt-auto pt-1">
+              <div class="flex items-baseline gap-1 min-w-0">
+                <span class="text-mono-num text-lg @sm:text-xl @3xl:text-2xl @4xl:text-3xl font-semibold tracking-tight" :class="scoreClass">
+                  {{ scoreReady ? score.score : '—' }}
+                </span>
+                <span v-if="scoreReady" class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">/ 100</span>
+              </div>
+              <div class="mt-0.5 flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                <template v-if="scoreReady">
+                  <span class="truncate group-hover:text-gray-700 dark:group-hover:text-gray-200">{{ score.bandLabel }}</span>
+                  <ChevronDownIcon class="h-3 w-3 shrink-0 transition-transform" :class="scoreOpen ? 'rotate-180' : ''" aria-hidden="true" />
+                </template>
+                <span v-else class="text-mono-num truncate">{{ scorePendingLabel }}</span>
+              </div>
+            </div>
+          </button>
         </div>
+      </div>
+
+      <div
+        v-if="scoreReady && scoreOpen"
+        id="performance-score-details"
+        class="mt-4 pt-3 border-t border-dashed border-gray-200 dark:border-gray-700"
+      >
+        <PerformanceScoreBreakdown :score="score" />
       </div>
 
       <!-- Today strip (when there is activity today) -->
@@ -158,7 +199,7 @@
           {{ rMode ? formatSignedR(todayR) : formatSignedCurrency(todayPnl) }}
         </span>
         <span class="text-gray-500 dark:text-gray-400 text-mono-num" v-if="avgDailyTrades > 0">
-          avg {{ avgDailyTrades.toFixed(1) }}/day
+          avg {{ formatDecimal(avgDailyTrades, { digits: 1 }) }}/day
         </span>
       </div>
     </div>
@@ -166,9 +207,14 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { winRateClass as winRateTone, profitFactorClass as profitFactorTone } from '@/utils/metricTone'
+import { computed, ref } from 'vue'
+import { ChevronDownIcon } from '@heroicons/vue/20/solid'
 import MiniBarChart from '@/components/common/MiniBarChart.vue'
+import PerformanceScoreBreakdown from '@/components/dashboard/PerformanceScoreBreakdown.vue'
 import { useCurrencyFormatter } from '@/composables/useCurrencyFormatter'
+import { formatDecimal, formatPercent } from '@/utils/formatters'
+import { formatR } from '@/utils/rFormat'
 
 const props = defineProps({
   analytics: {
@@ -194,11 +240,52 @@ const { formatCurrency, formatSignedCurrency } = useCurrencyFormatter()
 
 // R-multiples are unitless; show a signed value with a trailing R.
 function formatSignedR(value) {
-  const v = Number(value) || 0
-  return `${v >= 0 ? '+' : ''}${v.toFixed(2)}R`
+  return formatR(Number(value) || 0)
 }
 
 const summary = computed(() => props.analytics?.summary || {})
+
+// Performance score (`performanceScore` on the analytics payload; absent on
+// older backends). Collapsed by default; the choice is remembered per browser.
+const SCORE_OPEN_KEY = 'dashboard_score_expanded'
+const score = computed(() => props.analytics?.performanceScore || null)
+const scoreReady = computed(() => !!score.value?.ready && Number.isFinite(score.value?.score))
+const scoreOpen = ref(readScoreOpen())
+
+function readScoreOpen() {
+  try {
+    return localStorage.getItem(SCORE_OPEN_KEY) === 'true'
+  } catch {
+    return false
+  }
+}
+
+function toggleScore() {
+  if (!scoreReady.value) return
+  scoreOpen.value = !scoreOpen.value
+  try {
+    localStorage.setItem(SCORE_OPEN_KEY, String(scoreOpen.value))
+  } catch {
+    // Private mode or blocked storage: the toggle still works for this visit.
+  }
+}
+
+const scoreClass = computed(() => {
+  if (!scoreReady.value) return 'text-gray-400 dark:text-gray-500'
+  if (score.value.score >= 65) return 'text-green-700 dark:text-green-400'
+  if (score.value.score < 35) return 'text-red-600 dark:text-red-400'
+  return 'text-gray-900 dark:text-white'
+})
+
+const scorePendingLabel = computed(() => {
+  if (!score.value) return '—'
+  return `${score.value.tradesCounted || 0}/${score.value.minTrades || 20} trades`
+})
+
+const scorePendingTitle = computed(() => {
+  if (!score.value) return ''
+  return `Your performance score appears once this period has ${score.value.minTrades || 20} closed trades.`
+})
 
 const netPnl = computed(() => parseFloat(summary.value.totalNetPnL ?? summary.value.totalPnL ?? 0) || 0)
 // Total R across trades with a defined stop loss (NULL r_value trades are
@@ -217,14 +304,14 @@ const totalCosts = computed(() => parseFloat(summary.value.totalCosts) || 0)
 
 const winRate = computed(() => {
   if (totalTrades.value === 0) return 0
-  return ((winningTrades.value / totalTrades.value) * 100).toFixed(1)
+  return (winningTrades.value / totalTrades.value) * 100
 })
 
 // Win rate among decisive (non-breakeven) trades only.
 const winRateExcludingBe = computed(() => {
   const decisive = winningTrades.value + losingTrades.value
   if (decisive === 0) return 0
-  return ((winningTrades.value / decisive) * 100).toFixed(1)
+  return (winningTrades.value / decisive) * 100
 })
 const breakevenTrades = computed(() => parseInt(summary.value.breakevenTrades) || 0)
 
@@ -233,7 +320,7 @@ const profitFactorDisplay = computed(() => {
   if (totalTrades.value === 0) return '—'
   if (!Number.isFinite(profitFactor.value)) return '∞'
   if (profitFactor.value === 0) return '0.00'
-  return profitFactor.value.toFixed(2)
+  return formatDecimal(profitFactor.value)
 })
 
 const dailyPnL = computed(() => Array.isArray(props.analytics?.dailyPnL) ? props.analytics.dailyPnL : [])
@@ -328,13 +415,13 @@ const streakTooltip = computed(() => {
 })
 
 const streakClass = computed(() => {
-  if (currentStreak.value > 0) return 'text-green-600 dark:text-green-400'
+  if (currentStreak.value > 0) return 'text-green-700 dark:text-green-400'
   if (currentStreak.value < 0) return 'text-red-600 dark:text-red-400'
   return 'text-gray-400 dark:text-gray-500'
 })
 
 const pnlValueClass = computed(() => {
-  if (heroSign.value > 0) return 'text-green-600 dark:text-green-400 hero-glow-positive'
+  if (heroSign.value > 0) return 'text-green-700 dark:text-green-400 hero-glow-positive'
   if (heroSign.value < 0) return 'text-red-600 dark:text-red-400 hero-glow-negative'
   return 'text-gray-500 dark:text-gray-400'
 })
@@ -356,25 +443,19 @@ const pnlSizeClass = computed(() => {
 
 const winRateClass = computed(() => {
   if (totalTrades.value === 0) return 'text-gray-400 dark:text-gray-500'
-  const wr = parseFloat(winRate.value)
-  if (wr >= 60) return 'text-green-600 dark:text-green-400'
-  if (wr >= 45) return 'text-gray-900 dark:text-gray-100'
-  return 'text-red-600 dark:text-red-400'
+  return winRateTone(parseFloat(winRate.value))
 })
 
 const profitFactorClass = computed(() => {
   if (totalTrades.value === 0) return 'text-gray-400 dark:text-gray-500'
-  if (!Number.isFinite(profitFactor.value)) return 'text-green-600 dark:text-green-400'
-  if (profitFactor.value >= 1.5) return 'text-green-600 dark:text-green-400'
-  if (profitFactor.value >= 1) return 'text-gray-900 dark:text-gray-100'
-  return 'text-red-600 dark:text-red-400'
+  return profitFactorTone(profitFactor.value)
 })
 
 const todayR = computed(() => streakStats.value.todayR)
 
 const todayPnlClass = computed(() => {
   const v = props.rMode ? todayR.value : todayPnl.value
-  if (v > 0) return 'text-green-600 dark:text-green-400'
+  if (v > 0) return 'text-green-700 dark:text-green-400'
   if (v < 0) return 'text-red-600 dark:text-red-400'
   return 'text-gray-700 dark:text-gray-300'
 })

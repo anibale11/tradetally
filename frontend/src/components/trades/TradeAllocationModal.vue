@@ -1,26 +1,26 @@
 <template>
   <div v-if="open" class="fixed inset-0 z-50 overflow-y-auto" @keydown.esc="emit('close')">
     <div class="flex min-h-full items-center justify-center p-4">
-      <div class="fixed inset-0 bg-gray-900/60" aria-hidden="true" @click="emit('close')"></div>
+      <div class="modal-overlay" aria-hidden="true" @click="emit('close')"></div>
 
-      <section class="relative w-full max-w-2xl rounded-xl bg-white shadow-xl dark:bg-gray-800" role="dialog" aria-modal="true" aria-labelledby="allocation-title">
+      <section class="modal-panel w-full max-w-2xl" role="dialog" aria-modal="true" aria-labelledby="allocation-title">
         <header class="flex items-start justify-between gap-4 border-b border-gray-200 px-6 py-5 dark:border-gray-700">
           <div>
-            <h2 id="allocation-title" class="text-lg font-semibold text-gray-900 dark:text-white">
+            <h2 id="allocation-title" class="modal-title">
               Allocate {{ trade?.symbol || 'trade' }}
             </h2>
             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
               Divide this trade without changing its tags or brokerage record.
             </p>
           </div>
-          <button type="button" class="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-200" aria-label="Close" @click="emit('close')">
+          <button type="button" class="btn-icon p-1" aria-label="Close" @click="emit('close')">
             <XMarkIcon class="h-5 w-5" />
           </button>
         </header>
 
         <div class="px-6 py-5">
-          <div v-if="loading" class="flex justify-center py-12">
-            <div class="h-9 w-9 animate-spin rounded-full border-2 border-primary-600 border-t-transparent"></div>
+          <div v-if="initialLoading" class="flex justify-center py-12">
+            <div class="spinner spinner-lg"></div>
           </div>
 
           <template v-else>
@@ -33,15 +33,15 @@
             <template v-else>
               <div class="flex flex-col gap-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-900/40 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <div class="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Allocation basis</div>
+                  <div class="text-label">Allocation basis</div>
                   <div class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
                     {{ formatQuantity(basisQuantity) }} {{ quantityLabel }}
                     <span v-if="tradePnl !== null" class="font-normal text-gray-500 dark:text-gray-400"> · {{ formatMoney(tradePnl) }} P&amp;L</span>
                   </div>
                 </div>
-                <div class="inline-flex rounded-lg border border-gray-300 bg-white p-1 dark:border-gray-600 dark:bg-gray-800" role="group" aria-label="Allocation input method">
-                  <button type="button" class="rounded-md px-3 py-1.5 text-sm font-medium" :class="mode === 'percentage' ? selectedModeClass : unselectedModeClass" @click="changeMode('percentage')">Percentage</button>
+                <div class="card inline-flex border-gray-300 p-1 dark:border-gray-600" role="group" aria-label="Allocation input method">
                   <button type="button" class="rounded-md px-3 py-1.5 text-sm font-medium" :class="mode === 'quantity' ? selectedModeClass : unselectedModeClass" @click="changeMode('quantity')">Quantity</button>
+                  <button type="button" class="btn-ghost btn-sm" :class="mode === 'quantity' ? selectedModeClass : unselectedModeClass" @click="changeMode('quantity')">Quantity</button>
                 </div>
               </div>
 
@@ -70,7 +70,7 @@
                     </div>
                     <p v-if="tradePnl !== null" class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ formatMoney(previewPnl(row)) }}</p>
                   </div>
-                  <button type="button" class="rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-700 dark:hover:text-red-400" :disabled="rows.length <= 2" aria-label="Remove allocation" @click="removeRow(index)">
+                  <button type="button" class="btn-icon p-2" :disabled="rows.length <= 2" aria-label="Remove allocation" @click="removeRow(index)">
                     <TrashIcon class="h-5 w-5" />
                   </button>
                 </div>
@@ -81,10 +81,10 @@
                   <PlusIcon class="h-4 w-4" /> Add group
                 </button>
                 <div class="ml-auto flex items-center gap-3 text-sm">
-                  <span :class="Math.abs(remaining) <= tolerance ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-300'">
+                  <span :class="Math.abs(remaining) <= tolerance ? 'text-green-700 dark:text-green-400' : 'text-gray-600 dark:text-gray-300'">
                     {{ formatRemaining() }} remaining
                   </span>
-                  <button v-if="Math.abs(remaining) > tolerance" type="button" class="text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400" @click="fillRemaining">Use remainder</button>
+                  <button v-if="Math.abs(remaining) > tolerance" type="button" class="text-sm font-medium text-primary-700 hover:text-primary-800 dark:text-primary-400" @click="fillRemaining">Use remainder</button>
                 </div>
               </div>
 
@@ -92,15 +92,15 @@
                 All entries, exits, commissions, fees, and P&amp;L follow this same proportional split. This version does not perform tax-lot or beneficiary accounting.
               </p>
 
-              <div v-if="error" class="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">{{ error }}</div>
+              <div v-if="error" class="callout-danger mt-4">{{ error }}</div>
             </template>
           </template>
         </div>
 
         <footer v-if="!loading && groups.length >= 2" class="flex flex-col-reverse gap-3 border-t border-gray-200 px-6 py-4 dark:border-gray-700 sm:flex-row sm:justify-between">
-          <button v-if="hasExisting" type="button" class="rounded-md px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20" :disabled="saving" @click="clearAllocation">Clear allocation</button>
+          <button v-if="hasExisting" type="button" class="btn-ghost" :disabled="saving" @click="clearAllocation">Clear allocation</button>
           <div v-else></div>
-          <div class="flex justify-end gap-3">
+          <div class="modal-footer">
             <button type="button" class="btn-secondary" @click="emit('close')">Cancel</button>
             <button type="button" class="btn-primary" :disabled="saving || !canSave" @click="saveAllocation">{{ saving ? 'Saving...' : 'Save allocation' }}</button>
           </div>
@@ -115,6 +115,7 @@ import { computed, ref, watch } from 'vue'
 import { PlusIcon, TrashIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 import api from '@/services/api'
 import { useTradesStore } from '@/stores/trades'
+import { formatPercent } from '@/utils/formatters'
 
 const props = defineProps({
   open: { type: Boolean, default: false },
@@ -126,6 +127,7 @@ const emit = defineEmits(['close', 'saved'])
 const tradesStore = useTradesStore()
 
 const loading = ref(false)
+const initialLoading = ref(true)
 const saving = ref(false)
 const error = ref('')
 const mode = ref('percentage')
@@ -134,7 +136,7 @@ const rows = ref([])
 const hasExisting = ref(false)
 let rowCounter = 0
 
-const selectedModeClass = 'bg-primary-600 text-white shadow-sm'
+const selectedModeClass = 'segment-active'
 const unselectedModeClass = 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
 const tolerance = computed(() => mode.value === 'percentage' ? 0.01 : Math.max(0.000001, basisQuantity.value * 0.000001))
 const targetTotal = computed(() => mode.value === 'percentage' ? 100 : basisQuantity.value)
@@ -190,7 +192,7 @@ function previewPnl(row) {
 }
 
 function formatRemaining() {
-  return mode.value === 'percentage' ? `${remaining.value.toFixed(2)}%` : formatQuantity(remaining.value)
+  return mode.value === 'percentage' ? formatPercent(remaining.value, { digits: 2 }) : formatQuantity(remaining.value)
 }
 
 function availableGroups(currentId) {
@@ -250,6 +252,7 @@ async function loadAllocation() {
     error.value = err?.response?.data?.error || 'Unable to load this trade allocation'
   } finally {
     loading.value = false
+    initialLoading.value = false
   }
 }
 

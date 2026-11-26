@@ -20,17 +20,21 @@ jest.mock('../../src/models/PlaidConnection', () => ({
   markTransactionPending: jest.fn(),
   upsertTransactionRule: jest.fn(),
   deleteTransactionRule: jest.fn(),
+  delete: jest.fn(),
   upsertTransaction: jest.fn(),
   findTransactionRule: jest.fn(),
   markTransactionRuleApplied: jest.fn(),
   markTransactionsRemoved: jest.fn(),
-  resetApprovedTransactionByAccountTransactionId: jest.fn()
+  resetApprovedTransactionByAccountTransactionId: jest.fn(),
+  updateAfterFailure: jest.fn()
 }));
 
 jest.mock('../../src/services/plaid/plaidClient', () => ({
   isConfigured: jest.fn(() => true),
   createLinkToken: jest.fn(),
   syncTransactions: jest.fn(),
+  getAccounts: jest.fn(),
+  removeItem: jest.fn(),
   env: 'sandbox'
 }));
 
@@ -43,7 +47,12 @@ jest.mock('../../src/services/analyticsCache', () => ({
   invalidate: jest.fn()
 }));
 
+jest.mock('../../src/services/tierService', () => ({
+  canSyncBrokerConnection: jest.fn(() => Promise.resolve({ allowed: true }))
+}));
+
 const Account = require('../../src/models/Account');
+const TierService = require('../../src/services/tierService');
 const PlaidConnection = require('../../src/models/PlaidConnection');
 const plaidClient = require('../../src/services/plaid/plaidClient');
 const db = require('../../src/config/database');
@@ -301,6 +310,103 @@ describe('plaidFundingService sync auto-approval', () => {
   });
 });
 
+describe('plaidFundingService sync pagination recovery', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    PlaidConnection.upsertTransaction.mockImplementation(async (userId, tx) => ({ id: tx.externalTransactionId, ...tx }));
+    PlaidConnection.findTransactionRule.mockResolvedValue(null);
+  });
+
+  const connection = { id: 'conn-1', userId: 'user-1', accessToken: 'token', lastSyncCursor: 'cursor-start' };
+  const accountMap = new Map([['acct', { id: 'row-1', trackingMode: 'tracked_account', accountType: 'depository', accountSubtype: 'checking', linkedAccountId: null }]]);
+  const page = (ids, nextCursor, hasMore) => ({
+    added: ids.map(id => ({ transaction_id: id, account_id: 'acct', amount: 10, date: '2026-10-01', name: 'Coffee' })),
+    modified: [], removed: [], next_cursor: nextCursor, has_more: hasMore
+  });
+
+  test('restarts from the last completed cursor when Plaid reports a mutation during pagination', async () => {
+    const mutation = new Error('Plaid request failed: TRANSACTIONS_SYNC_MUTATION_DURING_PAGINATION');
+    mutation.plaid = { errorCode: 'TRANSACTIONS_SYNC_MUTATION_DURING_PAGINATION' };
+    plaidClient.syncTransactions
+      .mockResolvedValueOnce(page(['a'], 'cursor-page-1', true))
+      .mockRejectedValueOnce(mutation)
+      .mockResolvedValueOnce(page(['a', 'b'], 'cursor-page-1b', true))
+      .mockResolvedValueOnce(page(['c'], 'cursor-end', false));
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const result = await plaidFundingService.syncBankTransactions(connection, accountMap);
+
+    expect(result).toEqual({ processedCount: 4, nextCursor: 'cursor-end' });
+    expect(plaidClient.syncTransactions.mock.calls.map(call => call[1]))
+      .toEqual(['cursor-start', 'cursor-page-1', 'cursor-start', 'cursor-page-1b']);
+    warn.mockRestore();
+  });
+
+  test('gives up after repeated mutations so a broken Item does not loop forever', async () => {
+    const mutation = new Error('mutation');
+    mutation.plaid = { errorCode: 'TRANSACTIONS_SYNC_MUTATION_DURING_PAGINATION' };
+    plaidClient.syncTransactions.mockRejectedValue(mutation);
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    await expect(plaidFundingService.syncBankTransactions(connection, accountMap)).rejects.toThrow('mutation');
+    expect(plaidClient.syncTransactions).toHaveBeenCalledTimes(4);
+    warn.mockRestore();
+  });
+
+  test('treats PRODUCT_NOT_READY as a soft result that keeps the cursor', async () => {
+    const notReady = new Error('not ready');
+    notReady.plaid = { errorCode: 'PRODUCT_NOT_READY' };
+    plaidClient.syncTransactions.mockRejectedValueOnce(notReady);
+    const log = jest.spyOn(console, 'log').mockImplementation(() => {});
+    const result = await plaidFundingService.syncBankTransactions(connection, accountMap);
+    expect(result).toEqual({ processedCount: 0, nextCursor: 'cursor-start', notReady: true });
+    log.mockRestore();
+  });
+});
+
+describe('plaidFundingService deleteConnection', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    PlaidConnection.hasSchema.mockResolvedValue(true);
+    plaidClient.isConfigured.mockReturnValue(true);
+    PlaidConnection.findById.mockResolvedValue({ id: 'conn-1', userId: 'user-1', accessToken: 'access-token' });
+    PlaidConnection.delete.mockResolvedValue({ id: 'conn-1' });
+  });
+
+  test('removes the Item at Plaid before deleting the local connection', async () => {
+    plaidClient.removeItem.mockResolvedValue({ request_id: 'r' });
+    const result = await plaidFundingService.deleteConnection('user-1', 'conn-1');
+    expect(PlaidConnection.findById).toHaveBeenCalledWith('conn-1', 'user-1', true);
+    expect(plaidClient.removeItem).toHaveBeenCalledWith('access-token');
+    expect(PlaidConnection.delete).toHaveBeenCalledWith('conn-1', 'user-1');
+    expect(result).toEqual({ id: 'conn-1' });
+  });
+
+  test('still deletes locally when Plaid says the Item is already gone', async () => {
+    const gone = new Error('Plaid request failed: ITEM_NOT_FOUND');
+    gone.plaid = { errorCode: 'ITEM_NOT_FOUND' };
+    plaidClient.removeItem.mockRejectedValue(gone);
+    const log = jest.spyOn(console, 'log').mockImplementation(() => {});
+    await plaidFundingService.deleteConnection('user-1', 'conn-1');
+    expect(PlaidConnection.delete).toHaveBeenCalledWith('conn-1', 'user-1');
+    log.mockRestore();
+  });
+
+  test('keeps the connection when Plaid removal fails for another reason', async () => {
+    const outage = new Error('Plaid request failed: INTERNAL_SERVER_ERROR');
+    outage.plaid = { errorCode: 'INTERNAL_SERVER_ERROR' };
+    plaidClient.removeItem.mockRejectedValue(outage);
+    await expect(plaidFundingService.deleteConnection('user-1', 'conn-1'))
+      .rejects.toThrow('Nothing was deleted; try again in a moment.');
+    expect(PlaidConnection.delete).not.toHaveBeenCalled();
+  });
+
+  test('throws not found when the connection does not belong to the user', async () => {
+    PlaidConnection.findById.mockResolvedValue(null);
+    await expect(plaidFundingService.deleteConnection('user-1', 'missing')).rejects.toThrow('Plaid connection not found');
+    expect(plaidClient.removeItem).not.toHaveBeenCalled();
+  });
+});
+
 describe('plaidFundingService linkPlaidAccount unification', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -396,5 +502,41 @@ describe('plaidFundingService revertTransaction', () => {
       'ach credit'
     );
     expect(PlaidConnection.markTransactionPending).toHaveBeenCalledWith('plaid-tx-5', 'user-1');
+  });
+});
+
+describe('plaidFundingService syncConnection Pro gating', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    PlaidConnection.hasSchema.mockResolvedValue(true);
+    PlaidConnection.findById.mockResolvedValue({
+      id: 'conn-1',
+      userId: 'user-1',
+      accessToken: 'access-token',
+      targetType: 'bank'
+    });
+  });
+
+  test('skips the sync without calling Plaid or recording a failure for non-Pro users', async () => {
+    TierService.canSyncBrokerConnection.mockResolvedValueOnce({
+      allowed: false,
+      code: 'PRO_FEATURE_REQUIRED',
+      message: 'Broker sync is now a Pro feature.'
+    });
+
+    const result = await plaidFundingService.syncConnection('conn-1');
+
+    expect(TierService.canSyncBrokerConnection).toHaveBeenCalledWith('user-1');
+    expect(result).toEqual(expect.objectContaining({ processedCount: 0, skippedForTier: true }));
+    expect(plaidClient.getAccounts).not.toHaveBeenCalled();
+    expect(PlaidConnection.updateAfterFailure).not.toHaveBeenCalled();
+  });
+
+  test('syncs when the user is allowed (Pro or within the grace period)', async () => {
+    TierService.canSyncBrokerConnection.mockResolvedValueOnce({ allowed: true, tier: 'pro' });
+    plaidClient.getAccounts.mockRejectedValueOnce(new Error('plaid down'));
+
+    await expect(plaidFundingService.syncConnection('conn-1')).rejects.toThrow('plaid down');
+    expect(plaidClient.getAccounts).toHaveBeenCalledWith('access-token');
   });
 });

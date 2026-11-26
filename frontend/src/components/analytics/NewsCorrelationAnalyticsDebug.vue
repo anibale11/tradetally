@@ -1,8 +1,8 @@
 <template>
   <div class="space-y-6">
     <!-- Debug Info -->
-    <div class="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg">
-      <h3 class="font-bold mb-2">Debug Information</h3>
+    <div class="callout-warning">
+      <h3 class="heading-card mb-2">Debug Information</h3>
       <div class="space-y-1 text-sm">
         <div>Loading: {{ loading }}</div>
         <div>Error: {{ error || 'None' }}</div>
@@ -18,7 +18,7 @@
     <!-- Original Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">News Sentiment Analytics (Debug)</h2>
+        <h2 class="heading-section">News Sentiment Analytics (Debug)</h2>
         <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
           Analyze your trading patterns in correlation with news sentiment
         </p>
@@ -26,7 +26,7 @@
       <button
         @click="refreshAnalytics"
         :disabled="loading"
-        class="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+        class="btn-secondary btn-sm"
       >
         <span :class="{ 'animate-spin': loading }">[PROCESS]</span>
         <span class="ml-2">Refresh</span>
@@ -35,19 +35,19 @@
 
     <!-- Raw API Response -->
     <div v-if="rawResponse" class="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
-      <h3 class="font-bold mb-2">Raw API Response:</h3>
+      <h3 class="heading-card mb-2">Raw API Response:</h3>
       <pre class="text-xs overflow-auto">{{ JSON.stringify(rawResponse, null, 2) }}</pre>
     </div>
 
     <!-- Loading State -->
-    <div v-if="loading" class="flex justify-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+    <div v-if="initialLoading" class="flex justify-center py-12">
+      <div class="spinner spinner-lg"></div>
     </div>
 
     <!-- Error State -->
     <div v-else-if="error" class="card">
       <div class="card-body text-center py-8">
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Error</h3>
+        <h3 class="heading-card mb-2">Error</h3>
         <p class="text-red-600 dark:text-red-400">{{ error }}</p>
       </div>
     </div>
@@ -55,7 +55,7 @@
     <!-- Not Enabled State -->
     <div v-else-if="!enabled" class="card">
       <div class="card-body text-center py-8">
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Not Enabled</h3>
+        <h3 class="heading-card mb-2">Not Enabled</h3>
         <p class="text-gray-600 dark:text-gray-400">
           Feature is not enabled for this user.
         </p>
@@ -65,7 +65,7 @@
     <!-- Analytics Summary -->
     <div v-else-if="analytics" class="card">
       <div class="card-body">
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Analytics Summary</h3>
+        <h3 class="heading-card mb-4">Analytics Summary</h3>
         <div class="space-y-2">
           <div>Total Trades: {{ analytics.metadata?.total_trades_analyzed || 0 }}</div>
           <div>Insights: {{ analytics.insights?.length || 0 }}</div>
@@ -79,7 +79,7 @@
     <!-- No Data State -->
     <div v-else class="card">
       <div class="card-body text-center py-8">
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">No Data</h3>
+        <h3 class="heading-card mb-2">No Data</h3>
         <p class="text-gray-600 dark:text-gray-400">
           No analytics data available.
         </p>
@@ -95,6 +95,7 @@ import api from '@/services/api'
 // Data
 const analytics = ref(null)
 const loading = ref(false)
+const initialLoading = ref(true)
 const error = ref(null)
 const enabled = ref(false)
 const rawResponse = ref(null)
@@ -143,6 +144,7 @@ async function fetchAnalytics() {
     }
   } finally {
     loading.value = false
+    initialLoading.value = false
     console.log('[STATS] Fetch complete. State:', {
       loading: loading.value,
       error: error.value,

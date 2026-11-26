@@ -1,14 +1,14 @@
 <template>
   <div v-if="isOpen" class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="manual-review-title">
-    <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
-      <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity dark:bg-gray-900 dark:bg-opacity-75" aria-hidden="true" @click="$emit('close')"></div>
+    <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center ">
+      <div class="modal-backdrop" aria-hidden="true" @click="$emit('close')"></div>
 
       <span class="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
 
-      <div class="inline-block w-full max-w-4xl transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left align-bottom shadow-xl transition-all dark:bg-gray-800 sm:my-8 sm:p-6 sm:align-middle">
+      <div class="modal-panel w-full p-6 max-w-4xl">
         <div class="flex items-start justify-between gap-4">
           <div>
-            <h3 id="manual-review-title" class="text-lg font-semibold text-gray-900 dark:text-white">
+            <h3 id="manual-review-title" class="modal-title">
               Review sell-only executions
             </h3>
             <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
@@ -27,7 +27,7 @@
           </button>
         </div>
 
-        <div v-if="error" class="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
+        <div v-if="error" class="callout-danger mt-4">
           {{ error }}
         </div>
 
@@ -41,29 +41,29 @@
               <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                   <p class="text-base font-semibold text-gray-900 dark:text-white">{{ item.symbol }}</p>
-                  <span class="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:ring-amber-800">
+                  <span class="badge bg-yellow-50 text-yellow-700 ring-1 ring-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:ring-yellow-800">
                     Needs review
                   </span>
                 </div>
                 <dl class="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-5">
                   <div>
-                    <dt class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Symbol</dt>
+                    <dt class="text-label">Symbol</dt>
                     <dd class="font-medium text-gray-900 dark:text-white">{{ item.symbol || 'Unknown' }}</dd>
                   </div>
                   <div>
-                    <dt class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Quantity</dt>
+                    <dt class="text-label">Quantity</dt>
                     <dd class="font-medium text-gray-900 dark:text-white">{{ formatQuantity(item.quantity) }}</dd>
                   </div>
                   <div>
-                    <dt class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Price</dt>
+                    <dt class="text-label">Price</dt>
                     <dd class="font-medium text-gray-900 dark:text-white">{{ formatMoney(item.price) }}</dd>
                   </div>
                   <div>
-                    <dt class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Date</dt>
+                    <dt class="text-label">Date</dt>
                     <dd class="font-medium text-gray-900 dark:text-white">{{ formatDateTime(item.datetime) }}</dd>
                   </div>
                   <div>
-                    <dt class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Account</dt>
+                    <dt class="text-label">Account</dt>
                     <dd class="font-medium text-gray-900 dark:text-white">{{ item.account_identifier || 'Unknown' }}</dd>
                   </div>
                 </dl>
@@ -76,7 +76,7 @@
                 <label class="flex cursor-pointer rounded-md border p-2 text-sm" :class="optionClass(item, index, 'import_as_short')">
                   <input
                     v-model="decisions[reviewKey(item, index)]"
-                    class="mt-0.5 h-4 w-4 border-gray-300 text-primary-600 focus:ring-primary-500"
+                    class="radio mt-0.5"
                     type="radio"
                     value="import_as_short"
                   >
@@ -89,7 +89,7 @@
                 <label class="flex cursor-pointer rounded-md border p-2 text-sm" :class="optionClass(item, index, 'import_as_close_only')">
                   <input
                     v-model="decisions[reviewKey(item, index)]"
-                    class="mt-0.5 h-4 w-4 border-gray-300 text-primary-600 focus:ring-primary-500"
+                    class="radio mt-0.5"
                     type="radio"
                     value="import_as_close_only"
                   >
@@ -102,7 +102,7 @@
                 <label class="flex cursor-pointer rounded-md border p-2 text-sm" :class="optionClass(item, index, 'import_as_gifted_shares')">
                   <input
                     v-model="decisions[reviewKey(item, index)]"
-                    class="mt-0.5 h-4 w-4 border-gray-300 text-primary-600 focus:ring-primary-500"
+                    class="radio mt-0.5"
                     type="radio"
                     value="import_as_gifted_shares"
                   >
@@ -115,7 +115,7 @@
                 <label class="flex cursor-pointer rounded-md border p-2 text-sm" :class="optionClass(item, index, 'ignore')">
                   <input
                     v-model="decisions[reviewKey(item, index)]"
-                    class="mt-0.5 h-4 w-4 border-gray-300 text-primary-600 focus:ring-primary-500"
+                    class="radio mt-0.5"
                     type="radio"
                     value="ignore"
                   >
@@ -132,7 +132,7 @@
         <div class="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <button
             type="button"
-            class="inline-flex w-full justify-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700 sm:w-auto"
+            class="btn-secondary w-full justify-center sm:w-auto"
             :disabled="loading"
             @click="$emit('close')"
           >
@@ -140,7 +140,7 @@
           </button>
           <button
             type="button"
-            class="inline-flex w-full justify-center rounded-md border border-transparent bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+            class="btn-primary w-full sm:w-auto"
             :disabled="loading || items.length === 0"
             @click="submit"
           >

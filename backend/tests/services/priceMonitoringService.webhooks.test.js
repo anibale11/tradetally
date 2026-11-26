@@ -16,7 +16,13 @@ jest.mock('../../src/utils/historicalPriceCache', () => ({}));
 jest.mock('nodemailer', () => ({
   createTransport: jest.fn(() => ({ sendMail: jest.fn() }))
 }));
-jest.mock('../../src/services/tierService', () => ({}));
+jest.mock('../../src/services/tierService', () => ({
+  filterProUserIds: jest.fn(),
+  isProUser: jest.fn().mockResolvedValue(true)
+}));
+jest.mock('../../src/services/marketDataActivityService', () => ({
+  getActiveUserIdArray: jest.fn().mockResolvedValue(null)
+}));
 jest.mock('../../src/services/notificationPreferenceService', () => ({
   isNotificationEnabled: jest.fn()
 }));
@@ -30,6 +36,8 @@ const { publish } = require('../../src/events/domainEvents');
 const finnhub = require('../../src/utils/finnhub');
 const priceFallbackManager = require('../../src/utils/priceFallbackManager');
 const priceMonitoringService = require('../../src/services/priceMonitoringService');
+const TierService = require('../../src/services/tierService');
+const MarketDataActivityService = require('../../src/services/marketDataActivityService');
 
 describe('priceMonitoringService price alert webhook publication', () => {
   beforeEach(() => {
@@ -93,5 +101,86 @@ describe('priceMonitoringService price alert webhook publication', () => {
 
     expect(priceMonitoringService.failedSymbols.has('AAPL')).toBe(false);
     expect(db.query).not.toHaveBeenCalled();
+  });
+});
+
+describe('priceMonitoringService Pro gating', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    TierService.filterProUserIds.mockImplementation(async ids => ids.filter(id => id === 'pro-user'));
+  });
+
+  test('checkAlerts only triggers alerts for users resolved as Pro', async () => {
+    db.query.mockResolvedValueOnce({
+      rows: [
+        { id: 'a-free', user_id: 'free-user', symbol: 'AAPL' },
+        { id: 'a-pro', user_id: 'pro-user', symbol: 'AAPL' }
+      ]
+    });
+    const shouldSpy = jest.spyOn(priceMonitoringService, 'shouldTriggerAlert').mockReturnValue(true);
+    const triggerSpy = jest.spyOn(priceMonitoringService, 'triggerAlert').mockResolvedValue();
+
+    await priceMonitoringService.checkAlerts();
+
+    expect(TierService.filterProUserIds).toHaveBeenCalledWith(['free-user', 'pro-user']);
+    expect(triggerSpy).toHaveBeenCalledTimes(1);
+    expect(triggerSpy.mock.calls[0][0].id).toBe('a-pro');
+    shouldSpy.mockRestore();
+    triggerSpy.mockRestore();
+  });
+
+  test('monitors open-trade symbols for everyone but Pro-feature symbols only for Pro users', async () => {
+    db.query.mockImplementation(async (sql) => {
+      if (sql.includes('FROM trades')) {
+        return { rows: [{ symbol: 'SPY' }] };
+      }
+      return {
+        rows: [
+          { symbol: 'TSLA', user_id: 'free-user' },
+          { symbol: 'NVDA', user_id: 'pro-user' }
+        ]
+      };
+    });
+
+    const symbols = await priceMonitoringService.getMonitoredSymbols();
+
+    expect(symbols.sort()).toEqual(['NVDA', 'SPY']);
+  });
+  test('limits open trades, watchlists and holdings to active users but keeps price alerts', async () => {
+    MarketDataActivityService.getActiveUserIdArray.mockResolvedValueOnce(['active-user']);
+    TierService.filterProUserIds.mockImplementation(async ids => ids);
+    db.query.mockImplementation(async (sql, params) => {
+      if (sql.includes('FROM trades')) {
+        expect(params).toEqual([['active-user']]);
+        return { rows: [{ symbol: 'SPY' }] };
+      }
+      return {
+        rows: [
+          { symbol: 'TSLA', user_id: 'dormant-user', is_alert: false },
+          { symbol: 'AMD', user_id: 'dormant-user', is_alert: true },
+          { symbol: 'NVDA', user_id: 'active-user', is_alert: false }
+        ]
+      };
+    });
+
+    const symbols = await priceMonitoringService.getMonitoredSymbols();
+
+    expect(symbols.sort()).toEqual(['AMD', 'NVDA', 'SPY']);
+  });
+
+  test('outside extended hours refreshes each equity once after the close and always keeps crypto', async () => {
+    // Sunday 2026-11-08 12:00 ET: the last close was Friday 20:00 ET (40h earlier)
+    const now = new Date('2026-11-08T17:00:00Z');
+    finnhub.isCryptoSymbol = jest.fn(symbol => symbol === 'BTC');
+    db.query.mockResolvedValueOnce({
+      rows: [
+        { symbol: 'AAPL', age_seconds: 30 * 3600 }, // refreshed Saturday: done
+        { symbol: 'MSFT', age_seconds: 41 * 3600 } // last refreshed before the close
+      ]
+    });
+
+    const symbols = await priceMonitoringService.filterOffHoursSymbols(['AAPL', 'MSFT', 'NEW', 'BTC'], now);
+
+    expect(symbols).toEqual(['MSFT', 'NEW', 'BTC']);
   });
 });

@@ -4,7 +4,7 @@
         <div class="flex items-center mb-8">
             <button
                 @click="goBack"
-                class="mr-4 p-2 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                class="btn-icon p-2 mr-4"
             >
                 <svg
                     class="w-5 h-5"
@@ -59,19 +59,19 @@
             class="flex justify-center items-center py-12"
         >
             <div
-                class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"
+                class="spinner spinner-md"
             ></div>
         </div>
 
         <!-- Error State -->
         <div
             v-else-if="error"
-            class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4"
+            class="callout-danger"
         >
             <p class="text-red-700 dark:text-red-400">{{ error }}</p>
             <button
                 @click="loadAnalysis"
-                class="mt-2 text-red-600 hover:text-red-800 text-sm"
+                class="mt-2 text-red-600 dark:text-red-400 hover:text-red-800 text-sm"
             >
                 Try Again
             </button>
@@ -81,7 +81,7 @@
         <div v-else-if="analysis">
             <!-- Summary Card -->
             <div
-                class="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-6 mb-6"
+                class="card card-body mb-6"
             >
                 <div class="flex items-center justify-between mb-4">
                     <div>
@@ -89,7 +89,7 @@
                             Current Price
                         </p>
                         <p
-                            class="text-2xl font-bold text-gray-900 dark:text-white"
+                            class="stat-value text-gray-900 dark:text-white"
                         >
                             {{
                                 analysis.currentPrice
@@ -103,7 +103,7 @@
                             Market Cap
                         </p>
                         <p
-                            class="text-2xl font-bold text-gray-900 dark:text-white"
+                            class="stat-value text-gray-900 dark:text-white"
                         >
                             {{ formatMarketCap(analysis.marketCap) }}
                         </p>
@@ -129,7 +129,7 @@
                         </p>
                     </div>
                 </div>
-                <p class="text-xs text-gray-400 dark:text-gray-500">
+                <p class="text-xs text-gray-500 dark:text-gray-400">
                     Last updated: {{ formatDate(analysis.analysisDate) }}
                 </p>
             </div>
@@ -141,13 +141,13 @@
 
             <!-- 8 Pillars Analysis -->
             <div
-                class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden"
+                class="card overflow-hidden"
             >
                 <div
                     class="px-6 py-4 border-b border-gray-200 dark:border-gray-700"
                 >
                     <h2
-                        class="text-lg font-medium text-gray-900 dark:text-white"
+                        class="heading-card"
                     >
                         8 Pillars Analysis
                     </h2>

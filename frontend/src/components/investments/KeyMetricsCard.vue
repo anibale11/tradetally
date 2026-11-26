@@ -1,7 +1,7 @@
 <template>
-  <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden">
+  <div class="card overflow-hidden">
     <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-      <h2 class="text-lg font-medium text-gray-900 dark:text-white">Key Metrics</h2>
+      <h2 class="heading-card">Key Metrics</h2>
       <span v-if="metrics?.latest_year" class="text-xs text-gray-500 dark:text-gray-400">
         Latest fiscal year: {{ metrics.latest_year }}
       </span>
@@ -34,7 +34,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { formatPercent as formatPercentBase } from '@/utils/formatters'
+import { formatPercent as formatPercentBase, formatDecimal } from '@/utils/formatters'
 import { useCurrencyFormatter } from '@/composables/useCurrencyFormatter'
 
 const props = defineProps({
@@ -44,7 +44,7 @@ const props = defineProps({
   }
 })
 
-const { symbolFor } = useCurrencyFormatter()
+const { symbolFor, formatCurrency } = useCurrencyFormatter()
 // The DCF metrics response declares the currency its monetary values are in
 // (converted to the user's display currency server-side)
 const displayCurrency = computed(() => props.metrics?.currency || '')
@@ -68,7 +68,7 @@ function formatLargeCurrency(value) {
 
 function formatPrice(value) {
   if (value === null || value === undefined || !Number.isFinite(Number(value))) return 'N/A'
-  return `${symbolFor(displayCurrency.value)}${Number(value).toFixed(2)}`
+  return formatCurrency(Number(value), { currency: displayCurrency.value })
 }
 
 function formatPercent(decimal, digits = 2) {
@@ -76,8 +76,7 @@ function formatPercent(decimal, digits = 2) {
 }
 
 function formatRatio(value) {
-  if (value === null || value === undefined || !Number.isFinite(Number(value))) return 'N/A'
-  return Number(value).toFixed(2)
+  return formatDecimal(value, { digits: 2, nullValue: 'N/A' })
 }
 
 function formatDate(value) {

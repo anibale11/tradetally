@@ -4,7 +4,7 @@
         <div class="flex items-center justify-between mb-6">
             <button
                 @click="goBack"
-                class="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                class="btn-ghost btn-sm"
             >
                 <svg
                     class="w-4 h-4 mr-1"
@@ -54,7 +54,7 @@
         <!-- Initial Loading State - only shows on first load -->
         <div v-else-if="initialLoading" class="flex justify-center py-12">
             <div
-                class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"
+                class="spinner spinner-lg"
             ></div>
         </div>
 
@@ -66,7 +66,7 @@
                     class="flex items-center space-x-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm border border-gray-200 dark:border-gray-700"
                 >
                     <div
-                        class="animate-spin rounded-full h-4 w-4 border-2 border-primary-600 border-t-transparent"
+                        class="spinner spinner-xs"
                     ></div>
                     <span class="text-xs text-gray-600 dark:text-gray-400"
                         >Updating...</span
@@ -85,7 +85,7 @@
                         <button
                             @click="analyzeHistoricalTrades"
                             :disabled="loadingHistorical"
-                            class="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                            class="btn-primary w-full sm:w-auto flex"
                         >
                             <svg
                                 class="w-4 h-4 mr-2 flex-shrink-0"
@@ -105,7 +105,7 @@
                                 class="flex items-center"
                             >
                                 <div
-                                    class="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"
+                                    class="spinner spinner-xs spinner-current mr-2"
                                 ></div>
                                 Analyzing Historical Trades...
                             </span>
@@ -122,12 +122,7 @@
                         v-for="tab in behavioralTabs"
                         :key="tab.id"
                         @click="activeBehavioralTab = tab.id"
-                        :class="[
-                            'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors',
-                            activeBehavioralTab === tab.id
-                                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                        ]"
+                        :class="[ 'tab', activeBehavioralTab === tab.id ? 'tab-active' : 'tab-inactive' ]"
                     >
                         {{ tab.label }}
                     </button>
@@ -141,15 +136,8 @@
                     <div
                         v-for="alert in activeAlerts"
                         :key="alert.id"
-                        class="card border-l-4"
-                        :class="{
-                            'border-l-red-500 bg-red-50 dark:bg-red-900/10':
-                                alert.alert_type === 'warning',
-                            'border-l-yellow-500 bg-yellow-50 dark:bg-yellow-900/10':
-                                alert.alert_type === 'recommendation',
-                            'border-l-red-600 bg-red-100 dark:bg-red-900/20':
-                                alert.alert_type === 'blocking',
-                        }"
+                        class="card"
+                        :class="{ 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/10': alert.alert_type === 'warning', 'border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/10': alert.alert_type === 'recommendation', 'border-red-300 dark:border-red-700 bg-red-100 dark:bg-red-900/20': alert.alert_type === 'blocking', }"
                     >
                         <div class="card-body">
                             <div class="flex items-start justify-between">
@@ -170,7 +158,7 @@
                                 </div>
                                 <button
                                     @click="acknowledgeAlert(alert.id)"
-                                    class="ml-4 px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                                    class="btn-secondary btn-sm ml-4"
                                 >
                                     Acknowledge
                                 </button>
@@ -232,10 +220,10 @@
                         <div class="flex items-center">
                             <div class="flex-shrink-0">
                                 <div
-                                    class="h-8 w-8 rounded-full bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center"
+                                    class="h-8 w-8 rounded-full bg-yellow-100 dark:bg-yellow-900/20 flex items-center justify-center"
                                 >
                                     <svg
-                                        class="h-5 w-5 text-orange-600 dark:text-orange-400"
+                                        class="h-5 w-5 text-yellow-600 dark:text-yellow-400"
                                         fill="none"
                                         viewBox="0 0 24 24"
                                         stroke="currentColor"
@@ -276,10 +264,10 @@
                         <div class="flex items-center">
                             <div class="flex-shrink-0">
                                 <div
-                                    class="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center"
+                                    class="h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-900/20 flex items-center justify-center"
                                 >
                                     <svg
-                                        class="h-5 w-5 text-blue-600 dark:text-blue-400"
+                                        class="h-5 w-5 text-primary-700 dark:text-primary-400"
                                         fill="none"
                                         viewBox="0 0 24 24"
                                         stroke="currentColor"
@@ -323,31 +311,12 @@
                             <div class="flex-shrink-0">
                                 <div
                                     class="h-8 w-8 rounded-full flex items-center justify-center"
-                                    :class="{
-                                        'bg-green-100 dark:bg-green-900/20':
-                                            parseFloat(
-                                                revengeAnalysis?.statistics
-                                                    ?.total_additional_loss ||
-                                                    0,
-                                            ) < 0,
-                                        'bg-red-100 dark:bg-red-900/20':
-                                            parseFloat(
-                                                revengeAnalysis?.statistics
-                                                    ?.total_additional_loss ||
-                                                    0,
-                                            ) > 0,
-                                        'bg-gray-100 dark:bg-gray-900/20':
-                                            parseFloat(
-                                                revengeAnalysis?.statistics
-                                                    ?.total_additional_loss ||
-                                                    0,
-                                            ) === 0,
-                                    }"
+                                    :class="{ 'bg-green-100 dark:bg-green-900/20': parseFloat( revengeAnalysis?.statistics ?.total_additional_loss || 0, ) < 0, 'bg-red-100 dark:bg-red-900/20': parseFloat( revengeAnalysis?.statistics ?.total_additional_loss || 0, ) > 0, 'bg-gray-100 dark:bg-gray-900/20': parseFloat( revengeAnalysis?.statistics ?.total_additional_loss || 0, ) === 0, }"
                                 >
                                     <svg
                                         class="h-5 w-5"
                                         :class="{
-                                            'text-green-600 dark:text-green-400':
+                                            'text-green-700 dark:text-green-400':
                                                 parseFloat(
                                                     revengeAnalysis?.statistics
                                                         ?.total_additional_loss ||
@@ -409,7 +378,7 @@
                                     <dd
                                         class="text-lg font-medium"
                                         :class="{
-                                            'text-green-600 dark:text-green-400':
+                                            'text-green-700 dark:text-green-400':
                                                 parseFloat(
                                                     revengeAnalysis?.statistics
                                                         ?.total_additional_loss ||
@@ -438,25 +407,10 @@
                                                 ) < 0
                                             "
                                         >
-                                            ${{
-                                                Math.abs(
-                                                    parseFloat(
-                                                        revengeAnalysis
-                                                            ?.statistics
-                                                            ?.total_additional_loss ||
-                                                            0,
-                                                    ),
-                                                ).toFixed(2)
-                                            }}
+                                            {{ money(Math.abs( parseFloat( revengeAnalysis ?.statistics ?.total_additional_loss || 0))) }}
                                         </span>
                                         <span v-else>
-                                            ${{
-                                                parseFloat(
-                                                    revengeAnalysis?.statistics
-                                                        ?.total_additional_loss ||
-                                                        0,
-                                                ).toFixed(2)
-                                            }}
+                                            {{ money(parseFloat( revengeAnalysis?.statistics ?.total_additional_loss || 0)) }}
                                         </span>
                                     </dd>
                                 </dl>
@@ -493,7 +447,7 @@
             <div v-if="activeBehavioralTab === 'overview' && insights" class="card">
                 <div class="card-body">
                     <h3
-                        class="text-lg font-medium text-gray-900 dark:text-white mb-6"
+                        class="heading-card mb-6"
                     >
                         Behavioral Insights
                     </h3>
@@ -515,14 +469,7 @@
                         >
                             <div
                                 class="h-2 rounded-full transition-all duration-300"
-                                :class="{
-                                    'bg-green-600':
-                                        insights.overallRisk.level === 'low',
-                                    'bg-yellow-600':
-                                        insights.overallRisk.level === 'medium',
-                                    'bg-red-600':
-                                        insights.overallRisk.level === 'high',
-                                }"
+                                :class="{ 'bg-green-600': insights.overallRisk.level === 'low', 'bg-yellow-600': insights.overallRisk.level === 'medium', 'bg-red-600': insights.overallRisk.level === 'high', }"
                                 :style="{
                                     width: `${insights.overallRisk.score}%`,
                                 }"
@@ -543,7 +490,7 @@
                                 class="rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2"
                             >
                                 <p
-                                    class="text-[11px] text-gray-500 dark:text-gray-400"
+                                    class="text-xs text-gray-500 dark:text-gray-400"
                                 >
                                     {{ component.label }}
                                 </p>
@@ -562,17 +509,10 @@
                             v-for="insight in insights.insights"
                             :key="insight.title"
                             class="p-4 rounded-lg border"
-                            :class="{
-                                'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/10':
-                                    insight.severity === 'high',
-                                'border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/10':
-                                    insight.severity === 'medium',
-                                'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/10':
-                                    insight.severity === 'low',
-                            }"
+                            :class="{ 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/10': insight.severity === 'high', 'border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/10': insight.severity === 'medium', 'border-primary-200 bg-primary-50 dark:border-primary-800 dark:bg-primary-900/10': insight.severity === 'low', }"
                         >
                             <h4
-                                class="font-medium text-gray-900 dark:text-white"
+                                class="heading-card"
                             >
                                 {{ insight.title }}
                             </h4>
@@ -597,7 +537,7 @@
                     <!-- Recommendations -->
                     <div v-if="insights.recommendations?.length" class="mt-6">
                         <h4
-                            class="font-medium text-gray-900 dark:text-white mb-3"
+                            class="heading-card mb-3"
                         >
                             Recommended Actions
                         </h4>
@@ -614,7 +554,7 @@
                                             rec.priority === 'high',
                                         'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400':
                                             rec.priority === 'medium',
-                                        'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400':
+                                        'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300':
                                             rec.priority === 'low',
                                     }"
                                 >
@@ -651,14 +591,14 @@
             <div v-if="activeBehavioralTab === 'settings'" class="card">
                 <div class="card-body">
                     <h3
-                        class="text-lg font-medium text-gray-900 dark:text-white mb-4"
+                        class="heading-card mb-4"
                     >
                         Risk Level Legend
                     </h3>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div class="flex items-center space-x-3">
                             <span
-                                class="px-2 py-1 text-xs font-semibold rounded bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400"
+                                class="badge-danger"
                             >
                                 HIGH RISK
                             </span>
@@ -671,7 +611,7 @@
                         </div>
                         <div class="flex items-center space-x-3">
                             <span
-                                class="px-2 py-1 text-xs font-semibold rounded bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400"
+                                class="badge-warning"
                             >
                                 MEDIUM RISK
                             </span>
@@ -684,7 +624,7 @@
                         </div>
                         <div class="flex items-center space-x-3">
                             <span
-                                class="px-2 py-1 text-xs font-semibold rounded bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400"
+                                class="badge-primary"
                             >
                                 LOW RISK
                             </span>
@@ -700,11 +640,11 @@
             </div>
 
             <!-- Info Banner Explaining the Difference -->
-            <div v-if="activeBehavioralTab === 'settings'" class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-6">
+            <div v-if="activeBehavioralTab === 'settings'" class="callout-info mb-6">
                 <div class="flex">
                     <div class="flex-shrink-0">
                         <svg
-                            class="h-5 w-5 text-blue-400"
+                            class="h-5 w-5 text-primary-400"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -719,12 +659,12 @@
                     </div>
                     <div class="ml-3">
                         <h3
-                            class="text-sm font-medium text-blue-800 dark:text-blue-300"
+                            class="heading-sub text-primary-800 dark:text-primary-300"
                         >
                             Understanding the Analytics
                         </h3>
                         <div
-                            class="mt-2 text-sm text-blue-700 dark:text-blue-200"
+                            class="mt-2 text-sm text-primary-700 dark:text-primary-200"
                         >
                             <p class="mb-2">
                                 • <strong>Loss Aversion Analysis</strong>:
@@ -773,26 +713,7 @@
                                 :disabled="loadingTopMissedTrades"
                                 class="btn btn-primary btn-sm"
                             >
-                                <svg
-                                    v-if="loadingTopMissedTrades"
-                                    class="animate-spin -ml-1 mr-2 h-4 w-4"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <circle
-                                        class="opacity-25"
-                                        cx="12"
-                                        cy="12"
-                                        r="10"
-                                        stroke="currentColor"
-                                        stroke-width="4"
-                                    ></circle>
-                                    <path
-                                        class="opacity-75"
-                                        fill="currentColor"
-                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                    ></path>
-                                </svg>
+                                <span v-if="loadingTopMissedTrades" class="spinner spinner-xs spinner-current mr-2 -ml-1"></span>
                                 {{
                                     loadingTopMissedTrades
                                         ? "Analyzing..."
@@ -816,25 +737,7 @@
                             <div
                                 class="flex items-center space-x-2 text-gray-600 dark:text-gray-400"
                             >
-                                <svg
-                                    class="animate-spin h-5 w-5"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <circle
-                                        class="opacity-25"
-                                        cx="12"
-                                        cy="12"
-                                        r="10"
-                                        stroke="currentColor"
-                                        stroke-width="4"
-                                    ></circle>
-                                    <path
-                                        class="opacity-75"
-                                        fill="currentColor"
-                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                    ></path>
-                                </svg>
+                                <span class="spinner spinner-xs spinner-current mr-2"></span>
                                 <span class="text-sm font-medium"
                                     >Updating analysis...</span
                                 >
@@ -843,31 +746,31 @@
 
                         <!-- Summary Stats -->
                         <div
-                            class="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-lg p-4 mb-6"
+                            class="rounded-lg border border-gray-200 bg-gray-50 p-4 mb-6 dark:border-gray-700 dark:bg-gray-900/40"
                         >
                             <div
                                 class="grid grid-cols-1 md:grid-cols-4 gap-4 text-center"
                             >
                                 <div>
                                     <p
-                                        class="text-sm text-orange-700 dark:text-orange-300"
+                                        class="text-label"
                                     >
                                         Trades Analyzed
                                     </p>
                                     <p
-                                        class="text-xl font-bold text-orange-900 dark:text-orange-100"
+                                        class="stat-value text-gray-900 dark:text-white text-mono-num"
                                     >
                                         {{ topMissedTrades.totalAnalyzed }}
                                     </p>
                                 </div>
                                 <div>
                                     <p
-                                        class="text-sm text-orange-700 dark:text-orange-300"
+                                        class="text-label"
                                     >
                                         Trades Exited Too Early
                                     </p>
                                     <p
-                                        class="text-xl font-bold text-orange-900 dark:text-orange-100"
+                                        class="stat-value text-gray-900 dark:text-white text-mono-num"
                                     >
                                         {{
                                             topMissedTrades.totalEligibleTrades
@@ -876,34 +779,28 @@
                                 </div>
                                 <div>
                                     <p
-                                        class="text-sm text-orange-700 dark:text-orange-300"
+                                        class="text-label"
                                     >
                                         Total Missed Profit
                                     </p>
                                     <p
-                                        class="text-xl font-bold text-orange-900 dark:text-orange-100"
+                                        class="stat-value text-gray-900 dark:text-white text-mono-num"
                                     >
-                                        ${{
-                                            topMissedTrades.totalMissedProfit.toFixed(
-                                                2,
-                                            )
-                                        }}
+                                        {{ money(topMissedTrades.totalMissedProfit) }}
                                     </p>
                                 </div>
                                 <div>
                                     <p
-                                        class="text-sm text-orange-700 dark:text-orange-300"
+                                        class="text-label"
                                     >
                                         Avg Missed %
                                     </p>
                                     <p
-                                        class="text-xl font-bold text-orange-900 dark:text-orange-100"
+                                        class="stat-value text-gray-900 dark:text-white text-mono-num"
                                     >
                                         {{
-                                            topMissedTrades.avgMissedOpportunityPercent.toFixed(
-                                                1,
-                                            )
-                                        }}%
+                                            formatPercent(topMissedTrades.avgMissedOpportunityPercent)
+                                        }}
                                     </p>
                                 </div>
                             </div>
@@ -942,7 +839,7 @@
                             class="space-y-4"
                         >
                             <h4
-                                class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-4 flex items-center"
+                                class="heading-card mb-4 flex items-center"
                             >
                                 <MdiIcon
                                     :icon="mdiTarget"
@@ -961,25 +858,13 @@
                                     10,
                                 )"
                                 :key="trade.tradeId"
-                                class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 relative"
-                                :class="{
-                                    'ring-2 ring-red-200 dark:ring-red-800':
-                                        index === 0,
-                                    'ring-1 ring-orange-200 dark:ring-orange-800':
-                                        index === 1,
-                                    'ring-1 ring-yellow-200 dark:ring-yellow-800':
-                                        index === 2,
-                                }"
+                                class="card p-4 relative"
+                                :class="{ 'ring-2 ring-red-200 dark:ring-red-800': index === 0, 'ring-1 ring-yellow-200 dark:ring-yellow-800': index === 1, 'ring-1 ring-yellow-200 dark:ring-yellow-800': index === 2, }"
                             >
                                 <!-- Rank Badge -->
                                 <div
                                     class="absolute -top-2 -left-2 w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
-                                    :class="{
-                                        'bg-red-500': index === 0,
-                                        'bg-orange-500': index === 1,
-                                        'bg-yellow-500': index === 2,
-                                        'bg-gray-500': index > 2,
-                                    }"
+                                    :class="{ 'bg-red-500': index === 0, 'bg-yellow-500': index === 1, 'bg-yellow-500': index === 2, 'bg-gray-500': index > 2, }"
                                 >
                                     {{ index + 1 }}
                                 </div>
@@ -1003,7 +888,7 @@
                                             }}
                                             •
                                             {{ trade.side.toUpperCase() }} •
-                                            {{ trade.quantity }} shares
+                                            {{ formatQuantity(trade.quantity) }} shares
                                         </p>
                                         <div
                                             v-if="trade.hasRealPriceData"
@@ -1037,15 +922,9 @@
                                             missed opportunity
                                         </p>
                                         <p
-                                            class="text-sm font-medium text-green-600 dark:text-green-400"
+                                            class="text-sm font-medium text-green-700 dark:text-green-400"
                                         >
-                                            +${{
-                                                (
-                                                    trade
-                                                        .potentialAdditionalProfit
-                                                        ?.optimal || 0
-                                                ).toFixed(2)
-                                            }}
+                                            +{{ money(( trade.potentialAdditionalProfit ?.optimal || 0 )) }}
                                         </p>
                                     </div>
                                 </div>
@@ -1061,11 +940,7 @@
                                             Entry Price
                                         </p>
                                         <p class="font-medium">
-                                            ${{
-                                                (trade.entryPrice || 0).toFixed(
-                                                    2,
-                                                )
-                                            }}
+                                            {{ price((trade.entryPrice || 0)) }}
                                         </p>
                                     </div>
                                     <div>
@@ -1075,11 +950,7 @@
                                             Exit Price
                                         </p>
                                         <p class="font-medium">
-                                            ${{
-                                                (trade.exitPrice || 0).toFixed(
-                                                    2,
-                                                )
-                                            }}
+                                            {{ price((trade.exitPrice || 0)) }}
                                         </p>
                                     </div>
                                     <div>
@@ -1089,13 +960,9 @@
                                             Actual Profit
                                         </p>
                                         <p
-                                            class="font-medium text-green-600 dark:text-green-400"
+                                            class="font-medium text-green-700 dark:text-green-400"
                                         >
-                                            ${{
-                                                (
-                                                    trade.actualProfit || 0
-                                                ).toFixed(2)
-                                            }}
+                                            {{ money(( trade.actualProfit || 0 )) }}
                                         </p>
                                     </div>
                                     <div>
@@ -1116,7 +983,7 @@
 
                                 <!-- Peak Price and Potential -->
                                 <div
-                                    class="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 mb-4"
+                                    class="callout-danger mb-4"
                                 >
                                     <div
                                         class="grid grid-cols-1 md:grid-cols-2 gap-4"
@@ -1134,27 +1001,13 @@
                                             <p
                                                 class="text-lg font-bold text-red-900 dark:text-red-200"
                                             >
-                                                ${{
-                                                    trade.side === "long"
-                                                        ? (
-                                                              trade
-                                                                  .priceMovement
-                                                                  ?.maxPriceWithin24Hours ||
-                                                              0
-                                                          ).toFixed(2)
-                                                        : (
-                                                              trade
-                                                                  .priceMovement
-                                                                  ?.minPriceWithin24Hours ||
-                                                              0
-                                                          ).toFixed(2)
-                                                }}
+                                                {{ price(trade.side === "long" ? ( trade.priceMovement ?.maxPriceWithin24Hours || 0 ) : ( trade.priceMovement ?.minPriceWithin24Hours || 0 )) }}
                                             </p>
                                             <p
                                                 class="text-xs text-red-700 dark:text-red-400"
                                             >
                                                 {{
-                                                    (
+                                                    formatPercent(
                                                         (trade.side === "long"
                                                             ? ((trade
                                                                   .priceMovement
@@ -1169,8 +1022,8 @@
                                                                       0)) /
                                                               trade.exitPrice) *
                                                         100
-                                                    ).toFixed(1)
-                                                }}%
+                                                    )
+                                                }}
                                                 {{
                                                     trade.side === "long"
                                                         ? "higher"
@@ -1188,24 +1041,12 @@
                                             <p
                                                 class="text-lg font-bold text-red-900 dark:text-red-200"
                                             >
-                                                ${{
-                                                    (
-                                                        (trade.actualProfit ||
-                                                            0) +
-                                                        (trade
-                                                            .potentialAdditionalProfit
-                                                            ?.optimal || 0)
-                                                    ).toFixed(2)
-                                                }}
+                                                {{ money(( (trade.actualProfit || 0) + (trade.potentialAdditionalProfit ?.optimal || 0) )) }}
                                             </p>
                                             <p
                                                 class="text-xs text-red-700 dark:text-red-400"
                                             >
-                                                vs ${{
-                                                    (
-                                                        trade.actualProfit || 0
-                                                    ).toFixed(2)
-                                                }}
+                                                vs {{ money(( trade.actualProfit || 0 )) }}
                                                 actual profit
                                             </p>
                                         </div>
@@ -1219,13 +1060,13 @@
                                         trade.entryAnalysis.improvementPercent >
                                             0
                                     "
-                                    class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 mb-4"
+                                    class="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-3 mb-4"
                                 >
                                     <div
                                         class="flex items-start space-x-2 mb-2"
                                     >
                                         <svg
-                                            class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0"
+                                            class="w-5 h-5 text-primary-700 dark:text-primary-400 mt-0.5 flex-shrink-0"
                                             fill="none"
                                             viewBox="0 0 24 24"
                                             stroke="currentColor"
@@ -1239,7 +1080,7 @@
                                         </svg>
                                         <div class="flex-1">
                                             <p
-                                                class="text-sm font-medium text-blue-800 dark:text-blue-300 mb-1"
+                                                class="text-sm font-medium text-primary-800 dark:text-primary-300 mb-1"
                                             >
                                                 Better Entry Opportunity
                                             </p>
@@ -1248,21 +1089,17 @@
                                             >
                                                 <div>
                                                     <p
-                                                        class="text-xs text-blue-700 dark:text-blue-400"
+                                                        class="text-xs text-primary-700 dark:text-primary-400"
                                                     >
                                                         Optimal Entry Price
                                                     </p>
                                                     <p
-                                                        class="font-bold text-blue-900 dark:text-blue-200"
+                                                        class="font-bold text-primary-900 dark:text-primary-200"
                                                     >
-                                                        ${{
-                                                            trade.entryAnalysis.bestEntryPrice.toFixed(
-                                                                2,
-                                                            )
-                                                        }}
+                                                        {{ price(trade.entryAnalysis.bestEntryPrice) }}
                                                     </p>
                                                     <p
-                                                        class="text-xs text-blue-600 dark:text-blue-500"
+                                                        class="text-xs text-primary-700 dark:text-primary-500"
                                                     >
                                                         {{
                                                             trade.entryAnalysis
@@ -1273,27 +1110,21 @@
                                                 </div>
                                                 <div>
                                                     <p
-                                                        class="text-xs text-blue-700 dark:text-blue-400"
+                                                        class="text-xs text-primary-700 dark:text-primary-400"
                                                     >
                                                         Entry Improvement
                                                     </p>
                                                     <p
-                                                        class="font-bold text-blue-900 dark:text-blue-200"
+                                                        class="font-bold text-primary-900 dark:text-primary-200"
                                                     >
                                                         {{
-                                                            trade.entryAnalysis.improvementPercent.toFixed(
-                                                                1,
-                                                            )
-                                                        }}%
+                                                            formatPercent(trade.entryAnalysis.improvementPercent)
+                                                        }}
                                                     </p>
                                                     <p
-                                                        class="text-xs text-blue-600 dark:text-blue-500"
+                                                        class="text-xs text-primary-700 dark:text-primary-500"
                                                     >
-                                                        ${{
-                                                            trade.entryAnalysis.improvementDollar.toFixed(
-                                                                2,
-                                                            )
-                                                        }}
+                                                        {{ price(trade.entryAnalysis.improvementDollar) }}
                                                         per share
                                                     </p>
                                                 </div>
@@ -1304,32 +1135,24 @@
                                                     "
                                                 >
                                                     <p
-                                                        class="text-xs text-blue-700 dark:text-blue-400"
+                                                        class="text-xs text-primary-700 dark:text-primary-400"
                                                     >
                                                         P&L with Better Entry
                                                     </p>
                                                     <p
-                                                        class="font-bold text-blue-900 dark:text-blue-200"
+                                                        class="font-bold text-primary-900 dark:text-primary-200"
                                                     >
-                                                        ${{
-                                                            trade.entryAnalysis.improvedPnL.withBetterEntry.toFixed(
-                                                                2,
-                                                            )
-                                                        }}
+                                                        {{ money(trade.entryAnalysis.improvedPnL.withBetterEntry) }}
                                                     </p>
                                                     <p
-                                                        class="text-xs text-green-600 dark:text-green-500"
+                                                        class="text-xs text-green-700 dark:text-green-500"
                                                     >
-                                                        +${{
-                                                            trade.entryAnalysis.improvedPnL.improvement.toFixed(
-                                                                2,
-                                                            )
-                                                        }}
+                                                        +{{ money(trade.entryAnalysis.improvedPnL.improvement) }}
                                                     </p>
                                                 </div>
                                             </div>
                                             <p
-                                                class="text-xs text-blue-700 dark:text-blue-400 mt-2 italic"
+                                                class="text-xs text-primary-700 dark:text-primary-400 mt-2 italic"
                                             >
                                                 {{
                                                     trade.entryAnalysis
@@ -1354,19 +1177,7 @@
                                     >
                                         <div
                                             class="h-2 rounded-full"
-                                            :class="{
-                                                'bg-red-500':
-                                                    trade.exitQualityScore <
-                                                    0.3,
-                                                'bg-yellow-500':
-                                                    trade.exitQualityScore >=
-                                                        0.3 &&
-                                                    trade.exitQualityScore <
-                                                        0.7,
-                                                'bg-green-500':
-                                                    trade.exitQualityScore >=
-                                                    0.7,
-                                            }"
+                                            :class="{ 'bg-red-500': trade.exitQualityScore < 0.3, 'bg-yellow-500': trade.exitQualityScore >= 0.3 && trade.exitQualityScore < 0.7, 'bg-green-500': trade.exitQualityScore >= 0.7, }"
                                             :style="{
                                                 width: `${trade.exitQualityScore * 100}%`,
                                             }"
@@ -1376,20 +1187,20 @@
                                         class="text-sm font-medium text-gray-700 dark:text-gray-300"
                                     >
                                         {{
-                                            (
+                                            formatPercent(
                                                 trade.exitQualityScore * 100
-                                            ).toFixed(0)
-                                        }}%
+                                            )
+                                        }}
                                     </span>
                                 </div>
 
                                 <!-- Recommendation -->
                                 <div
-                                    class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3"
+                                    class="callout-info"
                                 >
                                     <div class="flex items-start space-x-2">
                                         <svg
-                                            class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0"
+                                            class="w-5 h-5 text-primary-700 dark:text-primary-400 mt-0.5 flex-shrink-0"
                                             fill="none"
                                             viewBox="0 0 24 24"
                                             stroke="currentColor"
@@ -1403,12 +1214,12 @@
                                         </svg>
                                         <div>
                                             <p
-                                                class="text-sm font-medium text-blue-800 dark:text-blue-300 mb-1"
+                                                class="text-sm font-medium text-primary-800 dark:text-primary-300 mb-1"
                                             >
                                                 Learning Opportunity
                                             </p>
                                             <p
-                                                class="text-sm text-blue-700 dark:text-blue-400"
+                                                class="text-sm text-primary-700 dark:text-primary-400"
                                             >
                                                 {{ trade.recommendation }}
                                             </p>
@@ -1429,7 +1240,7 @@
                                         showAllMissedTrades =
                                             !showAllMissedTrades
                                     "
-                                    class="px-4 py-2 text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-200"
+                                    class="px-4 py-2 text-sm font-medium text-primary-700 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-200"
                                 >
                                     {{
                                         showAllMissedTrades
@@ -1487,13 +1298,7 @@
                                             <span
                                                 class="text-xs text-gray-500 dark:text-gray-400 ml-2"
                                             >
-                                                (+${{
-                                                    (
-                                                        trade
-                                                            .potentialAdditionalProfit
-                                                            ?.optimal || 0
-                                                    ).toFixed(2)
-                                                }})
+                                                (+{{ money(( trade.potentialAdditionalProfit ?.optimal || 0 )) }})
                                             </span>
                                         </div>
                                     </div>
@@ -1524,7 +1329,7 @@
                                 </svg>
                             </div>
                             <h3
-                                class="mt-2 text-sm font-medium text-gray-900 dark:text-white"
+                                class="heading-sub mt-2"
                             >
                                 {{
                                     topMissedTrades.message ||
@@ -1571,7 +1376,7 @@
             <div v-if="activeBehavioralTab === 'settings'" class="card">
                 <div class="card-body">
                     <h3
-                        class="text-lg font-medium text-gray-900 dark:text-white mb-6"
+                        class="heading-card mb-6"
                     >
                         Behavioral Settings
                     </h3>
@@ -1581,7 +1386,7 @@
                             <div class="flex items-center justify-between">
                                 <div>
                                     <h4
-                                        class="text-sm font-medium text-gray-900 dark:text-white"
+                                        class="heading-sub"
                                     >
                                         Revenge Trading Detection
                                     </h4>
@@ -1598,20 +1403,12 @@
                                             'enabled',
                                         )
                                     "
-                                    class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-                                    :class="
-                                        settings.revengeTrading?.enabled
-                                            ? 'bg-primary-600'
-                                            : 'bg-gray-200 dark:bg-gray-700'
-                                    "
+                                    class="switch"
+                                    :class="settings.revengeTrading?.enabled ? 'switch-on' : ''"
                                 >
                                     <span
-                                        class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
-                                        :class="
-                                            settings.revengeTrading?.enabled
-                                                ? 'translate-x-5'
-                                                : 'translate-x-0'
-                                        "
+                                        class="switch-knob"
+                                        :class="settings.revengeTrading?.enabled ? 'translate-x-5' : 'translate-x-0'"
                                     ></span>
                                 </button>
                             </div>
@@ -1642,7 +1439,7 @@
                             <div class="flex items-center justify-between">
                                 <div>
                                     <h4
-                                        class="text-sm font-medium text-gray-900 dark:text-white"
+                                        class="heading-sub"
                                     >
                                         Cooling Period
                                     </h4>
@@ -1701,6 +1498,15 @@ import BehavioralLossAversion from "@/components/behavioral/BehavioralLossAversi
 import BehavioralOverconfidence from "@/components/behavioral/BehavioralOverconfidence.vue";
 import { formatDate, formatMinutes } from "@/utils/behavioralFormatters";
 import { mdiTarget, mdiLightbulb } from "@mdi/js";
+import { useCurrencyFormatter } from '@/composables/useCurrencyFormatter'
+import { formatDecimal, formatPercent, formatQuantity } from '@/utils/formatters'
+
+const { formatCurrency: _fmtCurrency, formatSignedCurrency: _fmtSigned } = useCurrencyFormatter()
+// Money follows the user's display currency (the API converts it). Quote
+// prices stay in the instrument's currency, as they do in trade views.
+const money = (v, o = {}) => _fmtCurrency(Number(v) || 0, o)
+const price = (v, o = {}) => _fmtCurrency(Number(v) || 0, { currency: 'USD', ...o })
+const moneySigned = (v, o = {}) => _fmtSigned(Number(v) || 0, o)
 
 const { showSuccess, showError } = useNotification();
 const authStore = useAuthStore();
@@ -2184,13 +1990,13 @@ const scrollToTopMissedTrades = async () => {
         // Briefly highlight the section
         topMissedTradesSection.value.classList.add(
             "ring-2",
-            "ring-orange-400",
+            "ring-yellow-400",
             "ring-opacity-50",
         );
         setTimeout(() => {
             topMissedTradesSection.value.classList.remove(
                 "ring-2",
-                "ring-orange-400",
+                "ring-yellow-400",
                 "ring-opacity-50",
             );
         }, 2000);
@@ -2587,13 +2393,13 @@ const viewTradesByStrategy = (strategy) => {
 const generateLossAversionMessage = (holdTimeRatio, estimatedMonthlyCost) => {
     const cost = Number(estimatedMonthlyCost) || 0;
     if (holdTimeRatio > 3) {
-        return `You exit winners ${holdTimeRatio.toFixed(1)}x faster than losers - this is costing you $${cost.toFixed(2)}/month`;
+        return `You exit winners ${formatDecimal(holdTimeRatio, { digits: 1 })}x faster than losers - this is costing you ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Math.abs(cost))}/month`;
     } else if (holdTimeRatio > 2) {
-        return `You hold losers ${holdTimeRatio.toFixed(1)}x longer than winners - consider using tighter stops to save $${cost.toFixed(2)}/month`;
+        return `You hold losers ${formatDecimal(holdTimeRatio, { digits: 1 })}x longer than winners - consider using tighter stops to save ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Math.abs(cost))}/month`;
     } else if (holdTimeRatio > 1.5) {
-        return `Slight loss aversion detected - you could save $${cost.toFixed(2)}/month with better exit timing`;
+        return `Slight loss aversion detected - you could save ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Math.abs(cost))}/month with better exit timing`;
     } else {
-        return `Good exit discipline - your hold time ratio of ${holdTimeRatio.toFixed(1)}x is within healthy range`;
+        return `Good exit discipline - your hold time ratio of ${formatDecimal(holdTimeRatio, { digits: 1 })}x is within healthy range`;
     }
 };
 

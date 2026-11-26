@@ -4,7 +4,7 @@
         <div class="flex items-center mb-8">
             <button
                 @click="$router.push('/markets')"
-                class="mr-4 p-2 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                class="btn-icon p-2 mr-4"
             >
                 <svg
                     class="w-5 h-5"
@@ -55,19 +55,19 @@
         <!-- Loading State (initial load only) -->
         <div v-if="initialLoading" class="flex justify-center items-center py-12">
             <div
-                class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"
+                class="spinner spinner-md"
             ></div>
         </div>
 
         <!-- Watchlist Items -->
         <div
             v-else-if="watchlist?.items?.length > 0"
-            class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden"
+            class="card overflow-hidden"
         >
             <div
                 class="px-6 py-4 border-b border-gray-200 dark:border-gray-700"
             >
-                <h2 class="text-lg font-medium text-gray-900 dark:text-white">
+                <h2 class="heading-card">
                     Symbols ({{ watchlist.items.length }})
                 </h2>
             </div>
@@ -75,35 +75,35 @@
                 <table
                     class="min-w-full divide-y divide-gray-200 dark:divide-gray-700"
                 >
-                    <thead class="bg-gray-50 dark:bg-gray-700">
+                    <thead class="table-head">
                         <tr>
                             <th
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                                class="text-left table-th px-4 py-2"
                             >
                                 Symbol
                             </th>
                             <th
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                class="text-left table-th px-4 py-2"
                             >
                                 Current Price
                             </th>
                             <th
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                class="text-left table-th px-4 py-2"
                             >
                                 Change
                             </th>
                             <th
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                class="text-left table-th px-4 py-2"
                             >
                                 % Change
                             </th>
                             <th
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                class="text-left table-th px-4 py-2"
                             >
                                 Added
                             </th>
                             <th
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                class="text-left table-th px-4 py-2"
                             >
                                 Actions
                             </th>
@@ -113,7 +113,7 @@
                         class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700"
                     >
                         <tr v-for="item in watchlist.items" :key="item.id">
-                            <td class="px-6 py-4 whitespace-nowrap">
+                            <td class="whitespace-nowrap px-4 py-3">
                                 <div class="flex items-center gap-3">
                                     <StockLogo
                                         :symbol="item.symbol"
@@ -133,7 +133,7 @@
                                 </div>
                             </td>
                             <td
-                                class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100"
+                                class="whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 px-4 py-3"
                             >
                                 {{
                                     item.current_price
@@ -141,7 +141,7 @@
                                         : "N/A"
                                 }}
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <td class="whitespace-nowrap text-sm px-4 py-3">
                                 <span
                                     v-if="item.price_change !== null"
                                     :class="priceChangeClass(item.price_change)"
@@ -154,12 +154,10 @@
                                     >N/A</span
                                 >
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <td class="whitespace-nowrap text-sm px-4 py-3">
                                 <span
                                     v-if="item.percent_change !== null"
-                                    :class="
-                                        priceChangeClass(item.percent_change)
-                                    "
+                                    :class="priceChangeClass(item.percent_change)"
                                 >
                                     {{
                                         formatPercentChange(item.percent_change)
@@ -172,28 +170,28 @@
                                 >
                             </td>
                             <td
-                                class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400"
+                                class="whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 px-4 py-3"
                             >
                                 {{ formatDate(item.added_at) }}
                             </td>
                             <td
-                                class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2"
+                                class="whitespace-nowrap text-sm font-medium space-x-2 px-4 py-3"
                             >
                                 <button
                                     @click="createPriceAlert(item.symbol)"
-                                    class="text-primary-600 hover:text-primary-900"
+                                    class="btn-link"
                                 >
                                     Alert
                                 </button>
                                 <button
                                     @click="editNotes(item)"
-                                    class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+                                    class="btn-ghost btn-sm"
                                 >
                                     Edit
                                 </button>
                                 <button
                                     @click="removeSymbol(item)"
-                                    class="text-red-600 hover:text-red-900"
+                                    class="text-red-600 dark:text-red-400 hover:text-red-900"
                                 >
                                     Remove
                                 </button>
@@ -219,7 +217,7 @@
                     d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
                 ></path>
             </svg>
-            <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">
+            <h3 class="heading-sub mt-2">
                 No symbols in watchlist
             </h3>
             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -236,16 +234,16 @@
         <div v-if="watchlist?.items?.length > 0" class="mt-8 space-y-8">
             <!-- Watchlist News Section -->
             <div
-                class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden"
+                class="card overflow-hidden"
             >
                 <div
                     class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between"
                 >
                     <h2
-                        class="text-lg font-medium text-gray-900 dark:text-white flex items-center"
+                        class="heading-card flex items-center"
                     >
                         <svg
-                            class="w-5 h-5 mr-2 text-primary-600"
+                            class="w-5 h-5 mr-2 text-primary-700"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -273,7 +271,7 @@
                         <button
                             @click="loadWatchlistNews"
                             :disabled="loadingNews"
-                            class="text-sm text-primary-600 hover:text-primary-800 disabled:opacity-50"
+                            class="btn-link"
                         >
                             {{ loadingNews ? "Loading..." : "Refresh" }}
                         </button>
@@ -285,7 +283,7 @@
                     class="flex justify-center items-center py-8"
                 >
                     <div
-                        class="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"
+                        class="spinner spinner-sm"
                     ></div>
                 </div>
 
@@ -309,7 +307,7 @@
                                     rounded-class="rounded-full"
                                 />
                                 <span
-                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200"
+                                    class="badge-primary"
                                 >
                                     {{ article.symbol }}
                                 </span>
@@ -319,10 +317,10 @@
                                     :href="article.url"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    class="block hover:text-primary-600 transition-colors"
+                                    class="block hover:text-primary-800 transition-colors"
                                 >
                                     <h3
-                                        class="text-sm font-medium text-gray-900 dark:text-white mb-1"
+                                        class="heading-sub mb-1"
                                     >
                                         {{ article.headline }}
                                     </h3>
@@ -373,16 +371,16 @@
 
             <!-- Upcoming Earnings Section -->
             <div
-                class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden"
+                class="card overflow-hidden"
             >
                 <div
                     class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between"
                 >
                     <h2
-                        class="text-lg font-medium text-gray-900 dark:text-white flex items-center"
+                        class="heading-card flex items-center"
                     >
                         <svg
-                            class="w-5 h-5 mr-2 text-green-600"
+                            class="w-5 h-5 mr-2 text-green-700 dark:text-green-400"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -409,7 +407,7 @@
                         <button
                             @click="loadWatchlistEarnings"
                             :disabled="loadingEarnings"
-                            class="text-sm text-primary-600 hover:text-primary-800 disabled:opacity-50"
+                            class="btn-link"
                         >
                             {{ loadingEarnings ? "Loading..." : "Refresh" }}
                         </button>
@@ -421,7 +419,7 @@
                     class="flex justify-center items-center py-8"
                 >
                     <div
-                        class="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600"
+                        class="spinner spinner-sm"
                     ></div>
                 </div>
 
@@ -442,7 +440,7 @@
                                     rounded-class="rounded-full"
                                 />
                                 <span
-                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200"
+                                    class="badge-success"
                                 >
                                     {{ earnings.symbol }}
                                 </span>
@@ -476,7 +474,7 @@
                                     v-if="earnings.epsEstimate"
                                     class="text-xs text-gray-600 dark:text-gray-400 mt-1"
                                 >
-                                    Est. EPS: ${{ earnings.epsEstimate }}
+                                    Est. EPS: {{ formatPrice(Number(earnings.epsEstimate)) }}
                                 </div>
                             </div>
                         </div>
@@ -508,16 +506,16 @@
 
             <!-- 8 Pillars Analysis Section -->
             <div
-                class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden"
+                class="card overflow-hidden"
             >
                 <div
                     class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between"
                 >
                     <h2
-                        class="text-lg font-medium text-gray-900 dark:text-white flex items-center"
+                        class="heading-card flex items-center"
                     >
                         <svg
-                            class="w-5 h-5 mr-2 text-orange-600"
+                            class="w-5 h-5 mr-2 text-yellow-600"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -531,7 +529,7 @@
                         </svg>
                         8 Pillars Analysis
                         <span
-                            class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400"
+                            class="ml-2 badge bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400"
                         >
                             Pro
                         </span>
@@ -541,7 +539,7 @@
                             v-if="pillarsLoaded"
                             @click="loadWatchlistPillars"
                             :disabled="loadingPillars"
-                            class="text-sm text-primary-600 hover:text-primary-800 disabled:opacity-50"
+                            class="btn-link"
                         >
                             {{ loadingPillars ? "Analyzing..." : "Refresh" }}
                         </button>
@@ -553,7 +551,7 @@
                     class="flex justify-center items-center py-8"
                 >
                     <div
-                        class="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-600"
+                        class="spinner spinner-sm"
                     ></div>
                     <span class="ml-3 text-sm text-gray-500 dark:text-gray-400"
                         >Analyzing {{ pillarsLoadingSymbol }}...</span
@@ -582,7 +580,7 @@
                     </p>
                     <button
                         @click="loadWatchlistPillars"
-                        class="btn-primary text-sm"
+                        class="btn-primary"
                     >
                         Analyze All Symbols
                     </button>
@@ -641,8 +639,8 @@
                                             :class="[
                                                 'w-4 h-4 rounded-full flex items-center justify-center text-xs',
                                                 getPillarPassed(analysis, n)
-                                                    ? 'bg-green-100 dark:bg-green-900/30 text-green-600'
-                                                    : 'bg-red-100 dark:bg-red-900/30 text-red-600',
+                                                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                                                    : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400',
                                             ]"
                                             :title="getPillarName(analysis, n)"
                                         >
@@ -686,10 +684,10 @@
                                         :class="[
                                             'text-lg font-bold',
                                             analysis.pillarsPassed >= 6
-                                                ? 'text-green-600'
+                                                ? 'text-green-700 dark:text-green-400'
                                                 : analysis.pillarsPassed >= 4
                                                   ? 'text-yellow-600'
-                                                  : 'text-red-600',
+                                                  : 'text-red-600 dark:text-red-400',
                                         ]"
                                     >
                                         {{ analysis.pillarsPassed }}/8
@@ -702,7 +700,7 @@
                                 </div>
                                 <router-link
                                     :to="`/analysis/analyze/${analysis.symbol}`"
-                                    class="text-sm text-primary-600 hover:text-primary-800 whitespace-nowrap"
+                                    class="text-sm text-primary-700 hover:text-primary-800 whitespace-nowrap"
                                 >
                                     View Details
                                 </router-link>
@@ -723,14 +721,14 @@
         <!-- Add Symbol Modal -->
         <div
             v-if="showAddSymbolModal"
-            class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+            class="modal-overlay flex items-center justify-center overflow-y-auto p-4"
         >
-            <div
-                class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700"
+            <div role="dialog" aria-modal="true"
+                class="modal-panel p-6 w-full max-w-md"
             >
                 <div class="mt-3">
                     <h3
-                        class="text-lg font-medium text-gray-900 dark:text-white mb-4"
+                        class="modal-title mb-4"
                     >
                         Add Symbol to Watchlist
                     </h3>
@@ -762,7 +760,7 @@
                                 placeholder="Enter notes"
                             ></textarea>
                         </div>
-                        <div class="flex justify-end space-x-3">
+                        <div class="modal-footer">
                             <button
                                 type="button"
                                 @click="cancelAddSymbol"
@@ -773,7 +771,7 @@
                             <button
                                 type="submit"
                                 :disabled="adding"
-                                class="px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md hover:bg-primary-700 disabled:opacity-50"
+                                class="btn-primary"
                             >
                                 {{ adding ? "Adding..." : "Add Symbol" }}
                             </button>
@@ -786,14 +784,14 @@
         <!-- Edit Notes Modal -->
         <div
             v-if="editingItem"
-            class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+            class="modal-overlay flex items-center justify-center overflow-y-auto p-4"
         >
-            <div
-                class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700"
+            <div role="dialog" aria-modal="true"
+                class="modal-panel p-6 w-full max-w-md"
             >
                 <div class="mt-3">
                     <h3
-                        class="text-lg font-medium text-gray-900 dark:text-white mb-4"
+                        class="modal-title mb-4"
                     >
                         Edit Notes for {{ editingItem.symbol }}
                     </h3>
@@ -812,18 +810,18 @@
                                 placeholder="Enter notes"
                             ></textarea>
                         </div>
-                        <div class="flex justify-end space-x-3">
+                        <div class="modal-footer">
                             <button
                                 type="button"
                                 @click="cancelEditNotes"
-                                class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-500"
+                                class="btn-secondary"
                             >
                                 Cancel
                             </button>
                             <button
                                 type="submit"
                                 :disabled="updating"
-                                class="px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md hover:bg-primary-700 disabled:opacity-50"
+                                class="btn-primary"
                             >
                                 {{ updating ? "Updating..." : "Update Notes" }}
                             </button>
@@ -841,6 +839,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useNotification } from "@/composables/useNotification";
 import { useInvestmentsStore } from "@/stores/investments";
 import { parseTradeDate } from "@/utils/date";
+import { formatDecimal } from "@/utils/formatters";
 import api from "@/services/api";
 import SymbolAutocomplete from "@/components/common/SymbolAutocomplete.vue";
 import StockLogo from "@/components/common/StockLogo.vue";
@@ -1134,18 +1133,17 @@ const initialLoading = ref(true);
         };
 
         const formatPriceChange = (change) => {
-            const formatted = Math.abs(change).toFixed(2);
-            return change >= 0 ? `+$${formatted}` : `-$${formatted}`;
+            const formatted = formatPrice(Math.abs(change));
+            return change >= 0 ? `+${formatted}` : `-${formatted}`;
         };
 
         const formatPercentChange = (change) => {
-            const formatted = Math.abs(change).toFixed(2);
-            return change >= 0 ? `+${formatted}%` : `-${formatted}%`;
+            return `${formatDecimal(change, { digits: 1, showSign: true })}%`;
         };
 
         const priceChangeClass = (change) => {
-            if (change > 0) return "text-green-600";
-            if (change < 0) return "text-red-600";
+            if (change > 0) return "text-green-700 dark:text-green-400";
+            if (change < 0) return "text-red-600 dark:text-red-400";
             return "text-gray-600";
         };
 

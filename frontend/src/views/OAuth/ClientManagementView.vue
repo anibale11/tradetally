@@ -18,8 +18,8 @@
     </div>
 
     <!-- Loading State -->
-    <div v-if="loading" class="flex justify-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+    <div v-if="initialLoading" class="flex justify-center py-12">
+      <div class="spinner spinner-lg"></div>
     </div>
 
     <!-- Clients List -->
@@ -27,7 +27,7 @@
       <div
         v-for="client in clients"
         :key="client.id"
-        class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+        class="card card-body"
       >
         <div class="flex items-start justify-between">
           <div class="flex-1">
@@ -37,7 +37,7 @@
               </h3>
               <span
                 v-if="client.is_trusted"
-                class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400"
+                class="badge-primary"
               >
                 Trusted
               </span>
@@ -55,7 +55,7 @@
                 </code>
                 <button
                   @click="copyToClipboard(client.client_id)"
-                  class="ml-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  class="btn-ghost btn-sm ml-2"
                   title="Copy"
                 >
                   <ClipboardIcon class="w-4 h-4" />
@@ -81,7 +81,7 @@
                   <span
                     v-for="scope in client.allowed_scopes"
                     :key="scope"
-                    class="px-2 py-0.5 text-xs rounded bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400"
+                    class="badge-primary"
                   >
                     {{ scope }}
                   </span>
@@ -111,9 +111,9 @@
     </div>
 
     <!-- Empty State -->
-    <div v-else class="text-center py-12 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+    <div v-else class="card text-center py-12">
       <KeyIcon class="w-16 h-16 text-gray-400 mx-auto mb-4" />
-      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">No OAuth Applications</h3>
+      <h3 class="heading-card mb-2">No OAuth Applications</h3>
       <p class="text-gray-500 dark:text-gray-400 mb-6">
         Create your first OAuth2 application to enable external integrations.
       </p>
@@ -124,9 +124,9 @@
     </div>
 
     <!-- Create Client Modal -->
-    <div v-if="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+    <div v-if="showCreateModal" class="modal-overlay flex items-center justify-center p-4">
+      <div role="dialog" aria-modal="true" class="modal-panel max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+        <h3 class="modal-title mb-4">
           Create OAuth2 Application
         </h3>
 
@@ -164,7 +164,7 @@
               v-model="redirectUrisText"
               rows="4"
               required
-              class="input font-mono text-sm"
+              class="input input-sm font-mono"
               placeholder="https://example.com/oauth/callback&#10;https://discourse.example.com/auth/oauth2_basic/callback"
             ></textarea>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -178,15 +178,15 @@
             </label>
             <div class="space-y-2">
               <label class="flex items-center">
-                <input type="checkbox" v-model="selectedScopes" value="openid" class="form-checkbox" />
+                <input type="checkbox" v-model="selectedScopes" value="openid" class="checkbox" />
                 <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">openid - Basic identity</span>
               </label>
               <label class="flex items-center">
-                <input type="checkbox" v-model="selectedScopes" value="profile" class="form-checkbox" />
+                <input type="checkbox" v-model="selectedScopes" value="profile" class="checkbox" />
                 <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">profile - Profile information</span>
               </label>
               <label class="flex items-center">
-                <input type="checkbox" v-model="selectedScopes" value="email" class="form-checkbox" />
+                <input type="checkbox" v-model="selectedScopes" value="email" class="checkbox" />
                 <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">email - Email address</span>
               </label>
             </div>
@@ -221,14 +221,14 @@
               type="checkbox"
               v-model="newClient.isTrusted"
               id="trusted"
-              class="form-checkbox"
+              class="checkbox"
             />
             <label for="trusted" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
               Trusted application (skip consent screen)
             </label>
           </div>
 
-          <div class="flex justify-end space-x-3 pt-4">
+          <div class="modal-footer">
             <button type="button" @click="closeCreateModal" class="btn-secondary">
               Cancel
             </button>
@@ -241,16 +241,16 @@
     </div>
 
     <!-- Client Created Modal (shows credentials) -->
-    <div v-if="createdClient" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full p-6">
+    <div v-if="createdClient" class="modal-overlay flex items-center justify-center p-4">
+      <div role="dialog" aria-modal="true" class="modal-panel max-w-2xl w-full p-6">
         <div class="flex items-center space-x-3 mb-4">
-          <CheckCircleIcon class="w-8 h-8 text-green-500" />
-          <h3 class="heading-card">
+          <CheckCircleIcon class="w-8 h-8 text-green-700 dark:text-green-400" />
+          <h3 class="modal-title">
             Application Created Successfully
           </h3>
         </div>
 
-        <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-4">
+        <div class="callout-warning mb-4">
           <p class="text-sm text-yellow-800 dark:text-yellow-300 font-medium">
             Save these credentials now! The client secret will not be shown again.
           </p>
@@ -267,7 +267,7 @@
               </code>
               <button
                 @click="copyToClipboard(createdClient.client_id)"
-                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                class="btn-ghost btn-sm"
               >
                 <ClipboardIcon class="w-5 h-5" />
               </button>
@@ -284,15 +284,15 @@
               </code>
               <button
                 @click="copyToClipboard(createdClient.client_secret)"
-                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                class="btn-ghost btn-sm"
               >
                 <ClipboardIcon class="w-5 h-5" />
               </button>
             </div>
           </div>
 
-          <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-            <p class="text-sm text-blue-800 dark:text-blue-300">
+          <div class="callout-info">
+            <p class="text-sm text-primary-800 dark:text-primary-300">
               <strong>For Discourse OAuth2 Basic plugin:</strong><br />
               Use these endpoints:<br />
               - Authorization: <code>{{ baseUrl }}/oauth/authorize</code><br />
@@ -311,19 +311,19 @@
     </div>
 
     <!-- Delete Confirmation Modal -->
-    <div v-if="clientToDelete" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+    <div v-if="clientToDelete" class="modal-overlay flex items-center justify-center p-4">
+      <div role="dialog" aria-modal="true" class="modal-panel max-w-md w-full p-6">
+        <h3 class="modal-title mb-4">
           Delete OAuth Application
         </h3>
         <p class="text-gray-600 dark:text-gray-400 mb-6">
           Are you sure you want to delete "{{ clientToDelete.name }}"? This will revoke all access tokens and cannot be undone.
         </p>
-        <div class="flex justify-end space-x-3">
+        <div class="modal-footer">
           <button @click="clientToDelete = null" class="btn-secondary">
             Cancel
           </button>
-          <button @click="deleteClient" :disabled="deleting" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">
+          <button @click="deleteClient" :disabled="deleting" class="btn-danger">
             {{ deleting ? 'Deleting...' : 'Delete' }}
           </button>
         </div>
@@ -351,6 +351,7 @@ import {
 const authStore = useAuthStore()
 
 const loading = ref(false)
+const initialLoading = ref(true)
 const creating = ref(false)
 const deleting = ref(false)
 const clients = ref([])
@@ -391,6 +392,7 @@ const loadClients = async () => {
     console.error('Error loading OAuth clients:', error)
   } finally {
     loading.value = false
+    initialLoading.value = false
   }
 }
 

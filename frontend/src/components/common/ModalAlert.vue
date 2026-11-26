@@ -3,14 +3,14 @@
         <!-- Modal Overlay -->
         <div
             v-if="modalAlert"
-            class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+            class="modal-overlay overflow-y-auto"
         >
             <div
                 class="flex min-h-full items-center justify-center p-4"
                 @click="handleOverlayClick"
             >
-            <div
-                class="relative w-full max-w-md p-5 border shadow-lg rounded-md bg-white dark:bg-gray-800"
+            <div role="dialog" aria-modal="true"
+                class="modal-panel w-full max-w-md p-6"
             >
                 <div class="mt-3">
                     <!-- Icon -->
@@ -43,7 +43,7 @@
                     <!-- Content -->
                     <div class="text-center">
                         <h3
-                            class="text-lg font-medium text-gray-900 dark:text-white mb-2"
+                            class="modal-title mb-2"
                         >
                             {{ modalAlert.title }}
                         </h3>
@@ -60,7 +60,7 @@
                                 v-model="modalAlert.checkboxChecked"
                                 type="checkbox"
                                 :disabled="modalAlert.isSubmitting"
-                                class="mt-0.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                class="checkbox mt-0.5"
                             />
                             <span>{{ modalAlert.checkboxLabel }}</span>
                         </label>
@@ -73,7 +73,7 @@
                             v-if="modalAlert.cancelText"
                             @click="handleCancel"
                             :disabled="modalAlert.isSubmitting"
-                            class="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
+                            class="btn-secondary w-full sm:w-auto"
                         >
                             {{ modalAlert.cancelText }}
                         </button>
@@ -84,7 +84,7 @@
                             :href="modalAlert.linkUrl"
                             target="_blank"
                             rel="noopener noreferrer"
-                            class="w-full sm:w-auto px-4 py-2 text-sm font-medium text-center text-primary-700 bg-primary-100 border border-primary-300 rounded-md hover:bg-primary-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:bg-primary-900/20 dark:text-primary-300 dark:border-primary-700 dark:hover:bg-primary-900/40"
+                            class="btn-secondary w-full justify-center sm:w-auto"
                         >
                             {{ modalAlert.linkText || "View Documentation" }}
                         </a>
@@ -93,7 +93,7 @@
                         <button
                             @click="handleConfirm"
                             :disabled="modalAlert.isSubmitting"
-                            class="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2"
+                            class="btn w-full justify-center text-white sm:w-auto"
                             :class="confirmButtonClass"
                         >
                             {{ modalAlert.isSubmitting ? modalAlert.pendingText : modalAlert.confirmText }}
@@ -140,9 +140,9 @@ const iconClass = computed(() => {
         case "warning":
             return "text-yellow-600 dark:text-yellow-400";
         case "confirm":
-            return "text-primary-600 dark:text-primary-400";
+            return "text-primary-700 dark:text-primary-400";
         case "success":
-            return "text-green-600 dark:text-green-400";
+            return "text-green-700 dark:text-green-400";
         default:
             return "text-gray-600 dark:text-gray-400";
     }
@@ -155,7 +155,7 @@ const confirmButtonClass = computed(() => {
         case "warning":
             return "bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500";
         case "confirm":
-            return "bg-primary-600 hover:bg-primary-700 focus:ring-primary-500";
+            return "bg-primary-700 hover:bg-primary-800 focus:ring-primary-500";
         case "success":
             return "bg-green-600 hover:bg-green-700 focus:ring-green-500";
         default:

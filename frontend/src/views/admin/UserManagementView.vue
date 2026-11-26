@@ -15,7 +15,7 @@
                 <button
                     @click="exportUsersToCSV"
                     :disabled="loading || users.length === 0"
-                    class="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                    class="btn-secondary"
                 >
                     Export CSV
                 </button>
@@ -24,11 +24,11 @@
 
         <!-- Loading (initial only) -->
         <div v-if="initialLoading" class="flex justify-center py-12">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+            <div class="spinner spinner-lg"></div>
         </div>
 
         <!-- Error -->
-        <div v-else-if="error && !users.length" class="rounded-md bg-red-50 dark:bg-red-900/20 p-4">
+        <div v-else-if="error && !users.length" class="callout-danger">
             <p class="text-sm text-red-800 dark:text-red-400">{{ error }}</p>
         </div>
 
@@ -36,7 +36,7 @@
             <!-- Subtle refresh indicator -->
             <div v-if="loading" class="flex justify-end mb-2">
                 <div class="flex items-center space-x-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm border border-gray-200 dark:border-gray-700">
-                    <div class="animate-spin rounded-full h-4 w-4 border-2 border-primary-600 border-t-transparent"></div>
+                    <div class="spinner spinner-xs"></div>
                     <span class="text-xs text-gray-600 dark:text-gray-400">Updating...</span>
                 </div>
             </div>
@@ -142,15 +142,15 @@
                 <!-- Table -->
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead class="bg-gray-50 dark:bg-gray-700">
+                        <thead class="table-head">
                             <tr>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">User</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Role / Tier</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Last Active</th>
-                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Imports</th>
-                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Trades</th>
-                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                                <th class="text-left table-th px-4 py-2">User</th>
+                                <th class="text-left table-th px-4 py-2">Role / Tier</th>
+                                <th class="text-left table-th px-4 py-2">Status</th>
+                                <th class="text-left table-th px-4 py-2">Last Active</th>
+                                <th class="text-right table-th px-4 py-2">Imports</th>
+                                <th class="text-right table-th px-4 py-2">Trades</th>
+                                <th class="text-right table-th px-4 py-2">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -160,7 +160,7 @@
                                 class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                             >
                                 <!-- User -->
-                                <td class="px-4 py-3 whitespace-nowrap">
+                                <td class="whitespace-nowrap px-4 py-3">
                                     <div class="flex items-center gap-3">
                                         <div class="h-8 w-8 flex-shrink-0 overflow-hidden rounded-full bg-primary-600">
                                             <img v-if="user.avatar_url" class="h-full w-full object-cover" :src="user.avatar_url" :alt="user.username" />
@@ -176,7 +176,7 @@
                                 </td>
 
                                 <!-- Role / Tier -->
-                                <td class="px-4 py-3 whitespace-nowrap">
+                                <td class="whitespace-nowrap px-4 py-3">
                                     <div class="flex items-center gap-2">
                                         <div class="w-20 text-xs">
                                             <BaseSelect
@@ -190,10 +190,10 @@
                                                 ]"
                                             />
                                         </div>
-                                        <span :class="getTierBadgeClass(getUserDisplayTier(user))" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium">
+                                        <span :class="getTierBadgeClass(getUserDisplayTier(user))" class="badge">
                                             {{ getUserDisplayTier(user) }}
                                         </span>
-                                        <span v-if="user.role === 'owner'" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-400">
+                                        <span v-if="user.role === 'owner'" class="badge-primary">
                                             owner
                                         </span>
                                     </div>
@@ -202,15 +202,15 @@
                                 <!-- Status -->
                                 <td class="px-4 py-3">
                                     <div class="flex flex-wrap gap-1 max-w-[220px]">
-                                        <span :class="user.is_active ? successPillClass : dangerPillClass" class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-medium">
+                                        <span :class="user.is_active ? successPillClass : dangerPillClass" class="badge">
                                             <MdiIcon :icon="user.is_active ? mdiCheckCircle : mdiCloseCircle" :size="12" />
                                             {{ user.is_active ? "Active" : "Inactive" }}
                                         </span>
-                                        <span :class="user.is_verified ? successPillClass : warnPillClass" class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-medium">
+                                        <span :class="user.is_verified ? successPillClass : warnPillClass" class="badge">
                                             <MdiIcon :icon="user.is_verified ? mdiCheckCircle : mdiCloseCircle" :size="12" />
                                             {{ user.is_verified ? "Verified" : "Unverified" }}
                                         </span>
-                                        <span :class="user.admin_approved ? successPillClass : pendingPillClass" class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-medium">
+                                        <span :class="user.admin_approved ? successPillClass : pendingPillClass" class="badge">
                                             <MdiIcon :icon="user.admin_approved ? mdiCheckCircle : mdiCloseCircle" :size="12" />
                                             {{ user.admin_approved ? "Approved" : "Pending" }}
                                         </span>
@@ -218,7 +218,7 @@
                                             @click="toggleMarketingConsent(user)"
                                             :disabled="isUpdating"
                                             :class="user.marketing_consent ? successPillClass : mutedPillClass"
-                                            class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-medium transition hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+                                            class="badge transition hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
                                         >
                                             <MdiIcon :icon="user.marketing_consent ? mdiCheckCircle : mdiCloseCircle" :size="12" />
                                             Mktg
@@ -227,30 +227,30 @@
                                 </td>
 
                                 <!-- Last Active -->
-                                <td class="px-4 py-3 whitespace-nowrap">
+                                <td class="whitespace-nowrap px-4 py-3">
                                     <p class="text-sm text-gray-900 dark:text-white">{{ formatRelativeTime(user.last_active_at) }}</p>
                                     <p class="text-xs text-gray-500 dark:text-gray-400">Joined {{ formatDate(user.created_at) }}</p>
                                 </td>
 
                                 <!-- Imports -->
-                                <td class="px-4 py-3 text-right whitespace-nowrap">
+                                <td class="text-right whitespace-nowrap px-4 py-3">
                                     <p class="text-sm font-medium text-gray-900 dark:text-white">{{ formatNumber(user.import_count) }}</p>
                                     <p class="text-xs text-gray-500 dark:text-gray-400">{{ formatNumber(user.trades_imported_count) }} rows</p>
                                 </td>
 
                                 <!-- Trades -->
-                                <td class="px-4 py-3 text-right whitespace-nowrap">
+                                <td class="text-right whitespace-nowrap px-4 py-3">
                                     <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ formatNumber(user.trade_count) }}</p>
                                 </td>
 
                                 <!-- Actions -->
-                                <td class="px-4 py-3 text-right whitespace-nowrap">
+                                <td class="text-right whitespace-nowrap px-4 py-3">
                                     <div class="flex justify-end gap-1">
                                         <button
                                             v-if="!user.is_verified"
                                             @click="verifyUser(user)"
                                             :disabled="isUpdating"
-                                            class="px-2 py-1 rounded text-xs font-medium text-primary-700 hover:bg-primary-50 transition disabled:opacity-50 dark:text-primary-400 dark:hover:bg-primary-900/20"
+                                            class="btn-ghost btn-sm"
                                         >
                                             Verify
                                         </button>
@@ -281,14 +281,14 @@
                                         <button
                                             @click="openTierModal(user)"
                                             :disabled="isUpdating"
-                                            class="px-2 py-1 rounded text-xs font-medium text-violet-700 hover:bg-violet-50 transition disabled:opacity-50 dark:text-violet-400 dark:hover:bg-violet-900/20"
+                                            class="btn-ghost btn-sm"
                                         >
                                             Tier
                                         </button>
                                         <button
                                             @click="confirmDeleteUser(user)"
                                             :disabled="isUpdating || user.id === currentUserId || (user.role === 'admin' && adminCount <= 1)"
-                                            class="px-2 py-1 rounded text-xs font-medium text-red-700 hover:bg-red-50 transition disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                                            class="btn-ghost btn-sm"
                                         >
                                             Delete
                                         </button>
@@ -297,7 +297,7 @@
                             </tr>
 
                             <tr v-if="users.length === 0">
-                                <td colspan="7" class="px-4 py-12 text-center">
+                                <td colspan="7" class="text-center px-4 py-3">
                                     <p class="text-base font-medium text-gray-700 dark:text-gray-200">No users match the current filters.</p>
                                     <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Reset the filter set or broaden the date range.</p>
                                 </td>
@@ -313,7 +313,7 @@
                         <button
                             @click="prevPage"
                             :disabled="currentPage === 1"
-                            class="btn-secondary py-1.5 px-3 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                            class="btn-secondary btn-sm px-3 text-sm"
                         >
                             Prev
                         </button>
@@ -330,7 +330,7 @@
                         <button
                             @click="nextPage"
                             :disabled="currentPage === totalPages"
-                            class="btn-secondary py-1.5 px-3 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                            class="btn-secondary btn-sm px-3 text-sm"
                         >
                             Next
                         </button>
@@ -341,20 +341,20 @@
     </div>
 
     <!-- Delete Confirmation Modal -->
-    <div v-if="showDeleteConfirm" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75 px-4">
-        <div class="w-full max-w-md rounded-lg bg-white dark:bg-gray-800 p-6 shadow-xl">
+    <div v-if="showDeleteConfirm" class="modal-overlay flex items-center justify-center px-4">
+        <div role="dialog" aria-modal="true" class="modal-panel w-full max-w-md p-6">
             <div class="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400">
                 <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
                 </svg>
             </div>
-            <h3 class="mt-3 text-lg font-semibold text-gray-900 dark:text-white">Delete {{ userToDelete?.username }}?</h3>
+            <h3 class="modal-title mt-3">Delete {{ userToDelete?.username }}?</h3>
             <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
                 This permanently removes the user and their related data. The action cannot be undone.
             </p>
             <div class="mt-5 flex justify-end gap-3">
                 <button @click="showDeleteConfirm = false" class="btn-secondary">Cancel</button>
-                <button @click="deleteUser" :disabled="isUpdating" class="btn-danger disabled:opacity-50 disabled:cursor-not-allowed">
+                <button @click="deleteUser" :disabled="isUpdating" class="btn-danger">
                     {{ isUpdating ? "Deleting..." : "Delete User" }}
                 </button>
             </div>
@@ -362,14 +362,14 @@
     </div>
 
     <!-- Tier Modal -->
-    <div v-if="showTierModal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75 px-4 py-8">
-        <div class="w-full max-w-2xl rounded-lg bg-white dark:bg-gray-800 p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+    <div v-if="showTierModal" class="modal-overlay flex items-center justify-center px-4 py-8">
+        <div role="dialog" aria-modal="true" class="modal-panel w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
             <div class="flex items-start justify-between gap-4">
                 <div>
-                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tier Controls</p>
-                    <h3 class="mt-1 text-xl font-semibold text-gray-900 dark:text-white">Manage {{ selectedUser?.username }}</h3>
+                    <p class="table-th">Tier Controls</p>
+                    <h3 class="modal-title mt-1">Manage {{ selectedUser?.username }}</h3>
                 </div>
-                <button @click="closeTierModal" class="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-200 transition">
+                <button @click="closeTierModal" class="btn-icon">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -380,35 +380,29 @@
                 <!-- Tier Info Cards -->
                 <div class="grid gap-3 md:grid-cols-3">
                     <div class="rounded-md bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 p-3">
-                        <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Current Tier</p>
+                        <p class="table-th">Current Tier</p>
                         <div class="mt-2 flex items-center gap-2">
-                            <span :class="getTierBadgeClass(tierInfo.tier)" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium">
+                            <span :class="getTierBadgeClass(tierInfo.tier)" class="badge">
                                 {{ tierInfo.tier }}
                             </span>
-                            <span v-if="tierInfo.override" class="text-xs font-medium text-amber-600 dark:text-amber-400">Override active</span>
+                            <span v-if="tierInfo.override" class="text-xs font-medium text-yellow-600 dark:text-yellow-400">Override active</span>
                         </div>
                     </div>
 
-                    <div v-if="tierInfo.subscription && tierInfo.subscription.status === 'active'" class="rounded-md bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 p-3">
-                        <p class="text-xs font-medium text-green-700 dark:text-green-300 uppercase tracking-wider">Subscription</p>
-                        <p class="mt-2 text-sm font-medium text-green-800 dark:text-green-200">Active</p>
-                        <p class="mt-0.5 text-xs text-green-700 dark:text-green-300">Renews {{ formatDate(tierInfo.subscription.current_period_end) }}</p>
-                    </div>
-
-                    <div v-if="selectedUser && (selectedUser.role === 'admin' || selectedUser.role === 'owner')" class="rounded-md bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-700 p-3">
+                    <div v-if="tierInfo.subscription && tierInfo.subscription.status === 'active'" class="callout-success"> <p class="text-xs font-medium text-green-700 dark:text-green-400 uppercase tracking-wider">Subscription</p> <p class="mt-2 text-sm font-medium text-green-700 dark:text-green-200">Active</p> <p class="mt-0.5 text-xs text-green-700 dark:text-green-300">Renews {{ formatDate(tierInfo.subscription.current_period_end) }}</p> </div> <div v-if="selectedUser && (selectedUser.role ==='admin' || selectedUser.role === 'owner')" class="callout-info">
                         <p class="text-xs font-medium text-primary-700 dark:text-primary-300 uppercase tracking-wider">Role Bonus</p>
                         <p class="mt-2 text-sm font-medium text-primary-800 dark:text-primary-200">Admins keep Pro by default</p>
                     </div>
                 </div>
 
                 <!-- Override Info -->
-                <div v-if="tierInfo.override" class="rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 p-3">
-                    <p class="text-sm font-medium text-amber-800 dark:text-amber-200">
+                <div v-if="tierInfo.override" class="callout-warning">
+                    <p class="text-sm font-medium text-yellow-800 dark:text-yellow-200">
                         Override: {{ tierInfo.override.tier }}
                         <span v-if="tierInfo.override.expires_at"> until {{ formatDate(tierInfo.override.expires_at) }}</span>
                     </p>
-                    <p v-if="tierInfo.override.reason" class="mt-0.5 text-xs text-amber-700 dark:text-amber-300">Reason: {{ tierInfo.override.reason }}</p>
-                    <p v-if="tierInfo.override.created_by_username" class="mt-0.5 text-xs text-amber-700 dark:text-amber-300">Set by: {{ tierInfo.override.created_by_username }}</p>
+                    <p v-if="tierInfo.override.reason" class="mt-0.5 text-xs text-yellow-700 dark:text-yellow-300">Reason: {{ tierInfo.override.reason }}</p>
+                    <p v-if="tierInfo.override.created_by_username" class="mt-0.5 text-xs text-yellow-700 dark:text-yellow-300">Set by: {{ tierInfo.override.created_by_username }}</p>
                 </div>
 
                 <!-- Override Controls -->
@@ -425,7 +419,7 @@
                             />
                             <input v-model="overrideExpiry" type="date" class="input" />
                             <input v-model="overrideReason" type="text" placeholder="Reason for override" class="input" />
-                            <button @click="setTierOverride" :disabled="isUpdating" class="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed">
+                            <button @click="setTierOverride" :disabled="isUpdating" class="btn-primary w-full">
                                 Set Override
                             </button>
                         </div>
@@ -435,7 +429,7 @@
                         <div class="card card-body">
                             <p class="text-sm font-semibold text-gray-900 dark:text-white">Trial access</p>
                             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Grant a 14-day Pro trial with a dated override.</p>
-                            <button @click="grant14DayTrial" :disabled="isUpdating" class="btn-primary mt-3 w-full disabled:opacity-50 disabled:cursor-not-allowed">
+                            <button @click="grant14DayTrial" :disabled="isUpdating" class="btn-primary mt-3 w-full">
                                 Grant Trial
                             </button>
                         </div>
@@ -443,7 +437,7 @@
                         <div v-if="tierInfo.override" class="rounded-lg border border-red-200 dark:border-red-700 p-4">
                             <p class="text-sm font-semibold text-gray-900 dark:text-white">Remove override</p>
                             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Revert the user to their base tier rules.</p>
-                            <button @click="removeTierOverride" :disabled="isUpdating" class="btn-danger mt-3 w-full disabled:opacity-50 disabled:cursor-not-allowed">
+                            <button @click="removeTierOverride" :disabled="isUpdating" class="btn-danger mt-3 w-full">
                                 Remove Override
                             </button>
                         </div>
@@ -514,7 +508,7 @@ const dangerPillClass =
 const warnPillClass =
     "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400";
 const pendingPillClass =
-    "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400";
+    "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400";
 const mutedPillClass =
     "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300";
 
@@ -621,7 +615,7 @@ function getTierBadgeClass(tier) {
     }
 
     if (tier === "pro") {
-        return "bg-violet-100 text-violet-800 dark:bg-violet-900/20 dark:text-violet-400";
+        return "bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-400";
     }
 
     return "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300";

@@ -24,13 +24,13 @@
 
     <!-- Loading State -->
     <div v-if="loading && isEditing" class="flex justify-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div class="spinner spinner-lg"></div>
     </div>
 
     <!-- Error State -->
-    <div v-else-if="error" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-8">
+    <div v-else-if="error" class="callout-danger mb-8">
       <div class="flex">
-        <ExclamationTriangleIcon class="w-5 h-5 text-red-400 mr-2" />
+        <ExclamationTriangleIcon class="w-5 h-5 text-red-600 dark:text-red-400 mr-2" />
         <p class="text-red-800 dark:text-red-200">{{ error }}</p>
       </div>
     </div>
@@ -39,11 +39,11 @@
     <div v-if="!loading && !error" class="space-y-8">
       <form @submit.prevent="saveEntry" class="space-y-6">
         <!-- Template Selector -->
-        <div v-if="!isEditing" class="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 p-4 rounded-lg">
+        <div v-if="!isEditing" class="callout-info">
           <div class="flex items-center justify-between mb-3">
             <div class="flex items-center">
-              <DocumentTextIcon class="w-5 h-5 text-primary-600 dark:text-primary-400 mr-2" />
-              <h3 class="text-sm font-medium text-primary-900 dark:text-primary-200">Use a Template</h3>
+              <DocumentTextIcon class="w-5 h-5 text-primary-700 dark:text-primary-400 mr-2" />
+              <h3 class="heading-sub text-primary-900 dark:text-primary-200">Use a Template</h3>
               <span
                 v-if="selectedTemplateName"
                 class="ml-2 text-xs text-primary-700 dark:text-primary-300"
@@ -54,7 +54,7 @@
             <button
               type="button"
               @click="toggleTemplates"
-              class="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+              class="btn-link"
             >
               {{ showTemplates ? 'Hide' : 'Show' }}
             </button>
@@ -73,7 +73,7 @@
                 :key="template.id"
                 type="button"
                 @click="applyTemplate(template)"
-                class="text-left p-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:border-primary-500 dark:hover:border-primary-500 transition-colors"
+                class="btn-secondary"
               >
                 <div class="flex items-start justify-between">
                   <div class="flex-1 min-w-0">
@@ -86,7 +86,7 @@
                   </div>
                   <span
                     v-if="template.is_default"
-                    class="ml-2 flex-shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+                    class="badge-primary ml-2 flex-shrink-0"
                   >
                     Default
                   </span>
@@ -97,8 +97,8 @@
         </div>
 
         <!-- Basic Information -->
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Basic Information</h2>
+        <div class="card card-body">
+          <h2 class="heading-card mb-4">Basic Information</h2>
           
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Entry Date -->
@@ -136,7 +136,7 @@
           <div class="mt-6">
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Title <span v-if="form.entryType === 'diary'" class="font-normal text-gray-500 dark:text-gray-400">(recommended for multiple entries)</span>
-              <span v-if="form.entryType === 'playbook'" class="text-red-500">*</span>
+              <span v-if="form.entryType === 'playbook'" class="text-red-600 dark:text-red-400">*</span>
             </label>
             <input
               type="text"
@@ -158,10 +158,10 @@
                   type="radio"
                   v-model="form.marketBias"
                   value="bullish"
-                  class="form-radio text-green-600"
+                  class="radio"
                 />
                 <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">
-                  <ArrowTrendingUpIcon class="w-4 h-4 inline mr-1 text-green-600" />
+                  <ArrowTrendingUpIcon class="w-4 h-4 inline mr-1 text-green-700 dark:text-green-400" />
                   Bullish
                 </span>
               </label>
@@ -170,10 +170,10 @@
                   type="radio"
                   v-model="form.marketBias"
                   value="bearish"
-                  class="form-radio text-red-600"
+                  class="radio"
                 />
                 <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">
-                  <ArrowTrendingDownIcon class="w-4 h-4 inline mr-1 text-red-600" />
+                  <ArrowTrendingDownIcon class="w-4 h-4 inline mr-1 text-red-600 dark:text-red-400" />
                   Bearish
                 </span>
               </label>
@@ -182,7 +182,7 @@
                   type="radio"
                   v-model="form.marketBias"
                   value="neutral"
-                  class="form-radio text-gray-600"
+                  class="radio"
                 />
                 <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">
                   <MinusIcon class="w-4 h-4 inline mr-1 text-gray-600" />
@@ -194,7 +194,7 @@
                   type="radio"
                   v-model="form.marketBias"
                   value=""
-                  class="form-radio text-gray-400"
+                  class="radio"
                 />
                 <span class="ml-2 text-sm text-gray-500 dark:text-gray-400">No bias</span>
               </label>
@@ -203,8 +203,8 @@
         </div>
 
         <!-- Content -->
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Content</h2>
+        <div class="card card-body">
+          <h2 class="heading-card mb-4">Content</h2>
           
           <!-- Main Content -->
           <div class="mb-6">
@@ -349,8 +349,8 @@
         </div>
 
         <!-- Trading Information -->
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Trading Information</h2>
+        <div class="card card-body">
+          <h2 class="heading-card mb-4">Trading Information</h2>
           
           <!-- Watchlist -->
           <div class="mb-6">
@@ -376,13 +376,13 @@
               <span
                 v-for="(symbol, index) in form.watchlist"
                 :key="symbol"
-                class="inline-flex items-center px-3 py-1 rounded-full bg-primary-100 dark:bg-primary-800 text-primary-800 dark:text-primary-200 text-sm"
+                class="badge bg-primary-100 dark:bg-primary-800 text-primary-800 dark:text-primary-200"
               >
                 {{ symbol }}
                 <button
                   type="button"
                   @click="removeWatchlistSymbol(index)"
-                  class="ml-2 text-primary-600 hover:text-primary-900 dark:text-primary-300 dark:hover:text-primary-100"
+                  class="btn-link ml-2"
                 >
                   <XMarkIcon class="w-3 h-3" />
                 </button>
@@ -404,7 +404,7 @@
               <button
                 type="button"
                 @click="showLinkedTradesSection = !showLinkedTradesSection"
-                class="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 whitespace-nowrap"
+                class="btn-link whitespace-nowrap"
               >
                 {{ showLinkedTradesSection ? 'Hide' : (form.linkedTrades.length > 0 ? 'Manage' : 'Add trades') }}
               </button>
@@ -445,13 +445,13 @@
               <span
                 v-for="(tag, index) in form.tags"
                 :key="tag"
-                class="inline-flex items-center px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm"
+                class="badge bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
               >
                 #{{ tag }}
                 <button
                   type="button"
                   @click="removeTag(index)"
-                  class="ml-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                  class="btn-ghost btn-sm ml-2"
                 >
                   <XMarkIcon class="w-3 h-3" />
                 </button>
@@ -461,8 +461,8 @@
         </div>
 
         <!-- Post-Market Reflection -->
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-          <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
+        <div class="card card-body">
+          <h2 class="heading-card mb-4">
             Post-Market Reflection
             <span class="text-sm font-normal text-gray-500 dark:text-gray-400">(Optional)</span>
           </h2>
@@ -478,7 +478,7 @@
                   type="radio"
                   v-model="form.followedPlan"
                   :value="true"
-                  class="form-radio text-green-600"
+                  class="radio"
                 />
                 <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Yes</span>
               </label>
@@ -487,7 +487,7 @@
                   type="radio"
                   v-model="form.followedPlan"
                   :value="false"
-                  class="form-radio text-red-600"
+                  class="radio"
                 />
                 <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">No</span>
               </label>
@@ -496,7 +496,7 @@
                   type="radio"
                   v-model="form.followedPlan"
                   :value="null"
-                  class="form-radio text-gray-400"
+                  class="radio"
                 />
                 <span class="ml-2 text-sm text-gray-500 dark:text-gray-400">Not applicable</span>
               </label>
@@ -520,10 +520,10 @@
         </div>
 
         <!-- Attachments -->
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="card card-body">
           <div class="flex items-start justify-between gap-4 mb-3">
             <div>
-              <h2 class="text-lg font-medium text-gray-900 dark:text-white">Attachments</h2>
+              <h2 class="heading-card">Attachments</h2>
               <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 Add charts and screenshots only when you need them.
               </p>
@@ -531,7 +531,7 @@
             <button
               type="button"
               @click="showAttachmentsSection = !showAttachmentsSection"
-              class="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 whitespace-nowrap"
+              class="btn-link whitespace-nowrap"
             >
               {{ showAttachmentsSection ? 'Hide' : ((entryAttachments.length > 0 || hasPendingImages) ? 'Manage' : 'Add images') }}
             </button>
@@ -1110,18 +1110,6 @@ watch(() => form.value.entryType, async (newEntryType, oldEntryType) => {
 <style scoped>
 .form-radio {
   @apply h-4 w-4 border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500;
-}
-
-.input {
-  @apply w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white;
-}
-
-.btn-primary {
-  @apply bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
-}
-
-.btn-secondary {
-  @apply bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 px-4 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
 }
 
 .toolbar-btn {

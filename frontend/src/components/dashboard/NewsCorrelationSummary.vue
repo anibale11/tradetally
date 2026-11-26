@@ -1,14 +1,14 @@
 <template>
-  <div v-if="enabled && summary" class="card">
+  <div v-if="enabled && summary" class="card text-mono-num">
     <div class="card-body">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white flex items-center">
-          <MdiIcon :icon="newspaperIcon" :size="20" class="mr-2 text-blue-500" />
+        <h3 class="heading-card flex items-center">
+          <MdiIcon :icon="newspaperIcon" :size="20" class="mr-2 text-primary-700 dark:text-primary-400" />
           News Sentiment Impact
         </h3>
         <router-link
           to="/metrics"
-          class="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium"
+          class="text-sm text-primary-700 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 font-medium"
         >
           View Details →
         </router-link>
@@ -16,14 +16,14 @@
 
       <div class="grid grid-cols-2 gap-4 mb-4">
         <div class="text-center">
-          <div class="text-2xl font-bold text-gray-900 dark:text-white">
+          <div class="stat-value text-gray-900 dark:text-white">
             {{ summary.total_trades_with_news }}
           </div>
           <div class="text-sm text-gray-500 dark:text-gray-400">Trades with News</div>
         </div>
         <div class="text-center">
-          <div class="text-2xl font-bold" :class="summary.overall_win_rate >= 50 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
-            {{ Math.round(summary.overall_win_rate) }}%
+          <div class="stat-value" :class="summary.overall_win_rate >= 50 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+            {{ formatPercent(summary.overall_win_rate) }}
           </div>
           <div class="text-sm text-gray-500 dark:text-gray-400">Overall Win Rate</div>
         </div>
@@ -40,8 +40,8 @@
             <span class="text-sm text-gray-900 dark:text-white font-medium">
               {{ summary.sentiment_breakdown.positive }} trades
             </span>
-            <span class="text-sm" :class="summary.performance_by_sentiment.positive_win_rate >= 50 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
-              {{ Math.round(summary.performance_by_sentiment.positive_win_rate) }}%
+            <span class="text-sm" :class="summary.performance_by_sentiment.positive_win_rate >= 50 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+              {{ formatPercent(summary.performance_by_sentiment.positive_win_rate) }}
             </span>
           </div>
         </div>
@@ -55,8 +55,8 @@
             <span class="text-sm text-gray-900 dark:text-white font-medium">
               {{ summary.sentiment_breakdown.negative }} trades
             </span>
-            <span class="text-sm" :class="summary.performance_by_sentiment.negative_win_rate >= 50 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
-              {{ Math.round(summary.performance_by_sentiment.negative_win_rate) }}%
+            <span class="text-sm" :class="summary.performance_by_sentiment.negative_win_rate >= 50 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+              {{ formatPercent(summary.performance_by_sentiment.negative_win_rate) }}
             </span>
           </div>
         </div>
@@ -82,7 +82,7 @@
             <span class="font-medium">Quick Insight:</span>
             Your best performance is on
             <span class="font-medium text-gray-900 dark:text-white">{{ bestSentiment.sentiment }}</span>
-            news with a {{ Math.round(bestSentiment.win_rate) }}% win rate.
+            news with a {{ formatPercent(bestSentiment.win_rate) }} win rate.
           </div>
         </div>
       </div>
@@ -93,13 +93,13 @@
   <div v-else-if="enabled === false" class="card">
     <div class="card-body text-center py-6">
       <MdiIcon :icon="lockIcon" :size="32" class="mx-auto text-gray-400 mb-3" />
-      <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-1">News Analytics</h3>
+      <h3 class="heading-sub mb-1">News Analytics</h3>
       <p class="text-xs text-gray-600 dark:text-gray-400 mb-3">
         Available for Pro users and self-hosters
       </p>
       <router-link
         to="/pricing"
-        class="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium"
+        class="text-xs text-primary-700 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 font-medium"
       >
         Upgrade to Pro →
       </router-link>
@@ -112,6 +112,7 @@ import { ref, onMounted, computed } from 'vue'
 import MdiIcon from '@/components/MdiIcon.vue'
 import { mdiNewspaper, mdiLightbulb, mdiLock } from '@mdi/js'
 import api from '@/services/api'
+import { formatPercent } from '@/utils/formatters'
 
 // Icons
 const newspaperIcon = mdiNewspaper

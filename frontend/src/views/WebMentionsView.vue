@@ -10,21 +10,21 @@
     </div>
 
     <div v-if="initialLoading" class="flex justify-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div class="spinner spinner-lg"></div>
     </div>
 
     <div v-else class="relative space-y-6">
       <div v-if="loading" class="absolute top-0 right-0 z-10">
         <div class="flex items-center space-x-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm border border-gray-200 dark:border-gray-700">
-          <div class="animate-spin rounded-full h-4 w-4 border-2 border-primary-600 border-t-transparent"></div>
+          <div class="spinner spinner-xs"></div>
           <span class="text-xs text-gray-600 dark:text-gray-400">Updating...</span>
         </div>
       </div>
 
       <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <section class="xl:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <section class="card xl:col-span-2">
           <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ editingRuleId ? 'Edit Rule' : 'Rule Builder' }}</h2>
+            <h2 class="heading-card">{{ editingRuleId ? 'Edit Rule' : 'Rule Builder' }}</h2>
           </div>
           <form @submit.prevent="saveRule" class="p-6 space-y-5">
             <div class="grid grid-cols-1 gap-4">
@@ -37,7 +37,7 @@
             <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-4">
               <div class="flex items-start justify-between gap-3">
                 <div>
-                  <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Start with holdings</h3>
+                  <h3 class="heading-sub">Start with holdings</h3>
                   <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Choose one or more current holdings to monitor, or switch to a custom symbol set.
                   </p>
@@ -45,7 +45,7 @@
                 <button
                   type="button"
                   @click="enableCustomMonitoring"
-                  class="btn-secondary text-sm"
+                  class="btn-secondary"
                 >
                   Monitor Custom
                 </button>
@@ -74,7 +74,7 @@
 
                   <div
                     v-if="holdingsMenuOpen"
-                    class="absolute z-20 mt-2 w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg"
+                    class="popover absolute z-20 mt-2 w-full"
                   >
                     <div class="grid max-h-80 grid-cols-1 gap-2 overflow-y-auto p-2 md:grid-cols-2">
                       <label
@@ -86,13 +86,13 @@
                           v-model="selectedHoldingSymbols"
                           :value="holding.symbol"
                           type="checkbox"
-                          class="mt-1 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                          class="checkbox mt-1"
                           @change="applyHoldingSelection"
                         />
                         <div class="min-w-0">
                           <div class="flex items-center gap-2 flex-wrap">
                             <span class="text-sm font-medium text-gray-900 dark:text-white">{{ holding.symbol }}</span>
-                            <span v-if="holding.account_name || holding.account_identifier" class="text-[11px] text-gray-500 dark:text-gray-400">
+                            <span v-if="holding.account_name || holding.account_identifier" class="text-xs text-gray-500 dark:text-gray-400">
                               {{ holding.account_name || holding.account_identifier }}
                             </span>
                           </div>
@@ -109,10 +109,10 @@
                   <span
                     v-for="symbol in selectedHoldingSymbols"
                     :key="symbol"
-                    class="inline-flex items-center gap-1 rounded-full bg-primary-100 px-2.5 py-1 text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
+                    class="badge-primary"
                   >
                     {{ symbol }}
-                    <button type="button" class="text-primary-700 dark:text-primary-300" @click="removeHoldingSymbol(symbol)">×</button>
+                    <button type="button" class="btn-link" @click="removeHoldingSymbol(symbol)">×</button>
                   </span>
                 </div>
                 <div v-else class="text-xs text-gray-500 dark:text-gray-400">
@@ -140,14 +140,14 @@
               <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3">
                 <div class="flex items-start justify-between gap-3">
                   <div>
-                    <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Trusted sources</h3>
+                    <h3 class="heading-sub">Trusted sources</h3>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       Choose which curated feeds this rule can monitor.
                     </p>
                   </div>
                   <div class="flex gap-2">
-                    <button type="button" @click="selectAllSources" class="text-xs text-primary-600 hover:text-primary-800">Select all</button>
-                    <button type="button" @click="clearSources" class="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Clear</button>
+                    <button type="button" @click="selectAllSources" class="btn-link">Select all</button>
+                    <button type="button" @click="clearSources" class="btn-ghost btn-sm">Clear</button>
                   </div>
                 </div>
                 <div class="space-y-3">
@@ -167,7 +167,7 @@
 
                     <div
                       v-if="sourcesMenuOpen"
-                      class="absolute z-20 mt-2 w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg"
+                      class="popover absolute z-20 mt-2 w-full"
                     >
                       <div class="max-h-80 overflow-y-auto p-2 space-y-2">
                         <label
@@ -179,17 +179,17 @@
                             v-model="form.source_ids"
                             :value="source.id"
                             type="checkbox"
-                            class="mt-1 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                            class="checkbox mt-1"
                           />
                           <div class="min-w-0">
                             <div class="flex items-center gap-2 flex-wrap">
                               <span class="text-sm font-medium text-gray-900 dark:text-white">{{ source.name }}</span>
-                              <span class="inline-flex px-2 py-0.5 rounded text-[11px] font-medium bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
+                              <span class="badge bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
                                 Trusted
                               </span>
                             </div>
                             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ source.trust_note }}</p>
-                            <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                               {{ source.domain || source.source_type }} · every {{ source.fetch_interval_minutes }} min
                             </p>
                           </div>
@@ -202,10 +202,10 @@
                     <span
                       v-for="source in selectedSourceNames"
                       :key="source.id"
-                      class="inline-flex items-center gap-1 rounded-full bg-primary-100 px-2.5 py-1 text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
+                      class="badge-primary"
                     >
                       {{ source.name }}
-                      <button type="button" class="text-primary-700 dark:text-primary-300" @click="removeSource(source.id)">×</button>
+                      <button type="button" class="btn-link" @click="removeSource(source.id)">×</button>
                     </span>
                   </div>
                   <div v-else class="text-xs text-gray-500 dark:text-gray-400">
@@ -223,14 +223,14 @@
                   </p>
                 </div>
                 <div class="flex flex-col gap-2 md:flex-row md:items-start md:justify-end">
-                  <button type="button" @click="suggestTermsFromSymbols" class="btn-secondary text-sm" :disabled="suggestingTerms">
+                  <button type="button" @click="suggestTermsFromSymbols" class="btn-secondary" :disabled="suggestingTerms">
                     {{ suggestingTerms ? 'Generating...' : 'Fill terms from symbols' }}
                   </button>
                   <div ref="presetMenuRef" class="relative w-full md:w-80">
                     <button
                       type="button"
                       @click="togglePresetMenu"
-                      class="input w-full flex items-center justify-between text-left text-sm"
+                      class="input input-sm w-full flex items-center justify-between text-left"
                     >
                       <span class="truncate text-gray-900 dark:text-white">
                         {{ presetMenuLabel }}
@@ -242,7 +242,7 @@
 
                     <div
                       v-if="presetMenuOpen"
-                      class="absolute right-0 z-20 mt-2 w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg"
+                      class="popover absolute right-0 z-20 mt-2 w-full"
                     >
                       <div class="max-h-80 overflow-y-auto p-2 space-y-2">
                         <button
@@ -261,14 +261,14 @@
                           <div class="flex items-center gap-2">
                             <input
                               v-model="presetName"
-                              class="input w-full text-sm"
+                              class="input input-sm w-full"
                               placeholder="Apple event terms"
                               @keydown.enter.prevent="savePreset"
                             />
                             <button
                               type="button"
                               @click="savePreset"
-                              class="btn-secondary text-sm"
+                              class="btn-secondary"
                               :disabled="savingPreset || !presetName.trim()"
                             >
                               {{ savingPreset ? 'Saving...' : 'Save' }}
@@ -325,9 +325,9 @@
         </section>
 
         <aside class="space-y-6">
-          <section class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+          <section class="card">
             <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Active Rules</h2>
+              <h2 class="heading-card">Active Rules</h2>
             </div>
             <div v-if="rules.length === 0" class="p-6 text-sm text-gray-500 dark:text-gray-400">No Web Mention rules yet.</div>
             <div v-else class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -336,13 +336,11 @@
                 :key="rule.id"
                 @click="selectRule(rule)"
                 class="relative w-full text-left p-5 transition-colors"
-                :class="selectedRule?.id === rule.id
-                  ? 'z-10 rounded-md bg-primary-50/80 ring-1 ring-primary-500/55 shadow-[0_0_0_1px_rgba(251,146,60,0.18),0_0_18px_rgba(251,146,60,0.18)] dark:bg-primary-900/20 dark:ring-primary-400/50 dark:shadow-[0_0_0_1px_rgba(251,146,60,0.16),0_0_20px_rgba(251,146,60,0.14)]'
-                  : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'"
+                :class="selectedRule?.id === rule.id ? 'z-10 rounded-md bg-primary-50/80 ring-1 ring-primary-500/55 shadow-[0_0_0_1px_rgba(251,146,60,0.18),0_0_18px_rgba(251,146,60,0.18)] dark:bg-primary-900/20 dark:ring-primary-400/50 dark:shadow-[0_0_0_1px_rgba(251,146,60,0.16),0_0_20px_rgba(251,146,60,0.14)]' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'"
               >
                 <div class="flex items-center justify-between">
                   <p class="font-medium text-gray-900 dark:text-white">{{ rule.name }}</p>
-                  <span class="text-xs" :class="rule.enabled ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'">
+                  <span class="text-xs" :class="rule.enabled ? 'text-primary-700 dark:text-primary-400' : 'text-gray-400'">
                     {{ rule.enabled ? 'On' : 'Off' }}
                   </span>
                 </div>
@@ -353,21 +351,21 @@
                   <button
                     @click.stop="toggleRuleEnabled(rule)"
                     class="text-xs"
-                    :class="rule.enabled ? 'text-amber-600 hover:text-amber-800' : 'text-primary-600 hover:text-primary-800'"
+                    :class="rule.enabled ? 'text-yellow-600 hover:text-yellow-800' : 'text-primary-700 hover:text-primary-800'"
                   >
                     {{ rule.enabled ? 'Disable' : 'Enable' }}
                   </button>
-                  <button @click.stop="testExistingRule(rule)" class="text-xs text-primary-600 hover:text-primary-800">Preview</button>
+                  <button @click.stop="testExistingRule(rule)" class="btn-link">Preview</button>
                   <button @click.stop="editRule(rule)" class="text-xs text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">Edit</button>
-                  <button @click.stop="removeRule(rule)" class="text-xs text-red-600 hover:text-red-800">Delete</button>
+                  <button @click.stop="removeRule(rule)" class="text-xs text-red-600 dark:text-red-400 hover:text-red-800">Delete</button>
                 </div>
               </button>
             </div>
           </section>
 
-          <section class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+          <section class="card">
             <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Recent Mentions</h2>
+              <h2 class="heading-card">Recent Mentions</h2>
               <span v-if="selectedRule" class="text-sm text-gray-500 dark:text-gray-400">{{ selectedRule.name }}</span>
             </div>
             <div v-if="mentions.length === 0" class="p-8 text-center text-sm text-gray-500 dark:text-gray-400">
@@ -385,7 +383,7 @@
                       :href="mention.url"
                       target="_blank"
                       rel="noopener noreferrer"
-                      class="block text-sm font-semibold leading-6 text-primary-600 hover:text-primary-800 break-words"
+                      class="block text-sm font-semibold leading-6 text-primary-700 hover:text-primary-800 break-words"
                     >
                       {{ mention.title }}
                     </a>
@@ -394,7 +392,7 @@
                     </p>
                   </div>
                   <div class="shrink-0 text-right">
-                    <p class="text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Published</p>
+                    <p class="text-label">Published</p>
                     <p class="mt-1 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
                       {{ formatDate(mention.published_at || mention.discovered_at) }}
                     </p>
@@ -403,13 +401,13 @@
 
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div class="rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2">
-                    <p class="text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Matched symbols</p>
+                    <p class="text-label">Matched symbols</p>
                     <p class="mt-1 text-sm text-gray-700 dark:text-gray-200 break-words">
                       {{ (mention.matched_symbols || []).join(', ') || 'None' }}
                     </p>
                   </div>
                   <div class="rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2">
-                    <p class="text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Matched terms</p>
+                    <p class="text-label">Matched terms</p>
                     <p class="mt-1 text-sm text-gray-700 dark:text-gray-200 break-words">
                       {{ (mention.matched_terms || []).join(', ') || 'None' }}
                     </p>
@@ -419,9 +417,9 @@
             </div>
           </section>
 
-          <section class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+          <section class="card">
             <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-300">Trusted Sources</h2>
+              <h2 class="text-label">Trusted Sources</h2>
             </div>
             <div class="p-4 space-y-4">
               <div class="flex items-center justify-between gap-3">
@@ -430,8 +428,8 @@
                   <p class="text-xs text-gray-500 dark:text-gray-400">Only failing sources are expandable here.</p>
                 </div>
                 <span
-                  class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium"
-                  :class="sourceErrorCount === 0 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'"
+                  class="badge"
+                  :class="sourceErrorCount === 0 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'"
                 >
                   {{ connectedSourceCount }}/{{ sources.length }}
                 </span>
@@ -445,23 +443,11 @@
                 <button
                   type="button"
                   @click="showSourceErrors = !showSourceErrors"
-                  class="text-sm text-primary-600 hover:text-primary-800"
+                  class="btn-link"
                 >
-                  {{ showSourceErrors ? 'Hide source errors' : `Show ${sourceErrorCount} source error${sourceErrorCount === 1 ? '' : 's'}` }}
-                </button>
-                <div v-if="showSourceErrors" class="space-y-3">
-                  <div
-                    v-for="source in failingSources"
-                    :key="source.id"
-                    class="rounded-md border border-red-200 dark:border-red-900/40 px-3 py-3"
-                  >
-                    <div class="flex items-start justify-between gap-3">
-                      <div>
-                        <p class="text-sm font-medium text-gray-900 dark:text-white">{{ source.name }}</p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ source.domain || source.source_type }}</p>
-                        <p class="text-xs text-red-600 dark:text-red-300 mt-2">{{ source.last_fetch_error || 'Fetch failed' }}</p>
+                  {{ showSourceErrors ? 'Hide source errors' : `Show ${sourceErrorCount} source error${sourceErrorCount === 1 ? '' : 's'}` }} </button> <div v-if="showSourceErrors" class="space-y-3"> <div v-for="source in failingSources" :key="source.id" class="rounded-md border border-red-200 dark:border-red-900/40 px-3 py-3" > <div class="flex items-start justify-between gap-3"> <div> <p class="text-sm font-medium text-gray-900 dark:text-white">{{ source.name }}</p> <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ source.domain || source.source_type }}</p> <p class="text-xs text-red-600 dark:text-red-400 mt-2">{{ source.last_fetch_error ||'Fetch failed' }}</p>
                       </div>
-                      <span class="inline-flex px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                      <span class="badge-warning">
                         error
                       </span>
                     </div>

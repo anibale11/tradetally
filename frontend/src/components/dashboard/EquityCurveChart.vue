@@ -39,9 +39,9 @@ function renderChart() {
   if (dailyData.length === 0) return
 
   const pnlValues = dailyData.map(d => parseFloat(d.cumulative_pnl) || 0)
-  const positiveColor = 'rgba(22, 163, 74, 1)'
+  const positiveColor = 'rgba(21, 128, 61, 1)'
   const negativeColor = 'rgba(220, 38, 38, 1)'
-  const positiveFill = 'rgba(22, 163, 74, 0.12)'
+  const positiveFill = 'rgba(21, 128, 61, 0.12)'
   const negativeFill = 'rgba(220, 38, 38, 0.12)'
 
   try {
@@ -95,15 +95,13 @@ function renderChart() {
             beginAtZero: false,
             grid: { color: 'rgba(156, 163, 175, 0.08)' },
             ticks: {
-              font: { family: 'ui-monospace, SFMono-Regular, Menlo, monospace', size: 10 },
-              callback: v => props.currencySymbol + Number(v).toLocaleString()
+                            callback: v => props.currencySymbol + Number(v).toLocaleString()
             }
           },
           x: {
             grid: { display: false },
             ticks: {
-              font: { family: 'ui-monospace, SFMono-Regular, Menlo, monospace', size: 10 },
-              maxRotation: 0,
+                            maxRotation: 0,
               autoSkipPadding: 24
             }
           }

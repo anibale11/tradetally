@@ -1,16 +1,16 @@
 <template>
-  <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden">
+  <div class="card overflow-hidden">
     <!-- Header -->
     <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
       <div class="flex items-center">
         <img v-if="analysis.logo" :src="analysis.logo" :alt="analysis.symbol" class="w-10 h-10 rounded-lg mr-3" />
         <div>
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white">{{ analysis.symbol }}</h3>
+          <h3 class="heading-card">{{ analysis.symbol }}</h3>
           <p v-if="analysis.companyName" class="text-sm text-gray-500 dark:text-gray-400">{{ analysis.companyName }}</p>
         </div>
       </div>
       <div class="text-right">
-        <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ analysis.pillarsPassed }}/8</p>
+        <p class="stat-value text-gray-900 dark:text-white">{{ analysis.pillarsPassed }}/8</p>
         <p class="text-sm text-gray-500 dark:text-gray-400">Pillars Passed</p>
       </div>
     </div>
@@ -79,25 +79,25 @@
     <!-- Actions -->
     <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700 flex items-center justify-between">
       <span class="text-sm text-gray-500 dark:text-gray-400">
-        {{ analysis.currentPrice ? `$${analysis.currentPrice.toFixed(2)}` : '' }}
+        {{ analysis.currentPrice ? formatCurrency(analysis.currentPrice, { currency: 'USD' }) : '' }}
         {{ analysis.industry ? ` | ${analysis.industry}` : '' }}
       </span>
       <div class="flex items-center space-x-3">
         <button
           @click="$emit('view-details', analysis)"
-          class="text-sm text-primary-600 hover:text-primary-800"
+          class="btn-link"
         >
           View Details
         </button>
         <button
           @click="$emit('add-to-watchlist', analysis)"
-          class="text-sm text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+          class="btn-ghost btn-sm"
         >
           Add to Watchlist
         </button>
         <button
           @click="$emit('add-to-holdings', analysis)"
-          class="text-sm text-green-600 hover:text-green-800"
+          class="btn-link"
         >
           Add to Holdings
         </button>
@@ -108,6 +108,10 @@
 
 <script setup>
 import PillarBadge from './PillarBadge.vue'
+import { formatDecimal } from '@/utils/formatters'
+import { useCurrencyFormatter } from '@/composables/useCurrencyFormatter'
+
+const { formatCurrency } = useCurrencyFormatter()
 
 defineProps({
   analysis: {
@@ -125,7 +129,7 @@ function formatPillarValue(pillar) {
     : 0
   
   if (typeof value === 'number') {
-    return value.toFixed(2)
+    return formatDecimal(value, { digits: 2 })
   }
   return String(value)
 }

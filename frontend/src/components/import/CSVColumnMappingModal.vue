@@ -1,15 +1,15 @@
 <template>
   <div v-if="isOpen" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center ">
       <!-- Background overlay -->
-      <div class="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-75 transition-opacity" aria-hidden="true" @click="$emit('close')"></div>
+      <div class="modal-backdrop" aria-hidden="true" @click="$emit('close')"></div>
 
       <!-- Modal panel -->
-      <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full sm:p-6">
+      <div class="modal-panel w-full p-6 max-w-3xl">
         <div class="absolute top-0 right-0 pt-4 pr-4">
           <button
             type="button"
-            class="bg-white dark:bg-gray-800 rounded-md text-gray-400 hover:text-gray-500 focus:outline-none"
+            class="bg-white dark:bg-gray-800 rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
             @click="$emit('close')"
           >
             <span class="sr-only">Close</span>
@@ -18,7 +18,7 @@
         </div>
 
         <div class="pr-8">
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white" id="modal-title">
+          <h3 class="modal-title" id="modal-title">
             Match your CSV columns
           </h3>
           <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -26,10 +26,30 @@
           </p>
         </div>
 
+        <!-- AI column match: runs on open only when the keyword matching left a
+             required column unmatched; otherwise it is offered, not run. -->
+        <div
+          v-if="aiStatus !== 'idle'"
+          class="mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-md border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900/40"
+          data-testid="ai-match-status"
+          role="status"
+        >
+          <p class="min-w-0 flex-1 text-gray-700 dark:text-gray-300">{{ aiStatusMessage }}</p>
+          <button
+            v-if="aiStatus !== 'matching' && canRetryAiMatch"
+            type="button"
+            class="shrink-0 text-sm font-medium text-primary-700 hover:text-primary-500 dark:text-primary-400"
+            data-testid="ai-match-retry"
+            @click="runAiMatch()"
+          >
+            {{ aiStatus === 'matched' ? 'Match again' : 'Match with AI instead' }}
+          </button>
+        </div>
+
         <form @submit.prevent="saveMapping" class="mt-5 space-y-4">
           <!-- Column mapper table -->
           <div class="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
-            <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)] gap-3 bg-gray-50 dark:bg-gray-900/40 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+            <div class="text-label grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)] gap-3 bg-gray-50 dark:bg-gray-900/40 px-4 py-2">
               <div>Your column</div>
               <div>Sample value</div>
               <div>TradeTally field</div>
@@ -113,48 +133,7 @@
                     { value: 'DD/MM/YYYY', label: 'DD/MM/YYYY' },
                     { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD' },
                     { value: 'MM-DD-YYYY', label: 'MM-DD-YYYY' },
-                    { value: 'DD-MM-YYYY', label: 'DD-MM-YYYY' }
-                  ]"
-                />
-              </div>
-              <div class="flex items-center sm:col-span-2">
-                <input
-                  id="hasHeaderRow"
-                  v-model="mappingForm.has_header_row"
-                  type="checkbox"
-                  class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                />
-                <label for="hasHeaderRow" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                  First row contains column headers
-                </label>
-              </div>
-            </div>
-          </details>
-
-          <!-- Mapping name -->
-          <div>
-            <label for="mappingName" class="label">Save this mapping as</label>
-            <input
-              id="mappingName"
-              v-model="mappingForm.mapping_name"
-              type="text"
-              placeholder="Optional — auto-generated if blank"
-              class="input"
-            />
-          </div>
-
-          <!-- Error -->
-          <div v-if="error" class="rounded-md bg-red-50 p-3 dark:bg-red-900/20">
-            <p class="text-sm font-medium text-red-800 dark:text-red-400">{{ error }}</p>
-          </div>
-
-          <!-- Help link -->
-          <p class="text-xs text-gray-500 dark:text-gray-400">
-            Not sure?
-            <a
-              :href="supportMailtoLink"
-              class="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400"
-              @click="$emit('support-clicked', { source: 'mapping_modal', detectedBroker: selectedBroker, headerCount: csvHeaders.length })"
+                    { value: 'DD-MM-YYYY', label: 'DD-MM-YYYY'} ]" /> </div> <div class="flex items-center sm:col-span-2"> <input id="hasHeaderRow" v-model="mappingForm.has_header_row" type="checkbox" class="checkbox" /> <label for="hasHeaderRow" class="ml-2 block text-sm text-gray-700 dark:text-gray-300"> First row contains column headers </label> </div> </div> </details> <!-- Mapping name --> <div> <label for="mappingName" class="label">Save this mapping as</label> <input id="mappingName" v-model="mappingForm.mapping_name" type="text" placeholder="Optional — auto-generated if blank" class="input" /> </div> <!-- Error --> <div v-if="error" class="callout-danger"> <p class="text-sm font-medium text-red-600 dark:text-red-400">{{ error }}</p> </div> <!-- Help link --> <p class="text-xs text-gray-500 dark:text-gray-400"> Not sure? <a :href="supportMailtoLink" class="font-medium text-primary-700 hover:text-primary-500 dark:text-primary-400" @click="$emit('support-clicked', { source: 'mapping_modal', detectedBroker: selectedBroker, headerCount: csvHeaders.length })"
             >
               Send us the headers
             </a>
@@ -166,7 +145,7 @@
             <button
               type="submit"
               :disabled="loading || !isFormValid"
-              class="w-full inline-flex justify-center rounded-md border border-transparent bg-primary-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:col-start-2 sm:text-sm"
+              class="btn-primary w-full sm:col-start-2"
             >
               <span v-if="loading">Saving...</span>
               <span v-else-if="!isFormValid">{{ unmatchedRequiredLabel }}</span>
@@ -174,7 +153,7 @@
             </button>
             <button
               type="button"
-              class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 sm:col-start-1 sm:mt-0 sm:text-sm"
+              class="btn-secondary mt-3 w-full dark:text-gray-200 sm:col-start-1 sm:mt-0"
               @click="$emit('close')"
               :disabled="loading"
             >
@@ -194,6 +173,7 @@ import BaseSelect from '@/components/common/BaseSelect.vue'
 import api from '@/services/api'
 import { useNotification } from '@/composables/useNotification'
 import { parseCSVFilePreview } from '@/utils/csvImportParse'
+import { redactSample } from '@/utils/csvSampleRedaction'
 
 const props = defineProps({
   isOpen: {
@@ -237,12 +217,34 @@ watch(
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleEscape)
+  cancelAiMatch()
 })
 
 const loading = ref(false)
 const error = ref(null)
 const isReparsing = ref(false)
 const isInitializing = ref(false)
+
+// AI column match. 'idle' hides the status row entirely.
+const aiStatus = ref('idle') // idle | recognized | matching | matched | stale | unavailable | credits | pro | failed
+const aiMatchedCount = ref(0)
+const aiMissingRequired = ref([])
+// Fields and columns the user set by hand while an AI match was in flight. A
+// slow AI reply fills in around them and never overwrites them.
+const userEditedFields = new Set()
+const userEditedHeaders = new Set()
+let aiRequestId = 0
+let aiAbortController = null
+
+// Stop waiting for an AI reply that can no longer be used. Aborting tells the
+// server nobody is listening, so it does not charge credits for it.
+function cancelAiMatch() {
+  aiRequestId++
+  if (aiAbortController) {
+    aiAbortController.abort()
+    aiAbortController = null
+  }
+}
 const displayHeaders = ref([])
 const displaySampleRows = ref({})
 
@@ -311,6 +313,37 @@ const unmatchedRequiredLabel = computed(() => {
   return `Still need: ${missing.join(', ')}`
 })
 
+const canRetryAiMatch = computed(() => !['unavailable', 'credits', 'pro'].includes(aiStatus.value))
+
+const aiStatusMessage = computed(() => {
+  switch (aiStatus.value) {
+    case 'recognized':
+      return 'We recognized the required columns from their names.'
+    case 'pro':
+      return 'AI column matching is a Pro feature, so we pre-filled what we recognized.'
+    case 'matching':
+      return 'AI is matching your columns…'
+    case 'matched': {
+      const count = aiMatchedCount.value
+      const base = `AI matched ${count} ${count === 1 ? 'column' : 'columns'}.`
+      if (aiMissingRequired.value.length > 0) {
+        return `${base} It could not find ${aiMissingRequired.value.join(', ')}; pick ${aiMissingRequired.value.length === 1 ? 'it' : 'them'} below.`
+      }
+      return `${base} Check them and change anything that's wrong.`
+    }
+    case 'stale':
+      return 'The columns changed, so the AI match no longer applies.'
+    case 'credits':
+      return "You're out of AI credits this month, so we pre-filled what we recognized."
+    case 'unavailable':
+      return "AI matching isn't available right now, so we pre-filled what we recognized."
+    case 'failed':
+      return "AI couldn't work out this file, so we pre-filled what we recognized."
+    default:
+      return ''
+  }
+})
+
 function getMappedField(header) {
   for (const fieldName of COLUMN_FIELD_NAMES) {
     if (mappingForm.value[fieldName] === header) return fieldName
@@ -324,6 +357,9 @@ function setMappedField(header, fieldName) {
   if (prev) mappingForm.value[prev] = ''
   // Apply new mapping (latest wins if another header was on the same field)
   if (fieldName) mappingForm.value[fieldName] = header
+  if (prev) userEditedFields.add(prev)
+  if (fieldName) userEditedFields.add(fieldName)
+  userEditedHeaders.add(header)
 }
 
 function rowSelectClass(header) {
@@ -411,6 +447,78 @@ async function refreshPreviewFromFile(autoDetectDelimiter = false) {
   }
 }
 
+/**
+ * Ask the backend which column holds each field and pre-fill the form with
+ * the answer. The keyword matches from autoDetectMappings stay in place if
+ * this fails, so the modal is always usable without AI.
+ */
+async function runAiMatch() {
+  const headers = [...displayHeaders.value]
+  if (headers.length < 2) return
+
+  cancelAiMatch()
+  const requestId = aiRequestId
+  const controller = new AbortController()
+  aiAbortController = controller
+  userEditedFields.clear()
+  userEditedHeaders.clear()
+  aiStatus.value = 'matching'
+
+  // Account numbers and other long identifiers are masked before the samples
+  // leave the browser; the server masks them again before the AI sees them.
+  const sampleRows = {}
+  for (const header of headers) {
+    sampleRows[header] = (displaySampleRows.value?.[header] || [])
+      .slice(0, 3)
+      .map(value => redactSample(header, value))
+  }
+
+  try {
+    const response = await api.post('/csv-mappings/suggest', { headers, sampleRows }, { signal: controller.signal })
+    // A newer request or a re-parse makes this reply stale (and aborted it).
+    if (requestId !== aiRequestId) return
+
+    const suggestion = response.data?.data
+    const mapping = suggestion?.mapping || {}
+    // Choices the user made while waiting win over the AI's.
+    const matched = COLUMN_FIELD_NAMES.filter(f =>
+      mapping[f] && headers.includes(mapping[f]) &&
+      !userEditedFields.has(f) && !userEditedHeaders.has(mapping[f])
+    )
+    if (matched.length === 0) {
+      aiStatus.value = userEditedFields.size > 0 || userEditedHeaders.size > 0 ? 'idle' : 'failed'
+      return
+    }
+
+    // The AI's columns win over keyword matches for the same column, but a
+    // keyword match the AI had no answer for is kept.
+    const aiHeaders = new Set(matched.map(f => mapping[f]))
+    for (const fieldName of COLUMN_FIELD_NAMES) {
+      if (userEditedFields.has(fieldName)) continue
+      if (aiHeaders.has(mappingForm.value[fieldName])) mappingForm.value[fieldName] = ''
+    }
+    for (const fieldName of matched) {
+      mappingForm.value[fieldName] = mapping[fieldName]
+    }
+    if (suggestion.date_format) {
+      mappingForm.value.date_format = suggestion.date_format
+    }
+    aiMatchedCount.value = matched.length
+    aiMissingRequired.value = REQUIRED_FIELD_NAMES
+      .filter(f => !mappingForm.value[f])
+      .map(f => FIELD_OPTIONS.find(opt => opt.value === f)?.label)
+      .filter(Boolean)
+    aiStatus.value = 'matched'
+  } catch (err) {
+    if (requestId !== aiRequestId) return
+    const code = err.response?.data?.code
+    if (code === 'INSUFFICIENT_CREDITS') aiStatus.value = 'credits'
+    else if (code === 'PRO_REQUIRED') aiStatus.value = 'pro'
+    else if (code === 'NO_SUGGESTION') aiStatus.value = 'failed'
+    else aiStatus.value = 'unavailable'
+  }
+}
+
 // Reset form and re-parse when modal opens
 watch(() => props.isOpen, async (isOpen) => {
   if (isOpen) {
@@ -421,17 +529,40 @@ watch(() => props.isOpen, async (isOpen) => {
     mappingForm.value.date_format = 'MM/DD/YYYY'
     mappingForm.value.has_header_row = true
     error.value = null
+    aiStatus.value = 'idle'
     await refreshPreviewFromFile(true)
     isInitializing.value = false
+    // AI is the fallback, not the default: when the keyword matching already
+    // found every required column, offer it instead of spending credits.
+    if (displayHeaders.value.length >= 2) {
+      if (isFormValid.value) {
+        aiStatus.value = 'recognized'
+      } else {
+        // Not awaited: the form is usable with the keyword matches meanwhile.
+        runAiMatch()
+      }
+    }
+  } else {
+    cancelAiMatch()
   }
-})
+  // immediate: ImportView creates this component with is-open already true
+  // (it sits behind a v-if), so there is no false-to-true change to react to.
+}, { immediate: true })
 
 // Re-parse when CSV settings change (delimiter / header row)
 watch(
   () => [mappingForm.value.delimiter, mappingForm.value.has_header_row],
   async () => {
     if (props.isOpen && props.csvFile && !isInitializing.value) {
+      // The columns are about to change: drop any in-flight or applied AI
+      // match and let the user ask for a new one.
+      cancelAiMatch()
       await refreshPreviewFromFile(false)
+      if (aiStatus.value === 'matching' || aiStatus.value === 'matched') {
+        aiStatus.value = 'stale'
+      } else if (aiStatus.value === 'recognized' && !isFormValid.value) {
+        aiStatus.value = 'stale'
+      }
     }
   }
 )
@@ -598,49 +729,30 @@ async function saveMapping() {
   color: rgb(209 213 219);
 }
 
-.input {
-  display: block;
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-  color: rgb(17 24 39);
-  background-color: white;
-  border: 1px solid rgb(209 213 219);
-  border-radius: 0.375rem;
-}
-
-.input:focus {
-  outline: none;
-  border-color: rgb(59 130 246);
-}
-
-.dark .input {
-  color: rgb(243 244 246);
-  background-color: rgb(55 65 81);
-  border-color: rgb(75 85 99);
-}
-
-.dark .input:focus {
-  border-color: rgb(96 165 250);
-}
-
 /* Per-row mapping select — compact, themed by mapping state */
 .row-select {
   display: block;
   width: 100%;
-  padding: 0.375rem 0.625rem;
-  font-size: 0.8125rem;
+  /* Mirrors .input.input-sm: 16px on phones (no iOS zoom), 14px from sm up. */
+  padding: 0.25rem 0.5rem;
+  min-height: 32px;
+  font-size: 16px;
   line-height: 1.25rem;
   background-color: white;
   border: 1px solid rgb(209 213 219);
   border-radius: 0.375rem;
 }
 
+@media (min-width: 640px) {
+  .row-select {
+    font-size: 0.875rem;
+  }
+}
+
 .row-select:focus {
   outline: none;
-  border-color: rgb(240 129 42);
-  box-shadow: 0 0 0 2px rgba(240, 129, 42, 0.2);
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary-500) 25%, transparent);
 }
 
 .dark .row-select {

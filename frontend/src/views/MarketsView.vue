@@ -33,14 +33,9 @@
             <!-- Tab Navigation -->
             <div class="border-b border-gray-200 dark:border-gray-700 mb-6">
                 <nav class="-mb-px flex space-x-8">
-                    <button
+                    <button class="btn-link"
                         @click="activeTab = 'watchlists'"
-                        :class="[
-                            activeTab === 'watchlists'
-                                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600',
-                            'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm',
-                        ]"
+                        :class="[ activeTab === 'watchlists' ? 'tab-active' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600', 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm', ]"
                     >
                         <svg
                             class="w-5 h-5 inline mr-2"
@@ -57,14 +52,9 @@
                         </svg>
                         Watchlists
                     </button>
-                    <button
+                    <button class="btn-link"
                         @click="activeTab = 'alerts'"
-                        :class="[
-                            activeTab === 'alerts'
-                                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600',
-                            'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm',
-                        ]"
+                        :class="[ activeTab === 'alerts' ? 'tab-active' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600', 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm', ]"
                     >
                         <MdiIcon
                             :icon="mdiBell"
@@ -107,7 +97,7 @@
                     class="flex justify-center items-center py-12"
                 >
                     <div
-                        class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"
+                        class="spinner spinner-md"
                     ></div>
                 </div>
 
@@ -119,7 +109,7 @@
                     <div
                         v-for="watchlist in watchlists"
                         :key="watchlist.id"
-                        class="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow cursor-pointer"
+                        class="card transition-shadow cursor-pointer"
                         @click="selectWatchlist(watchlist)"
                     >
                         <div class="p-6">
@@ -129,7 +119,7 @@
                                 </h3>
                                 <span
                                     v-if="watchlist.is_default"
-                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200"
+                                    class="badge-primary"
                                 >
                                     Default
                                 </span>
@@ -149,7 +139,7 @@
                             <div class="mt-4 flex space-x-2">
                                 <button
                                     @click.stop="editWatchlist(watchlist)"
-                                    class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 text-sm font-medium"
+                                    class="btn-ghost btn-sm"
                                 >
                                     Edit
                                 </button>
@@ -181,7 +171,7 @@
                         ></path>
                     </svg>
                     <h3
-                        class="mt-2 text-sm font-medium text-gray-900 dark:text-white"
+                        class="heading-sub mt-2"
                     >
                         No watchlists
                     </h3>
@@ -191,7 +181,7 @@
                     <div class="mt-6">
                         <button
                             @click="showCreateWatchlistModal = true"
-                            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700"
+                            class="btn-primary"
                         >
                             Create Watchlist
                         </button>
@@ -213,7 +203,7 @@
                     <div class="mt-4 sm:mt-0 flex flex-wrap gap-3">
                         <a
                             href="#markets-webhook-destinations"
-                            class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                            class="btn-secondary dark:text-gray-200"
                         >
                             Webhook Destinations
                         </a>
@@ -229,17 +219,12 @@
 
                 <!-- Market & Connection Status -->
                 <div
-                    class="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow p-4"
+                    class="card mb-6 p-4"
                 >
                     <div class="flex items-center justify-between mb-3">
                         <div class="flex items-center space-x-3">
                             <div
-                                :class="[
-                                    'w-3 h-3 rounded-full',
-                                    marketStatus.isOpen
-                                        ? 'bg-green-500'
-                                        : 'bg-yellow-500',
-                                ]"
+                                :class="[ 'w-3 h-3 rounded-full', marketStatus.isOpen ? 'bg-green-500' : 'bg-yellow-500', ]"
                             ></div>
                             <span
                                 class="text-sm text-gray-700 dark:text-gray-300"
@@ -269,10 +254,7 @@
                     <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-3">
                             <div
-                                :class="[
-                                    'w-3 h-3 rounded-full',
-                                    getConnectionStatusColor(),
-                                ]"
+                                :class="[ 'w-3 h-3 rounded-full', getConnectionStatusColor(), ]"
                             ></div>
                             <span
                                 class="text-sm text-gray-700 dark:text-gray-300"
@@ -283,7 +265,7 @@
                         <button
                             v-if="!notificationPermissionGranted"
                             @click="requestBrowserNotifications"
-                            class="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                            class="btn-link"
                         >
                             Enable browser notifications
                         </button>
@@ -293,7 +275,7 @@
                         class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700"
                     >
                         <h4
-                            class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                            class="heading-sub mb-2"
                         >
                             Recent Alerts
                         </h4>
@@ -353,58 +335,58 @@
                     class="flex justify-center items-center py-12"
                 >
                     <div
-                        class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"
+                        class="spinner spinner-md"
                     ></div>
                 </div>
 
                 <!-- Alerts Table -->
                 <div
                     v-else-if="alerts.length > 0"
-                    class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden"
+                    class="card overflow-hidden"
                 >
                     <div class="overflow-x-auto">
                         <table
                             class="min-w-full divide-y divide-gray-200 dark:divide-gray-700"
                         >
-                            <thead class="bg-gray-50 dark:bg-gray-700">
+                            <thead class="table-head">
                                 <tr>
                                     <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                        class="text-left table-th px-4 py-2"
                                     >
                                         Symbol
                                     </th>
                                     <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                        class="text-left table-th px-4 py-2"
                                     >
                                         Alert Type
                                     </th>
                                     <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                        class="text-left table-th px-4 py-2"
                                     >
                                         Target
                                     </th>
                                     <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                        class="text-left table-th px-4 py-2"
                                     >
                                         Current Price
                                     </th>
                                     <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                        class="text-left table-th px-4 py-2"
                                     >
                                         Status
                                     </th>
                                     <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                        class="text-left table-th px-4 py-2"
                                     >
                                         Notifications
                                     </th>
                                     <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                        class="text-left table-th px-4 py-2"
                                     >
                                         Created
                                     </th>
                                     <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                        class="text-left table-th px-4 py-2"
                                     >
                                         Actions
                                     </th>
@@ -418,29 +400,29 @@
                                     :key="alert.id"
                                 >
                                     <td
-                                        class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100"
+                                        class="whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100 px-4 py-3"
                                     >
                                         {{ alert.symbol }}
                                     </td>
                                     <td
-                                        class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100"
+                                        class="whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 px-4 py-3"
                                     >
                                         <span class="capitalize">{{
                                             alert.alert_type.replace("_", " ")
                                         }}</span>
                                     </td>
                                     <td
-                                        class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100"
+                                        class="whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 px-4 py-3"
                                     >
                                         <span v-if="alert.target_price">{{
                                             formatPrice(alert.target_price)
                                         }}</span>
                                         <span v-else-if="alert.change_percent"
-                                            >{{ alert.change_percent }}%</span
+                                            >{{ formatPercent(alert.change_percent) }}</span
                                         >
                                     </td>
                                     <td
-                                        class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100"
+                                        class="whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 px-4 py-3"
                                     >
                                         {{
                                             alert.current_price
@@ -450,13 +432,13 @@
                                                 : "N/A"
                                         }}
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
+                                    <td class="whitespace-nowrap px-4 py-3">
                                         <span
                                             v-if="
                                                 alert.is_active &&
                                                 !alert.triggered_at
                                             "
-                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
+                                            class="badge-success"
                                         >
                                             Active
                                         </span>
@@ -465,7 +447,7 @@
                                                 alert.is_active &&
                                                 alert.triggered_at
                                             "
-                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400"
+                                            class="badge bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-400"
                                         >
                                             Triggered (Repeat)
                                         </span>
@@ -474,19 +456,19 @@
                                                 !alert.is_active &&
                                                 alert.triggered_at
                                             "
-                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800"
+                                            class="badge bg-yellow-100 text-yellow-800"
                                         >
                                             Triggered
                                         </span>
                                         <span
                                             v-else
-                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
+                                            class="badge-neutral"
                                         >
                                             Inactive
                                         </span>
                                     </td>
                                     <td
-                                        class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400"
+                                        class="whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 px-4 py-3"
                                     >
                                         <div class="flex space-x-1">
                                             <MdiIcon
@@ -494,35 +476,35 @@
                                                 title="Email enabled"
                                                 :icon="mdiEmailOutline"
                                                 :size="16"
-                                                class="text-primary-500"
+                                                class="text-primary-700 dark:text-primary-400"
                                                 />
                                             <MdiIcon
                                                 v-if="alert.browser_enabled"
                                                 :icon="mdiBell"
                                                 :size="16"
                                                 title="Browser enabled"
-                                                classes="text-green-500"
+                                                classes="text-green-700 dark:text-green-400"
                                             />
                                             <MdiIcon
                                                 v-if="alert.repeat_enabled"
                                                 :icon="mdiRepeat"
                                                 :size="16"
                                                 title="Repeat enabled"
-                                                classes="text-purple-500"
+                                                classes="text-primary-500"
                                             />
                                         </div>
                                     </td>
                                     <td
-                                        class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400"
+                                        class="whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 px-4 py-3"
                                     >
                                         {{ formatDate(alert.created_at) }}
                                     </td>
                                     <td
-                                        class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2"
+                                        class="whitespace-nowrap text-sm font-medium space-x-2 px-4 py-3"
                                     >
                                         <button
                                             @click="editAlert(alert)"
-                                            class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+                                            class="btn-ghost btn-sm"
                                         >
                                             Edit
                                         </button>
@@ -534,7 +516,7 @@
                                         </button>
                                         <button
                                             @click="deleteAlert(alert)"
-                                            class="text-red-600 hover:text-red-900"
+                                            class="text-red-600 dark:text-red-400 hover:text-red-900"
                                         >
                                             Delete
                                         </button>
@@ -561,7 +543,7 @@
                         />
                     </svg>
                     <h3
-                        class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100"
+                        class="heading-sub mt-2"
                     >
                         No price alerts
                     </h3>
@@ -571,7 +553,7 @@
                     <div class="mt-6">
                         <button
                             @click="showCreateAlertModal = true"
-                            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700"
+                            class="btn-primary"
                         >
                             Create Alert
                         </button>
@@ -583,17 +565,17 @@
         <!-- Create/Edit Watchlist Modal -->
         <div
             v-if="showCreateWatchlistModal || editingWatchlist"
-            class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+            class="modal-overlay overflow-y-auto"
             role="dialog"
             aria-modal="true"
             @click.self="cancelEditWatchlist"
         >
             <div
-                class="relative top-20 mx-4 sm:mx-auto p-5 border w-full max-w-sm shadow-lg rounded-md bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700"
+                class="modal-panel top-20 mx-4 sm:mx-auto p-6 w-full max-w-sm"
             >
                 <div class="mt-3">
                     <h3
-                        class="text-lg font-medium text-gray-900 dark:text-white mb-4"
+                        class="modal-title mb-4"
                     >
                         {{
                             editingWatchlist
@@ -636,7 +618,7 @@
                                 <input
                                     v-model="watchlistForm.is_default"
                                     type="checkbox"
-                                    class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                    class="checkbox"
                                 />
                                 <span
                                     class="ml-2 text-sm text-gray-700 dark:text-gray-300"
@@ -644,7 +626,7 @@
                                 >
                             </label>
                         </div>
-                        <div class="flex justify-end space-x-3">
+                        <div class="modal-footer">
                             <button
                                 type="button"
                                 @click="cancelEditWatchlist"
@@ -674,17 +656,17 @@
         <!-- Create/Edit Alert Modal -->
         <div
             v-if="showCreateAlertModal || editingAlert"
-            class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+            class="modal-overlay overflow-y-auto"
             role="dialog"
             aria-modal="true"
             @click.self="cancelEditAlert"
         >
             <div
-                class="relative top-20 mx-4 sm:mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white dark:bg-gray-800 dark:border-gray-700"
+                class="modal-panel top-20 mx-4 sm:mx-auto p-6 w-full max-w-lg"
             >
                 <div class="mt-3">
                     <h3
-                        class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4"
+                        class="modal-title mb-4"
                     >
                         {{
                             editingAlert
@@ -778,7 +760,7 @@
                                     <input
                                         v-model="alertForm.email_enabled"
                                         type="checkbox"
-                                        class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                        class="checkbox"
                                     />
                                     <span
                                         class="ml-2 text-sm text-gray-700 dark:text-gray-300"
@@ -789,7 +771,7 @@
                                     <input
                                         v-model="alertForm.browser_enabled"
                                         type="checkbox"
-                                        class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                        class="checkbox"
                                     />
                                     <span
                                         class="ml-2 text-sm text-gray-700 dark:text-gray-300"
@@ -800,7 +782,7 @@
                                     <input
                                         v-model="alertForm.repeat_enabled"
                                         type="checkbox"
-                                        class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                        class="checkbox"
                                     />
                                     <span
                                         class="ml-2 text-sm text-gray-700 dark:text-gray-300"
@@ -811,7 +793,7 @@
                             </div>
                         </div>
 
-                        <div class="flex justify-end space-x-3">
+                        <div class="modal-footer">
                             <button
                                 type="button"
                                 @click="cancelEditAlert"
@@ -822,7 +804,7 @@
                             <button
                                 type="submit"
                                 :disabled="savingAlert"
-                                class="btn-primary disabled:opacity-50"
+                                class="btn-primary"
                             >
                                 {{
                                     savingAlert
@@ -858,6 +840,7 @@ import SymbolAutocomplete from "@/components/common/SymbolAutocomplete.vue";
 import SymbolCurrentPrice from "@/components/price-alerts/SymbolCurrentPrice.vue";
 import BaseSelect from "@/components/common/BaseSelect.vue";
 import { useVisibilityPolling } from "@/composables/useVisibilityPolling";
+import { formatPercent } from '@/utils/formatters'
 
 const route = useRoute();
 const router = useRouter();

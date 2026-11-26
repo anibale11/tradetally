@@ -3,7 +3,7 @@
     <div class="card">
         <div class="card-body">
             <h3
-                class="text-lg font-medium text-gray-900 dark:text-white mb-6"
+                class="heading-card mb-6"
             >
                 Admin CUSIP AI Provider Settings
             </h3>
@@ -24,7 +24,7 @@
                         id="adminUseMainProviderForCusip"
                         v-model="form.useMainProvider"
                         type="checkbox"
-                        class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                        class="checkbox"
                         @change="onAdminCusipUseMainProviderChange"
                     />
                     <label
@@ -78,7 +78,7 @@
 
                     <div
                         v-if="HOST_CLI_AI_PROVIDERS.includes(form.provider)"
-                        class="rounded-lg border border-primary-200 bg-primary-50 px-4 py-3 text-sm text-primary-800 dark:border-primary-800 dark:bg-primary-900/20 dark:text-primary-200"
+                        class="callout-info"
                     >
                         Runs the authenticated CLI installed on the TradeTally backend host.
                     </div>
@@ -157,7 +157,7 @@
                             class="flex items-center"
                         >
                             <div
-                                class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"
+                                class="spinner spinner-xs spinner-light mr-2"
                             ></div>
                             Saving...
                         </span>
